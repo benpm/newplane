@@ -15,7 +15,7 @@ import type { EditorRefApi } from "@plane/editor";
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
-import type { TIssue, TWorkspaceDraftIssue } from "@plane/types";
+import type { TIssue, TIssueUpdatePayload, TWorkspaceDraftIssue } from "@plane/types";
 // hooks
 import { ToggleSwitch } from "@plane/ui";
 import {
@@ -48,9 +48,11 @@ import { useProjectIssueProperties } from "@/hooks/use-project-issue-properties"
 // plane web imports
 import { DeDupeButtonRoot } from "@/plane-web/components/de-dupe/de-dupe-button";
 import { DuplicateModalRoot } from "@/plane-web/components/de-dupe/duplicate-modal";
+import { FieldChangeReasonModal } from "@/plane-web/components/issues/issue-details/sidebar/field-change-reason-modal";
 import { IssueTypeSelect, WorkItemTemplateSelect } from "@/plane-web/components/issues/issue-modal";
 import { WorkItemModalAdditionalProperties } from "@/plane-web/components/issues/issue-modal/modal-additional-properties";
 import { useDebouncedDuplicateIssues } from "@/plane-web/hooks/use-debounced-duplicate-issues";
+import { useDueDateReasonGate } from "@/plane-web/hooks/use-due-date-reason-gate";
 
 export interface IssueFormProps {
   data?: Partial<TIssue>;
@@ -165,6 +167,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     control,
     getValues,
     setValue,
+    setError,
   } = methods;
 
   const projectId = watch("project_id");
@@ -179,6 +182,13 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   const isDisabled = isSubmitting || isApplyingTemplate;
 
   const { getIndex } = getTabIndex(ETabIndices.ISSUE_FORM, isMobile);
+
+  // Gate due-date edits behind a mandatory reason prompt (edit mode only),
+  // mirroring the detail sidebar / spreadsheet / inline list flows.
+  const dueDateReasonGate = useDueDateReasonGate({
+    originalDate: data?.target_date ?? null,
+    isEditMode: !!data?.id,
+  });
 
   // fetch task categories once on mount
   useEffect(() => {
@@ -264,6 +274,12 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
 
     if (formData.hasOwnProperty("is_draft")) submitData.is_draft = formData.is_draft;
 
+    // Attach the captured due-date change reason (transient, popped by backend).
+    // Only present when an existing due date was actually changed.
+    if (data?.id && dueDateReasonGate.reason && submitData.target_date) {
+      (submitData as TIssueUpdatePayload).reason = dueDateReasonGate.reason;
+    }
+
     await onSubmit(submitData, is_draft_issue)
       .then(() => {
         setGptAssistantModal(false);
@@ -305,12 +321,25 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
         ...data,
         ...getValues(),
       } as TWorkspaceDraftIssue);
-    } catch {
-      setToast({
-        type: TOAST_TYPE.ERROR,
-        title: "Error!",
-        message: "Failed to move work item to project. Please try again.",
-      });
+    } catch (error: unknown) {
+      const errorData = (error as { response?: { data?: Record<string, unknown> } })?.response?.data;
+      let fieldErrorApplied = false;
+      if (errorData && typeof errorData === "object") {
+        for (const [key, value] of Object.entries(errorData)) {
+          if (key === "non_field_errors" || key === "detail") continue;
+          const message = Array.isArray(value) ? String(value[0]) : typeof value === "string" ? value : "";
+          if (!message) continue;
+          setError(key as keyof TIssue, { type: "server", message });
+          fieldErrorApplied = true;
+        }
+      }
+      if (!fieldErrorApplied) {
+        setToast({
+          type: TOAST_TYPE.ERROR,
+          title: t("error"),
+          message: t("failed_to_move_issue_to_project"),
+        });
+      }
     } finally {
       setIsMoving(false);
     }
@@ -512,6 +541,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                   isDraft={isDraft}
                   handleFormChange={handleFormChange}
                   setSelectedParentIssue={setSelectedParentIssue}
+                  onTargetDateChange={dueDateReasonGate.handleDateChange}
                 >
                   <WorkItemModalAdditionalProperties
                     isDraft={isDraft}
@@ -604,6 +634,12 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
           </div>
         )}
       </div>
+      <FieldChangeReasonModal
+        isOpen={dueDateReasonGate.isModalOpen}
+        onClose={dueDateReasonGate.close}
+        onConfirm={dueDateReasonGate.confirm}
+        fieldLabel={t("common.order_by.due_date")}
+      />
     </FormProvider>
   );
 });
