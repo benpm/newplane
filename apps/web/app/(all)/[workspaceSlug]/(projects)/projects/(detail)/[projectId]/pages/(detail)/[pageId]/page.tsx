@@ -39,7 +39,7 @@ const projectPageVersionService = new ProjectPageVersionService();
 
 const storeType = EPageStoreType.PROJECT;
 
-function PageDetailsPage({ params }: Route.ComponentProps) {
+const PageDetailsPage = observer(function PageDetailsPage({ params }: Route.ComponentProps) {
   // router
   const router = useAppRouter();
   const { workspaceSlug, projectId, pageId } = params;
@@ -82,7 +82,7 @@ function PageDetailsPage({ params }: Route.ComponentProps) {
       fetchAllVersions: async (pageId) =>
         await projectPageVersionService.fetchAllVersions(workspaceSlug, projectId, pageId),
       fetchDescriptionBinary: async () => {
-        if (!id) return;
+        if (!id) throw new Error("Page id is required to fetch the description binary");
         return await projectPageService.fetchDescriptionBinary(workspaceSlug, projectId, id);
       },
       fetchEntity: fetchEntityCallback,
@@ -195,6 +195,6 @@ function PageDetailsPage({ params }: Route.ComponentProps) {
       </div>
     </>
   );
-}
+});
 
-export default observer(PageDetailsPage);
+export default PageDetailsPage;

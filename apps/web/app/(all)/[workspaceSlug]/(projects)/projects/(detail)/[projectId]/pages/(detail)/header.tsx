@@ -22,7 +22,7 @@ import { useProject } from "@/hooks/store/use-project";
 import { useAppRouter } from "@/hooks/use-app-router";
 // plane web imports
 import { CommonProjectBreadcrumbs } from "@/plane-web/components/breadcrumbs/common";
-import { PageDetailsHeaderExtraActions } from "@/plane-web/components/pages";
+import { PageAncestorBreadcrumbs, PageDetailsHeaderExtraActions } from "@/plane-web/components/pages";
 import { EPageStoreType, usePage, usePageStore } from "@/plane-web/hooks/store";
 
 export interface IPagesHeaderProps {
@@ -78,6 +78,13 @@ export const PageDetailsHeader = observer(function PageDetailsHeader() {
                   icon={<PageIcon className="h-4 w-4 text-tertiary" />}
                 />
               }
+            />
+
+            <PageAncestorBreadcrumbs
+              page={page}
+              storeType={storeType}
+              workspaceSlug={workspaceSlug?.toString() ?? ""}
+              projectId={projectId?.toString() ?? ""}
             />
 
             <Breadcrumbs.Item

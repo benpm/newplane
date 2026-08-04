@@ -48,6 +48,7 @@ export interface IProjectPageStore {
   getCurrentProjectPageIds: (projectId: string) => string[];
   getCurrentProjectFilteredPageIdsByTab: (pageType: TPageNavigationTabs) => string[] | undefined;
   getPageById: (pageId: string) => TProjectPage | undefined;
+  getPageChildIds: (pageId: string) => string[];
   updateFilters: <T extends keyof TPageFilters>(filterKey: T, filterValue: TPageFilters[T]) => void;
   clearAllFilters: () => void;
   // actions
@@ -62,6 +63,7 @@ export interface IProjectPageStore {
     pageId: string,
     options?: { trackVisit?: boolean }
   ) => Promise<TPage | undefined>;
+  fetchSubPages: (workspaceSlug: string, projectId: string, pageId: string) => Promise<TPage[] | undefined>;
   createPage: (pageData: Partial<TPage>) => Promise<TPage | undefined>;
   removePage: (params: { pageId: string; shouldSync?: boolean }) => Promise<void>;
   movePage: (workspaceSlug: string, projectId: string, pageId: string, newProjectId: string) => Promise<void>;
@@ -97,6 +99,7 @@ export class ProjectPageStore implements IProjectPageStore {
       // actions
       fetchPagesList: action,
       fetchPageDetails: action,
+      fetchSubPages: action,
       createPage: action,
       removePage: action,
       movePage: action,
@@ -143,7 +146,8 @@ export class ProjectPageStore implements IProjectPageStore {
     if (!projectId) return undefined;
     // helps to filter pages based on the pageType
     let pagesByType = filterPagesByPageType(pageType, Object.values(this?.data || {}));
-    pagesByType = pagesByType.filter((p) => p.project_ids?.includes(projectId));
+    // roots only — child pages (loaded via fetchSubPages) render nested under their parent
+    pagesByType = pagesByType.filter((p) => p.project_ids?.includes(projectId) && !p.parent);
 
     const pages = (pagesByType.map((page) => page.id) as string[]) || undefined;
 
@@ -173,6 +177,8 @@ export class ProjectPageStore implements IProjectPageStore {
     let filteredPages = pagesByType.filter(
       (p) =>
         p.project_ids?.includes(projectId) &&
+        // roots only when browsing; a search query flattens the tree so children remain findable
+        (this.filters.searchQuery ? true : !p.parent) &&
         getPageName(p.name).toLowerCase().includes(this.filters.searchQuery.toLowerCase()) &&
         shouldFilterPage(p, this.filters.filters)
     );
@@ -188,6 +194,14 @@ export class ProjectPageStore implements IProjectPageStore {
    * @param {string} pageId
    */
   getPageById = computedFn((pageId: string) => this.data?.[pageId] || undefined);
+
+  /** ids of the loaded direct children of a page, respecting current sort order */
+  getPageChildIds = computedFn((pageId: string) => {
+    const children = Object.values(this.data ?? {}).filter((page) => page.parent === pageId);
+    const childrenJSON = children.map((page) => page.asJSON).filter((page): page is TPage => !!page);
+    const sorted = orderPages(childrenJSON, this.filters.sortKey, this.filters.sortBy);
+    return sorted.map((page) => page.id).filter((id): id is string => !!id);
+  });
 
   updateFilters = <T extends keyof TPageFilters>(filterKey: T, filterValue: TPageFilters[T]) => {
     runInAction(() => {
@@ -222,10 +236,8 @@ export class ProjectPageStore implements IProjectPageStore {
           if (page?.id) {
             const existingPage = this.getPageById(page.id);
             if (existingPage) {
-              // If page already exists, update all fields except name
-
-              const { name, ...otherFields } = page;
-              existingPage.mutateProperties(otherFields, false);
+              // update all fields except name (mutateProperties skips it when shouldUpdateName is false)
+              existingPage.mutateProperties(page, false);
             } else {
               // If new page, create a new instance with all data
               set(this.data, [page.id], new ProjectPage(this.store, page));
@@ -242,6 +254,37 @@ export class ProjectPageStore implements IProjectPageStore {
         this.error = {
           title: "Failed",
           description: "Failed to fetch the pages, Please try again later.",
+        };
+      });
+      throw error;
+    }
+  };
+
+  fetchSubPages = async (workspaceSlug: string, projectId: string, pageId: string) => {
+    try {
+      if (!workspaceSlug || !projectId || !pageId) return undefined;
+
+      const pages = await this.service.fetchSubPages(workspaceSlug, projectId, pageId);
+      runInAction(() => {
+        for (const page of pages) {
+          if (page?.id) {
+            const existingPage = this.getPageById(page.id);
+            if (existingPage) {
+              // update all fields except name (mutateProperties skips it when shouldUpdateName is false)
+              existingPage.mutateProperties(page, false);
+            } else {
+              set(this.data, [page.id], new ProjectPage(this.store, page));
+            }
+          }
+        }
+      });
+
+      return pages;
+    } catch (error) {
+      runInAction(() => {
+        this.error = {
+          title: "Failed",
+          description: "Failed to fetch sub-pages, Please try again later.",
         };
       });
       throw error;
@@ -328,7 +371,7 @@ export class ProjectPageStore implements IProjectPageStore {
    * @description delete a page
    * @param {string} pageId
    */
-  removePage = async ({ pageId, shouldSync = true }: { pageId: string; shouldSync?: boolean }) => {
+  removePage = async ({ pageId }: { pageId: string; shouldSync?: boolean }) => {
     try {
       const { workspaceSlug, projectId } = this.store.router;
       if (!workspaceSlug || !projectId || !pageId) return undefined;

@@ -94,12 +94,18 @@ class PageViewSet(BaseViewSet):
                 projects__project_projectmember__is_active=True,
                 projects__archived_at__isnull=True,
             )
-            .filter(parent__isnull=True)
             .filter(Q(owned_by=self.request.user) | Q(access=0))
             .prefetch_related("projects")
             .select_related("workspace")
             .select_related("owned_by")
             .annotate(is_favorite=Exists(subquery))
+            .annotate(
+                # non-deleted direct children; lets the UI decide whether to render an
+                # expander without fetching the children first
+                sub_pages_count=Count(
+                    "child_page", distinct=True, filter=Q(child_page__deleted_at__isnull=True)
+                )
+            )
             .order_by(self.request.GET.get("order_by", "-created_at"))
             .prefetch_related("labels")
             .order_by("-is_favorite", "-created_at")
@@ -171,6 +177,23 @@ class PageViewSet(BaseViewSet):
                     projects__id=project_id,
                     project_pages__deleted_at__isnull=True,
                 )
+                # Reject cycles: a page cannot become a child of itself or of any of its
+                # descendants. Left unchecked, the recursive archive CTE would never
+                # terminate on such a loop. Walk upwards from the requested parent with a
+                # visited-set so a pre-existing loop cannot hang this check either.
+                ancestor_id = str(parent)
+                visited = set()
+                while ancestor_id is not None and ancestor_id not in visited:
+                    if ancestor_id == str(page_id):
+                        return Response(
+                            {"error": "A page cannot be moved under itself or one of its sub-pages"},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    visited.add(ancestor_id)
+                    ancestor_id = (
+                        Page.objects.filter(pk=ancestor_id).values_list("parent_id", flat=True).first()
+                    )
+                    ancestor_id = str(ancestor_id) if ancestor_id else None
 
             # Only update access if the page owner is the requesting  user
             if page.access != request.data.get("access", page.access) and page.owned_by_id != request.user.id:
@@ -289,7 +312,26 @@ class PageViewSet(BaseViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def list(self, request, slug, project_id):
-        queryset = self.get_queryset()
+        # Only roots at the top level; children are fetched per-parent via sub_pages.
+        queryset = self.get_queryset().filter(parent__isnull=True)
+        project = Project.objects.get(pk=project_id)
+        if (
+            ProjectMember.objects.filter(
+                workspace__slug=slug,
+                project_id=project_id,
+                member=request.user,
+                role=5,
+                is_active=True,
+            ).exists()
+            and not project.guest_view_all_features
+        ):
+            queryset = queryset.filter(owned_by=request.user)
+        pages = PageSerializer(queryset, many=True).data
+        return Response(pages, status=status.HTTP_200_OK)
+
+    def sub_pages(self, request, slug, project_id, page_id):
+        """Direct children of a page, with the same access rules and annotations as list."""
+        queryset = self.get_queryset().filter(parent_id=page_id)
         project = Project.objects.get(pk=project_id)
         if (
             ProjectMember.objects.filter(
@@ -393,13 +435,14 @@ class PageViewSet(BaseViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # remove parent from all the children
+        # Re-parent children to the deleted page's own parent so they keep their place
+        # in the tree (None for a root page, i.e. children become roots).
         _ = Page.objects.filter(
             parent_id=page_id,
             projects__id=project_id,
             workspace__slug=slug,
             project_pages__deleted_at__isnull=True,
-        ).update(parent=None)
+        ).update(parent=page.parent_id)
 
         page.delete()
         # Delete the user favorite page

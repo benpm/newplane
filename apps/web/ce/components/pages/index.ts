@@ -7,3 +7,5 @@
 export * from "./editor";
 export * from "./modals";
 export * from "./extra-actions";
+export * from "./page-ancestor-breadcrumbs";
+export * from "./sidebar-project-pages-tree";

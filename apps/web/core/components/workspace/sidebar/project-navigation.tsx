@@ -20,6 +20,8 @@ import { useAppTheme } from "@/hooks/store/use-app-theme";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
+// plane web components
+import { SidebarProjectPagesTree } from "@/plane-web/components/pages";
 
 export type TNavigationItem = {
   name: string;
@@ -184,19 +186,22 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         const shouldShowCount = item.key === "intake" && (project.intake_count ?? 0) > 0;
 
         return (
-          <Link key={item.key} href={item.href} onClick={handleProjectClick}>
-            <SidebarNavItem isActive={!!isActive(item)}>
-              <div className="flex items-center justify-between gap-1.5 py-[1px] w-full">
-                <div className="flex items-center gap-1.5">
-                  <item.icon
-                    className={`flex-shrink-0 size-4 ${item.name === "Intake" ? "stroke-1" : "stroke-[1.5]"}`}
-                  />
-                  <span className="text-11 font-medium">{t(item.i18n_key)}</span>
+          <React.Fragment key={item.key}>
+            <Link href={item.href} onClick={handleProjectClick}>
+              <SidebarNavItem isActive={!!isActive(item)}>
+                <div className="flex items-center justify-between gap-1.5 py-[1px] w-full">
+                  <div className="flex items-center gap-1.5">
+                    <item.icon
+                      className={`flex-shrink-0 size-4 ${item.name === "Intake" ? "stroke-1" : "stroke-[1.5]"}`}
+                    />
+                    <span className="text-11 font-medium">{t(item.i18n_key)}</span>
+                  </div>
+                  {shouldShowCount && <span className="text-11 font-medium text-tertiary">{project.intake_count}</span>}
                 </div>
-                {shouldShowCount && <span className="text-11 font-medium text-tertiary">{project.intake_count}</span>}
-              </div>
-            </SidebarNavItem>
-          </Link>
+              </SidebarNavItem>
+            </Link>
+            {item.key === "pages" && <SidebarProjectPagesTree workspaceSlug={workspaceSlug} projectId={projectId} />}
+          </React.Fragment>
         );
       })}
     </>

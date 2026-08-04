@@ -7,7 +7,7 @@
 import { useMemo, useState } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
-import { ArchiveRestoreIcon, FileOutput, LockKeyhole, LockKeyholeOpen } from "lucide-react";
+import { ArchiveRestoreIcon, FileOutput, FilePlus2, LockKeyhole, LockKeyholeOpen } from "lucide-react";
 // constants
 import { EPageAccess } from "@plane/constants";
 // plane editor
@@ -19,11 +19,13 @@ import { ContextMenu, CustomMenu } from "@plane/ui";
 import { cn } from "@plane/utils";
 import { DeletePageModal } from "@/components/pages/modals/delete-page-modal";
 // hooks
+import { useAppRouter } from "@/hooks/use-app-router";
 import { usePageOperations } from "@/hooks/use-page-operations";
 // plane web components
 import { MovePageModal } from "@/plane-web/components/pages";
 // plane web hooks
 import type { EPageStoreType } from "@/plane-web/hooks/store";
+import { usePageStore } from "@/plane-web/hooks/store";
 import { usePageFlag } from "@/plane-web/hooks/use-page-flag";
 // store types
 import type { TPageInstance } from "@/store/pages/base-page";
@@ -41,7 +43,8 @@ export type TPageActions =
   | "delete"
   | "version-history"
   | "export"
-  | "move";
+  | "move"
+  | "add-sub-page";
 
 type Props = {
   extraOptions?: (TContextMenuItem & { key: TPageActions })[];
@@ -66,11 +69,15 @@ export const PageActions = observer(function PageActions(props: Props) {
   const { pageOperations } = usePageOperations({
     page,
   });
+  // router + store for creating sub-pages
+  const router = useAppRouter();
+  const { createPage, getPageById } = usePageStore(storeType);
   // derived values
   const {
     access,
     archived_at,
     is_locked,
+    canCurrentUserEditPage,
     canCurrentUserArchivePage,
     canCurrentUserChangeAccess,
     canCurrentUserDeletePage,
@@ -148,6 +155,23 @@ export const PageActions = observer(function PageActions(props: Props) {
           icon: FileOutput,
           shouldRender: canCurrentUserMovePage && isMovePageEnabled,
         },
+        {
+          key: "add-sub-page",
+          action: () => {
+            const createSubPage = async () => {
+              const newPage = await createPage({ parent: page.id, access, project_ids: page.project_ids });
+              if (!newPage?.id) return;
+              // reflect the new child in the parent's expander without a refetch
+              page.mutateProperties({ sub_pages_count: (page.sub_pages_count ?? 0) + 1 }, false);
+              const created = getPageById(newPage.id);
+              if (created) router.push(created.getRedirectionLink());
+            };
+            void createSubPage();
+          },
+          title: "Add sub-page",
+          icon: FilePlus2,
+          shouldRender: canCurrentUserEditPage && !archived_at,
+        },
       ];
       if (extraOptions) {
         menuItems.push(...extraOptions);
@@ -164,9 +188,14 @@ export const PageActions = observer(function PageActions(props: Props) {
       canCurrentUserDuplicatePage,
       canCurrentUserArchivePage,
       canCurrentUserDeletePage,
+      canCurrentUserEditPage,
       canCurrentUserMovePage,
       isMovePageEnabled,
       pageOperations,
+      createPage,
+      getPageById,
+      router,
+      page,
     ]
   );
   // arrange options
