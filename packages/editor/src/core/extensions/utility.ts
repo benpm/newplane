@@ -14,6 +14,7 @@ import type { TAdditionalActiveDropbarExtensions } from "@/plane-editor/types/ut
 import { DropHandlerPlugin } from "@/plugins/drop";
 import { FilePlugins } from "@/plugins/file/root";
 import { MarkdownClipboardPlugin } from "@/plugins/markdown-clipboard";
+import { MarkdownPastePlugin } from "@/plugins/markdown-paste";
 import type { IEditorProps, TEditorAsset, TFileHandler } from "@/types";
 
 type TActiveDropbarExtensions =
@@ -23,6 +24,9 @@ type TActiveDropbarExtensions =
   | CORE_EXTENSIONS.TABLE
   | "bubble-menu"
   | CORE_EXTENSIONS.SIDE_MENU
+  // Extension point for editions that add their own dropbars. Resolves to `never` in CE,
+  // which is what the redundant-constituent rule flags; the union is deliberate.
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   | TAdditionalActiveDropbarExtensions;
 
 declare module "@tiptap/core" {
@@ -80,6 +84,9 @@ export const UtilityExtension = (props: Props) => {
         MarkdownClipboardPlugin({
           editor: this.editor,
           getEditorMetaData,
+        }),
+        MarkdownPastePlugin({
+          editor: this.editor,
         }),
         DropHandlerPlugin({
           disabledExtensions,

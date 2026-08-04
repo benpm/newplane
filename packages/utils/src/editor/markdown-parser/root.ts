@@ -17,6 +17,7 @@ import remarkStringify from "remark-stringify";
 import { unified } from "unified";
 // local imports
 import { parseCustomComponents } from "./custom-components-handler";
+import { parseFootnotes } from "./footnotes-handler";
 import { parseMarks } from "./marks-handler";
 import type { TCustomComponentsMetaData } from "./types";
 
@@ -130,6 +131,7 @@ export function convertHTMLToMarkdown(args: TArgs): string {
           metaData,
         }),
         ...parseMarks,
+        ...parseFootnotes,
       },
     })
     .use(remarkGfm)

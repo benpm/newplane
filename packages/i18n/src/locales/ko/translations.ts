@@ -627,6 +627,23 @@ export default {
     success: "성공!",
     error: "오류!",
   },
+  page_markdown: {
+    raw_mode: {
+      action: "마크다운으로 편집",
+      title: "마크다운으로 편집",
+      description: "이 페이지의 내용을 GitHub 형식의 마크다운으로 직접 편집합니다.",
+      lossy_warning:
+        "임베드, 멘션 등 Plane 전용 블록은 마크다운으로 표현할 수 없으므로 변경 사항을 적용하면 사라집니다.",
+      apply: "적용",
+      applied: "마크다운으로 페이지를 업데이트했습니다.",
+      apply_failed: "마크다운을 적용하지 못했습니다. 문법을 확인한 후 다시 시도해 주세요.",
+    },
+    import: {
+      action: "마크다운 가져오기",
+      success: "마크다운 파일을 가져왔습니다.",
+      failed: "파일을 가져오지 못했습니다. 올바른 마크다운 파일인지 확인해 주세요.",
+    },
+  },
   links: {
     toasts: {
       created: {

@@ -635,6 +635,23 @@ export default {
     success: "Success!",
     error: "Error!",
   },
+  page_markdown: {
+    raw_mode: {
+      action: "Edit as Markdown",
+      title: "Edit as Markdown",
+      description: "Edit this page's content directly as GitHub-flavored Markdown.",
+      lossy_warning:
+        "Embeds, mentions and other Plane-specific blocks have no Markdown equivalent and will be lost when you apply these changes.",
+      apply: "Apply",
+      applied: "Page updated from Markdown.",
+      apply_failed: "Could not apply the Markdown. Please check the syntax and try again.",
+    },
+    import: {
+      action: "Import Markdown",
+      success: "Markdown file imported.",
+      failed: "Could not import that file. Please make sure it is a valid Markdown file.",
+    },
+  },
   links: {
     toasts: {
       created: {

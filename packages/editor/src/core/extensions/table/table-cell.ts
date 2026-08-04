@@ -53,6 +53,13 @@ export const TableCell = Node.create<TableCellOptions>({
       textColor: {
         default: null,
       },
+      // GFM column alignment (`:---`, `:---:`, `---:`). Without this the alignment row is
+      // dropped whenever content passes through the editor.
+      textAlign: {
+        default: null,
+        parseHTML: (element) => element.style.textAlign || element.getAttribute("align") || null,
+        renderHTML: () => ({}),
+      },
     };
   },
 
@@ -113,7 +120,9 @@ export const TableCell = Node.create<TableCellOptions>({
     return [
       "td",
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        style: `background-color: ${node.attrs.background}; color: ${node.attrs.textColor};`,
+        style: `background-color: ${node.attrs.background}; color: ${node.attrs.textColor};${
+          node.attrs.textAlign ? ` text-align: ${node.attrs.textAlign};` : ""
+        }`,
       }),
       0,
     ];

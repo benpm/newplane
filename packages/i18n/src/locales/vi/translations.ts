@@ -641,6 +641,23 @@ export default {
     success: "Thành công!",
     error: "Lỗi!",
   },
+  page_markdown: {
+    raw_mode: {
+      action: "Chỉnh sửa dạng Markdown",
+      title: "Chỉnh sửa dạng Markdown",
+      description: "Chỉnh sửa trực tiếp nội dung trang này ở định dạng Markdown của GitHub.",
+      lossy_warning:
+        "Các khối riêng của Plane như nhúng, nhắc tên không có tương đương trong Markdown và sẽ bị mất khi bạn áp dụng thay đổi.",
+      apply: "Áp dụng",
+      applied: "Đã cập nhật trang từ Markdown.",
+      apply_failed: "Không thể áp dụng Markdown. Vui lòng kiểm tra cú pháp và thử lại.",
+    },
+    import: {
+      action: "Nhập Markdown",
+      success: "Đã nhập tệp Markdown.",
+      failed: "Không thể nhập tệp. Vui lòng đảm bảo đây là tệp Markdown hợp lệ.",
+    },
+  },
   links: {
     toasts: {
       created: {

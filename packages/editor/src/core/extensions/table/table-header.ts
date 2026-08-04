@@ -45,6 +45,13 @@ export const TableHeader = Node.create<TableHeaderOptions>({
       background: {
         default: "none",
       },
+      // GFM column alignment (`:---`, `:---:`, `---:`). The header row is where the
+      // alignment markers live, so losing it here loses them for the whole column.
+      textAlign: {
+        default: null,
+        parseHTML: (element) => element.style.textAlign || element.getAttribute("align") || null,
+        renderHTML: () => ({}),
+      },
     };
   },
 
@@ -60,7 +67,9 @@ export const TableHeader = Node.create<TableHeaderOptions>({
     return [
       "th",
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        style: `background-color: ${node.attrs.background};`,
+        style: `background-color: ${node.attrs.background};${
+          node.attrs.textAlign ? ` text-align: ${node.attrs.textAlign};` : ""
+        }`,
       }),
       0,
     ];

@@ -108,7 +108,10 @@ export const CoreEditorExtensions = (args: TArguments): Extensions => {
     Markdown.configure({
       html: true,
       transformCopiedText: false,
-      transformPastedText: true,
+      // Pasting is owned by MarkdownPastePlugin, which shares convertMarkdownToHTML with
+      // the wiki sync so pasted and synced content parse identically. Leaving this on
+      // would give markdown two competing paste paths.
+      transformPastedText: false,
       breaks: true,
     }),
     Table,
