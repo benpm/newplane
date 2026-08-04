@@ -2118,6 +2118,13 @@ export default {
     },
   },
   project_settings: {
+    auto_add_new_users: {
+      label: "Tự động thêm người dùng mới",
+      description:
+        "Tự động thêm người dùng mới vào dự án này với vai trò Thành viên khi họ tham gia hệ thống hoặc không gian làm việc này.",
+      updated_success: "Đã cập nhật cài đặt tự động thêm người dùng mới.",
+      updated_error: "Không thể cập nhật cài đặt tự động thêm người dùng mới. Vui lòng thử lại.",
+    },
     general: {
       enter_project_id: "Nhập ID nhóm/dự án",
       please_select_a_timezone: "Vui lòng chọn múi giờ",

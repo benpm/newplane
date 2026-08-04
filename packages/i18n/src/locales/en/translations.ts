@@ -2109,6 +2109,13 @@ export default {
     },
   },
   project_settings: {
+    auto_add_new_users: {
+      label: "Auto-add new users",
+      description:
+        "Automatically add new users to this project as Members when they join the instance or this workspace.",
+      updated_success: "Auto-add new users setting has been updated.",
+      updated_error: "Failed to update auto-add new users setting. Please try again.",
+    },
     general: {
       enter_project_id: "Enter team/project ID",
       please_select_a_timezone: "Please select a timezone",

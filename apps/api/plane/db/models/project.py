@@ -99,6 +99,8 @@ class Project(BaseModel):
     is_issue_type_enabled = models.BooleanField(default=False)
     guest_view_all_features = models.BooleanField(default=False)
     is_bank_wide = models.BooleanField(default=False, verbose_name="Is Bank-wide Project")
+    # When true, users new to the instance or to this workspace are enrolled as project Members automatically.
+    auto_add_new_users = models.BooleanField(default=False)
     cover_image = models.TextField(blank=True, null=True)
     cover_image_asset = models.ForeignKey(
         "db.FileAsset",

@@ -11,4 +11,5 @@ export type TPartialProject = IPartialProject;
 export type TProject = TPartialProject &
   IProject & {
     is_bank_wide?: boolean;
+    auto_add_new_users?: boolean;
   };

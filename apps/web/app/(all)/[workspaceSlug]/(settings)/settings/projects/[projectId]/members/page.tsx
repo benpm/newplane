@@ -19,12 +19,13 @@ import { SettingsHeading } from "@/components/settings/heading";
 import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
 // plane web imports
+import { AutoAddUsersSettingsRoot } from "@/plane-web/components/projects/settings/auto-add-users/root";
 import { ProjectTeamspaceList } from "@/plane-web/components/projects/teamspaces/teamspace-list";
 // local imports
 import type { Route } from "./+types/page";
 import { MembersProjectSettingsHeader } from "./header";
 
-function MembersSettingsPage({ params }: Route.ComponentProps) {
+const MembersSettingsPage = observer(function MembersSettingsPage({ params }: Route.ComponentProps) {
   // router
   const { workspaceSlug, projectId } = params;
   // plane hooks
@@ -39,6 +40,12 @@ function MembersSettingsPage({ params }: Route.ComponentProps) {
     EUserPermissionsLevel.PROJECT
   );
   const isWorkspaceAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE);
+  const isProjectAdmin = allowPermissions(
+    [EUserPermissions.ADMIN],
+    EUserPermissionsLevel.PROJECT,
+    workspaceSlug,
+    projectId
+  );
   const canPerformProjectMemberActions = isProjectMemberOrAdmin || isWorkspaceAdmin;
 
   if (workspaceUserInfo && !canPerformProjectMemberActions) {
@@ -50,10 +57,11 @@ function MembersSettingsPage({ params }: Route.ComponentProps) {
       <PageHead title={pageTitle} />
       <SettingsHeading title={t("common.members")} />
       <ProjectSettingsMemberDefaults projectId={projectId} workspaceSlug={workspaceSlug} />
+      <AutoAddUsersSettingsRoot projectId={projectId} workspaceSlug={workspaceSlug} isAdmin={isProjectAdmin} />
       <ProjectTeamspaceList projectId={projectId} workspaceSlug={workspaceSlug} />
       <ProjectMemberList projectId={projectId} workspaceSlug={workspaceSlug} />
     </SettingsContentWrapper>
   );
-}
+});
 
-export default observer(MembersSettingsPage);
+export default MembersSettingsPage;

@@ -2098,6 +2098,12 @@ export default {
     },
   },
   project_settings: {
+    auto_add_new_users: {
+      label: "신규 사용자 자동 추가",
+      description: "신규 사용자가 인스턴스 또는 이 워크스페이스에 참여하면 이 프로젝트에 구성원으로 자동 추가합니다.",
+      updated_success: "신규 사용자 자동 추가 설정이 업데이트되었습니다.",
+      updated_error: "신규 사용자 자동 추가 설정을 업데이트하지 못했습니다. 다시 시도해 주세요.",
+    },
     general: {
       enter_project_id: "팀/프로젝트 ID 입력",
       please_select_a_timezone: "시간대를 선택하세요",
