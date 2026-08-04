@@ -56,6 +56,7 @@ export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
     handleEditorReady,
     id,
     mentionHandler,
+    pageLinkHandler,
     dragDropEnabled = true,
     isTouchDevice,
     onEditorFocus,
@@ -65,7 +66,6 @@ export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
     titleRef,
     updatePageProperties,
     user,
-    actions,
   } = props;
 
   const { mainNavigationExtension, titleNavigationExtension, setMainEditor, setTitleEditor } = useEditorNavigation();
@@ -126,6 +126,7 @@ export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
       handleEditorReady,
       isTouchDevice,
       mentionHandler,
+      pageLinkHandler,
       onAssetChange,
       onChange,
       onEditorFocus,
@@ -151,6 +152,7 @@ export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
       handleEditorReady,
       isTouchDevice,
       mentionHandler,
+      pageLinkHandler,
       onAssetChange,
       onChange,
       onEditorFocus,

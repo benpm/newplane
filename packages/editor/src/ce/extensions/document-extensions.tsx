@@ -6,6 +6,7 @@
 
 import type { HocuspocusProvider } from "@hocuspocus/provider";
 import type { AnyExtension } from "@tiptap/core";
+import { Link2 } from "lucide-react";
 import { SlashCommands } from "@/extensions";
 // types
 import type { IEditorProps, TExtensions, TUserDetails } from "@/types";
@@ -28,7 +29,25 @@ const extensionRegistry: TDocumentEditorAdditionalExtensionsRegistry[] = [
   {
     isEnabled: (disabledExtensions) => !disabledExtensions.includes("slash-commands"),
     getExtension: ({ disabledExtensions, flaggedExtensions }) =>
-      SlashCommands({ disabledExtensions, flaggedExtensions }),
+      SlashCommands({
+        disabledExtensions,
+        flaggedExtensions,
+        additionalOptions: [
+          {
+            commandKey: "link",
+            key: "page-link",
+            title: "Link to page",
+            description: "Autocomplete a link to another page.",
+            searchTerms: ["link", "page", "wiki", "reference", "connect"],
+            icon: <Link2 className="size-3.5" />,
+            // Inserting the trigger text opens the [[ page-link suggestion dropdown,
+            // so the slash command and the manual trigger share one code path.
+            command: ({ editor, range }) => editor.chain().focus().deleteRange(range).insertContent("[[").run(),
+            section: "general",
+            pushAfter: "table",
+          },
+        ],
+      }),
   },
 ];
 

@@ -40,6 +40,7 @@ import type { IEditorProps } from "@/types";
 // local imports
 import { CustomImageExtension } from "./custom-image/extension";
 import { EmojiExtension } from "./emoji/extension";
+import { PageLinkSuggestionExtension } from "./page-link";
 import { CustomPlaceholderExtension } from "./placeholder";
 import { CustomStarterKitExtension } from "./starter-kit";
 import { UniqueID } from "./unique-id/extension";
@@ -52,6 +53,7 @@ type TArguments = Pick<
   | "getEditorMetaData"
   | "isTouchDevice"
   | "mentionHandler"
+  | "pageLinkHandler"
   | "placeholder"
   | "showPlaceholderOnEmpty"
   | "tabIndex"
@@ -71,6 +73,7 @@ export const CoreEditorExtensions = (args: TArguments): Extensions => {
     getEditorMetaData,
     isTouchDevice = false,
     mentionHandler,
+    pageLinkHandler,
     placeholder,
     showPlaceholderOnEmpty,
     tabIndex,
@@ -119,6 +122,7 @@ export const CoreEditorExtensions = (args: TArguments): Extensions => {
     TableCell,
     TableRow,
     CustomMentionExtension(mentionHandler),
+    PageLinkSuggestionExtension(pageLinkHandler ?? {}),
     CustomPlaceholderExtension({ placeholder, showPlaceholderOnEmpty }),
     CharacterCount,
     CustomColorExtension,

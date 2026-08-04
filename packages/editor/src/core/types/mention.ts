@@ -29,3 +29,14 @@ export type TMentionHandler = {
   renderComponent: (props: TCallbackMentionComponentProps) => React.ReactNode;
   searchCallback?: (query: string) => Promise<TMentionSection[]>;
 };
+
+// Page-link autocomplete ([[ trigger). Items must be TPageLinkSuggestion — i.e. carry a
+// redirect_uri — since the picked entry is inserted as a plain link mark.
+export type TPageLinkSuggestion = TMentionSuggestion & {
+  /** app-relative URL of the target page */
+  redirect_uri: string;
+};
+
+export type TPageLinkHandler = {
+  searchCallback?: (query: string) => Promise<TMentionSection[]>;
+};

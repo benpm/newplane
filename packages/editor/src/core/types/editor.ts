@@ -30,6 +30,7 @@ import type {
   TExtensions,
   TFileHandler,
   TMentionHandler,
+  TPageLinkHandler,
   TRealtimeConfig,
   TServerHandler,
   TUserDetails,
@@ -66,6 +67,8 @@ export type TEditorCommands =
   | "attachment"
   | "emoji"
   | "external-embed"
+  // extension point for other editions; resolves to `never` in CE, which the rule flags
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   | TExtendedEditorCommands;
 
 export type TCommandExtraProps = {
@@ -115,6 +118,7 @@ export type CoreEditorRefApi = {
   getAttributesWithExtendedMark: (
     mark: string | MarkType,
     attribute: string | NodeType | MarkType
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => Record<string, any> | undefined;
   getCoordsFromPos: (pos?: number) => ReturnType<EditorView["coordsAtPos"]> | undefined;
   getCurrentCursorPosition: () => number | undefined;
@@ -147,6 +151,8 @@ export type CoreEditorRefApi = {
   undo: () => void;
 };
 
+// extension point for other editions; resolves to `unknown` in CE, which the rule flags
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 export type EditorRefApi = CoreEditorRefApi & TExtendedEditorRefApi;
 
 export type EditorTitleRefApi = EditorRefApi;
@@ -171,9 +177,11 @@ export type IEditorProps = {
   initialValue: string;
   isTouchDevice?: boolean;
   mentionHandler: TMentionHandler;
+  pageLinkHandler?: TPageLinkHandler;
   onAssetChange?: (assets: TEditorAsset[]) => void;
   onEditorFocus?: () => void;
   onChange?: (json: object, html: string, { isMigrationUpdate }?: { isMigrationUpdate?: boolean }) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onEnterKeyPress?: (e?: any) => void;
   onTransaction?: () => void;
   placeholder?: string | ((isFocused: boolean, value: string) => string);

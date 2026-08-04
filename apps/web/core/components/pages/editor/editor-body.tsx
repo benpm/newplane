@@ -16,10 +16,13 @@ import type {
   TAIMenuProps,
   TDisplayConfig,
   TFileHandler,
+  TMentionSection,
+  TPageLinkSuggestion,
   TRealtimeConfig,
   TServerHandler,
 } from "@plane/editor";
 import { useTranslation } from "@plane/i18n";
+import { PageIcon } from "@plane/propel/icons";
 import type { TSearchEntityRequestPayload, TSearchResponse, TWebhookConnectionQueryParams } from "@plane/types";
 import { ERowVariant, Row } from "@plane/ui";
 import { cn, generateRandomColor, hslToHex } from "@plane/utils";
@@ -45,7 +48,6 @@ import type { TPageInstance } from "@/store/pages/base-page";
 import { PageContentLoader } from "../loaders/page-content-loader";
 import { PageEditorHeaderRoot } from "./header";
 import { PageContentBrowser } from "./summary";
-import { PageEditorTitle } from "./title";
 
 export type TEditorBodyConfig = {
   fileHandler: TFileHandler;
@@ -111,6 +113,24 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
     enableAdvancedMentions: true,
     searchEntity: handlers.fetchEntity,
   });
+  // [[ page-link autocomplete: search pages and offer them as link targets
+  const searchPagesCallback = useCallback(
+    async (query: string): Promise<TMentionSection[]> => {
+      const res = await handlers.fetchEntity({ count: 10, query_type: ["page"], query });
+      const items: TPageLinkSuggestion[] = (res?.page ?? [])
+        .filter((foundPage) => !!foundPage.id && foundPage.id !== pageId)
+        .map((foundPage) => ({
+          id: foundPage.id ?? "",
+          entity_identifier: foundPage.id ?? "",
+          entity_name: "page",
+          title: foundPage.name || "Untitled",
+          icon: <PageIcon className="size-3.5 text-tertiary" />,
+          redirect_uri: `/${workspaceSlug}/projects/${projectId}/pages/${foundPage.id}`,
+        }));
+      return items.length > 0 ? [{ key: "pages", title: "Pages", items }] : [];
+    },
+    [handlers, pageId, projectId, workspaceSlug]
+  );
   // editor flaggings
   const { document: documentEditorExtensions } = useEditorFlagging({
     workspaceSlug,
@@ -248,8 +268,12 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
                 <div
                   className="!cursor-pointer max-h-[50vh] overflow-hidden"
                   role="button"
+                  tabIndex={0}
                   aria-label={t("page_navigation_pane.outline_floating_button")}
                   onClick={handleOpenNavigationPane}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") handleOpenNavigationPane();
+                  }}
                 >
                   <PageContentBrowser className="overflow-y-auto" editorRef={editorRef} showOutline />
                 </div>
@@ -284,6 +308,9 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
               },
               renderComponent: (props) => <EditorMentionsRoot {...props} />,
               getMentionedEntityDetails: (id: string) => ({ display_name: getUserDetails(id)?.display_name ?? "" }),
+            }}
+            pageLinkHandler={{
+              searchCallback: searchPagesCallback,
             }}
             updatePageProperties={updatePageProperties}
             realtimeConfig={realtimeConfig}
