@@ -35,7 +35,11 @@ from rest_framework.response import Response
 # Module imports
 from plane.app.permissions import ROLE, allow_permission
 from plane.utils.workflow_checker import check_workflow_creation, check_workflow_transition
-from plane.utils.work_item_permission_checker import check_work_item_field_permission
+from plane.utils.work_item_permission_checker import (
+    DATE_FIELD_PERMISSION_MAP,
+    bypasses_field_locks,
+    check_work_item_field_permission,
+)
 from plane.app.serializers import (
     IssueCreateSerializer,
     IssueDetailSerializer,
@@ -760,13 +764,19 @@ class IssueViewSet(BaseViewSet):
         if fp_error is not None:
             return fp_error
 
-        # Validate: reason required when *changing* an existing target_date or completed_at
-        # (not when setting for the first time)
+        # Validate: reason required when *changing* an existing target_date or
+        # completed_at (not when setting for the first time), and only while the
+        # project still restricts that date. Once a project unlocks the field
+        # the change is ordinary editing, so demanding a justification for it
+        # would contradict the toggle.
         REASON_REQUIRED_FIELDS = {"target_date", "completed_at"}
-        is_changing_protected = any(
+        is_changing_protected = not bypasses_field_locks(
+            user_project_role, user_workspace_role
+        ) and any(
             field in request.data
             and request.data[field] not in (None, "", [])
             and getattr(issue, field) not in (None, "")
+            and not getattr(project_fp, DATE_FIELD_PERMISSION_MAP[field], False)
             for field in REASON_REQUIRED_FIELDS
         )
         if is_changing_protected:
