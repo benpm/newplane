@@ -2127,6 +2127,8 @@ export default {
       never_synced: "아직 동기화되지 않았습니다.",
       issue_sync_label: "이슈 동기화",
       issue_sync_description: "GitHub 이슈를 가져오고 열림/닫힘 상태를 양방향으로 동기화합니다.",
+      wiki_sync_label: "위키 동기화",
+      wiki_sync_description: "이 프로젝트의 페이지를 저장소 위키와 양방향으로 동기화합니다.",
       connected: "GitHub 저장소가 연결되었습니다.",
       disconnected: "GitHub 저장소 연결이 해제되었습니다.",
       updated: "GitHub 동기화 설정이 업데이트되었습니다.",

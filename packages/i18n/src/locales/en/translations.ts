@@ -2138,6 +2138,8 @@ export default {
       never_synced: "Not synced yet.",
       issue_sync_label: "Issue sync",
       issue_sync_description: "Import GitHub issues and keep open/closed state in sync both ways.",
+      wiki_sync_label: "Wiki sync",
+      wiki_sync_description: "Sync this project's pages with the repository's wiki in both directions.",
       connected: "GitHub repository connected.",
       disconnected: "GitHub repository disconnected.",
       updated: "GitHub sync settings updated.",

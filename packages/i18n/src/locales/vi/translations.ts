@@ -2147,6 +2147,8 @@ export default {
       never_synced: "Chưa đồng bộ.",
       issue_sync_label: "Đồng bộ issue",
       issue_sync_description: "Nhập issue từ GitHub và đồng bộ trạng thái mở/đóng theo cả hai chiều.",
+      wiki_sync_label: "Đồng bộ wiki",
+      wiki_sync_description: "Đồng bộ các trang của dự án này với wiki của kho lưu trữ theo cả hai chiều.",
       connected: "Đã kết nối kho lưu trữ GitHub.",
       disconnected: "Đã ngắt kết nối kho lưu trữ GitHub.",
       updated: "Đã cập nhật cài đặt đồng bộ GitHub.",

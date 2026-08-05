@@ -151,6 +151,27 @@ export const GithubSyncSettingsRoot = observer(function GithubSyncSettingsRoot(p
               size="sm"
             />
           </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-13 font-medium text-primary">{t("project_settings.github_sync.wiki_sync_label")}</p>
+              <p className="text-11 text-tertiary mt-0.5">{t("project_settings.github_sync.wiki_sync_description")}</p>
+            </div>
+            <ToggleSwitch
+              value={githubSync.is_wiki_sync_enabled}
+              onChange={() =>
+                void run(
+                  () =>
+                    githubSyncService.update(workspaceSlug, projectId, {
+                      is_wiki_sync_enabled: !githubSync.is_wiki_sync_enabled,
+                    }),
+                  "project_settings.github_sync.updated"
+                )
+              }
+              disabled={!isAdmin}
+              size="sm"
+            />
+          </div>
         </div>
       )}
     </div>

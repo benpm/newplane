@@ -79,3 +79,35 @@ class GithubIssueLink(ProjectBaseModel):
 
     def __str__(self):
         return f"{self.github_sync.repository_full_name}#{self.github_issue_number}"
+
+
+class GithubWikiPageLink(ProjectBaseModel):
+    """Maps one Plane page to one file in the associated repository's wiki.
+
+    Identity lives here, not in filenames: `wiki_slug` is the file name without `.md`.
+    `wiki_content_hash` is the sha256 of the markdown as last synced (either direction),
+    and `last_synced_at` the moment of that sync — together they let the sync decide
+    which side changed, and the newest-timestamp-wins policy resolve both-changed cases.
+    """
+
+    github_sync = models.ForeignKey("db.ProjectGithubSync", on_delete=models.CASCADE, related_name="wiki_page_links")
+    page = models.OneToOneField("db.Page", on_delete=models.CASCADE, related_name="github_wiki_link")
+    wiki_slug = models.CharField(max_length=255)
+    wiki_content_hash = models.CharField(max_length=64, null=True, blank=True)
+    last_synced_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "GitHub Wiki Page Link"
+        verbose_name_plural = "GitHub Wiki Page Links"
+        db_table = "github_wiki_page_links"
+        ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["github_sync", "wiki_slug"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="github_wiki_page_link_unique_sync_slug_when_deleted_at_null",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.github_sync.repository_full_name}/wiki/{self.wiki_slug}"
