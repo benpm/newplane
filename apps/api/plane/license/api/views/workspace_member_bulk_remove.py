@@ -13,7 +13,7 @@ from rest_framework.response import Response
 
 from plane.app.views.base import BaseAPIView
 from plane.db.models import Project, ProjectMember, User, Workspace, WorkspaceMember
-from plane.license.api.permissions import InstanceAdminPermission
+from plane.license.api.permissions import InstanceAdminMenuPermission
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class InstanceWorkspaceBulkRemoveMembersEndpoint(BaseAPIView):
     Skips rows where the user is the sole admin of any project in the workspace.
     """
 
-    permission_classes = [InstanceAdminPermission]
+    permission_classes = [InstanceAdminMenuPermission]
 
     def post(self, request):
         members_data = request.data.get("members", None)
