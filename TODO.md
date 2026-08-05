@@ -27,22 +27,17 @@ Work queued from testing this branch on the dev site. One task, one commit.
       `github_wiki_sync_task.schedule_github_wiki_syncs` but `autodiscover_tasks()`
       does not register it, so the worker discards every message
 - [x] Fix the GitHub wiki sync Celery task never running
-- [~] Fix the failing unit tests. `497 passed / 22 failed / 10 errors` →
-      `522 passed / 6 failed / 1 error`. Run with `./scripts/dev-site-test.sh -m unit`.
-      Still open:
-      - `test_issue_field_permission_enforcement.py` (4 + 1 error):
-        - `test_member_set_date_none_to_value_toggle_false_allowed` (x2) —
-          `TypeError: expected string or bytes-like object, got 'NoneType'` raised
-          inside the issue update path once permissions pass. Real code bug.
-        - `test_member_change_date_toggle_true_allowed` (x2) — 400 "A reason is
-          required when changing the due date or completed date." **Product
-          decision needed:** should a reason be required even when the project
-          toggle allows the member to change that date? Test says no, code says yes.
-        - `test_workspace_admin_patch_locked_date_allowed` — fixture IntegrityError,
-          duplicate `project_user_property_unique_user_project_when_deleted_at_null`
-          (the fixture adds a ProjectMember for a user that already has one).
-      - `test_business_calendar_api.py` (2) — duplicate holiday / day-override
-        expected to return 400, not investigated yet.
+- [x] Fix the failing unit tests. `497 passed / 22 failed / 10 errors` →
+      **`529 passed, 0 failed, 0 errors`**. Run: `./scripts/dev-site-test.sh -m unit`.
+- [ ] Fix the contract/smoke suites: `320 passed / 19 failed / 5 errors`
+      (`./scripts/dev-site-test.sh -m "contract or smoke"`). By file:
+      `contract/app/test_authentication.py` (8),
+      `contract/app/test_state_permissions.py` (7),
+      `contract/api/test_cycles.py` (5),
+      plus one each in `smoke/test_business_calendar_smoke.py`,
+      `contract/views/test_user_work_items.py`,
+      `contract/app/test_workspace_time_tracking.py`,
+      `contract/app/test_api_token.py`.
 - [ ] Raise backend coverage. Baseline is well under half of ~30k statements;
       agree a realistic target before starting.
 - [ ] Sweep for further unrelated bugs surfaced by the dev site logs
