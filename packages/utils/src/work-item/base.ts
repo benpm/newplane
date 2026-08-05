@@ -295,7 +295,7 @@ export const getComputedDisplayFilters = (
 export const getComputedDisplayProperties = (
   displayProperties: IIssueDisplayProperties = {}
 ): IIssueDisplayProperties => ({
-  // CE extended display properties (Shinhan Bank custom columns)
+  // CE extended display properties (Plane custom columns)
   department_name: displayProperties?.department_name ?? true,
   project_name: displayProperties?.project_name ?? true,
   main_task_category: displayProperties?.main_task_category ?? true,

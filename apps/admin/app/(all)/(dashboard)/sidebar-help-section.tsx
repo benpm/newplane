@@ -58,7 +58,7 @@ export const AdminSidebarHelpSection = observer(function AdminSidebarHelpSection
     >
       <div className={`flex items-center gap-1 ${isSidebarCollapsed ? "flex-col justify-center" : "w-full"}`}>
         <Tooltip
-          tooltipContent="Redirect to Shinhan Workspace"
+          tooltipContent="Redirect to Plane"
           position="right"
           className="ml-4"
           disabled={!isSidebarCollapsed}
@@ -68,7 +68,7 @@ export const AdminSidebarHelpSection = observer(function AdminSidebarHelpSection
             className={`relative px-2 py-1 flex items-center gap-1 rounded-sm bg-layer-1 text-body-xs-medium text-secondary whitespace-nowrap`}
           >
             <NewTabIcon width={14} height={14} />
-            {!isSidebarCollapsed && "Redirect to Shinhan Workspace"}
+            {!isSidebarCollapsed && "Redirect to Plane"}
           </a>
         </Tooltip>
         <Tooltip tooltipContent="Help" position={isSidebarCollapsed ? "right" : "top"} className="ml-4">

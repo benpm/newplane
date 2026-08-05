@@ -90,11 +90,11 @@ export default {
       already_have_an_account: "Already have an account?",
       login: "Log in",
       create_account: "Create an account",
-      new_to_plane: "New to Shinhan Workspace?",
+      new_to_plane: "New to Plane?",
       header: {
         work_in_all_dimensions: "Work in all dimensions.",
-        welcome_back_jms: "Welcome back to Shinhan Workspace.",
-        create_jms_account: "Create your Shinhan Workspace account.",
+        welcome_back_jms: "Welcome back to Plane.",
+        create_jms_account: "Create your Plane account.",
       },
       back_to_sign_in: "Back to sign in",
       resend_in: "Resend in {seconds} seconds",
@@ -181,7 +181,7 @@ export default {
       },
     },
     footer: {
-      custom_powered_by: "Shinhan Workspace (SHWS) (Built on Plane Architecture)",
+      custom_powered_by: "Plane",
     },
   },
 } as const;

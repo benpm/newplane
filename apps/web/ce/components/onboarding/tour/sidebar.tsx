@@ -53,14 +53,14 @@ export function TourSidebar({ step, setStep }: Props) {
       <h3 className="text-16 font-medium">
         Let{"'"}s get started!
         <br />
-        Get more out of Shinhan Workspace.
+        Get more out of Plane.
       </h3>
       <div className="mt-8 space-y-5">
         {sidebarOptions.map((option) => (
           <button
             key={option.key}
             type="button"
-            className={`flex w-full cursor-pointer items-center gap-2 border-l-[3px] py-0.5 pl-3 pr-2 text-left text-13 font-medium capitalize ${
+            className={`flex w-full cursor-pointer items-center gap-2 border-l-[3px] py-0.5 pl-3 pr-2 text-13 font-medium capitalize ${
               step === option.key ? "border-accent-strong text-accent-primary" : "border-transparent text-secondary"
             }`}
             onClick={() => setStep(option.key)}

@@ -20,7 +20,7 @@ from django.utils.html import strip_tags
 def get_email_logo_url():
     """Return the absolute URL for the email logo based on WEB_URL setting."""
     web_url = (settings.WEB_URL or "").rstrip("/")
-    return f"{web_url}/shinhan-bank-logo.png"
+    return f"{web_url}/plane-logo.png"
 
 
 def generate_plain_text_from_html(html_content):
