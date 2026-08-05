@@ -105,19 +105,24 @@ class TestSanitizeSheetName:
         assert "-2" in second
 
     def test_multiple_collisions_suffix_increments(self):
-        """Multiple collisions get -2, -3, -4, etc."""
+        """Multiple collisions get -2, -3, -4, etc.
+
+        Uniqueness is case-insensitive, because Excel treats sheet names that
+        way, but the caller's own capitalisation is preserved: only the suffix
+        is added. A sheet the caller named "SHEET" stays upper case.
+        """
         used = set()
         name1 = sanitize_sheet_name("Sheet", used)
         assert name1 == "Sheet"
 
         name2 = sanitize_sheet_name("SHEET", used)
-        assert name2 == "Sheet-2"
+        assert name2 == "SHEET-2"
 
         name3 = sanitize_sheet_name("sheet", used)
-        assert name3 == "Sheet-3"
+        assert name3 == "sheet-3"
 
         name4 = sanitize_sheet_name("ShEeT", used)
-        assert name4 == "Sheet-4"
+        assert name4 == "ShEeT-4"
 
     def test_used_set_updated_on_each_call(self):
         """The 'used' set is updated after each sanitize call."""
