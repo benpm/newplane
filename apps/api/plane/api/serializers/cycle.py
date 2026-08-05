@@ -59,8 +59,13 @@ class CycleCreateSerializer(BaseSerializer):
         ]
 
     def validate(self, data):
-        project_id = self.initial_data.get("project_id") or (
-            self.instance.project_id if self.instance and hasattr(self.instance, "project_id") else None
+        # On create the project comes from the URL, so the view supplies it via
+        # context; the body copy is optional and only kept for callers that
+        # still send it. On update the existing row already knows its project.
+        project_id = (
+            self.initial_data.get("project_id")
+            or self.context.get("project_id")
+            or (self.instance.project_id if self.instance and hasattr(self.instance, "project_id") else None)
         )
 
         if not project_id:
