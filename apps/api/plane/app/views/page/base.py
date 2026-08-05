@@ -57,11 +57,14 @@ from plane.app.permissions import ProjectPagePermission
 
 
 def unarchive_archive_page_and_descendants(page_id, archived_at):
-    # Your SQL query
+    # UNION rather than UNION ALL: it discards rows already collected, so a
+    # parent loop in the data terminates instead of recursing until the
+    # statement is killed. Re-parenting rejects new cycles, but this must not
+    # depend on that check having been in place for every row ever written.
     sql = """
     WITH RECURSIVE descendants AS (
         SELECT id FROM pages WHERE id = %s
-        UNION ALL
+        UNION
         SELECT pages.id FROM pages, descendants WHERE pages.parent_id = descendants.id
     )
     UPDATE pages SET archived_at = %s WHERE id IN (SELECT id FROM descendants);
@@ -100,10 +103,17 @@ class PageViewSet(BaseViewSet):
             .select_related("owned_by")
             .annotate(is_favorite=Exists(subquery))
             .annotate(
-                # non-deleted direct children; lets the UI decide whether to render an
-                # expander without fetching the children first
+                # Non-deleted direct children the caller is actually allowed to see, so
+                # the UI can decide whether to render an expander without fetching them.
+                # The visibility predicate has to match the one applied to the rows
+                # themselves above: counting a private page owned by someone else would
+                # both render an expander that opens onto nothing and disclose that the
+                # hidden sub-page exists.
                 sub_pages_count=Count(
-                    "child_page", distinct=True, filter=Q(child_page__deleted_at__isnull=True)
+                    "child_page",
+                    distinct=True,
+                    filter=Q(child_page__deleted_at__isnull=True)
+                    & (Q(child_page__owned_by=self.request.user) | Q(child_page__access=0)),
                 )
             )
             .order_by(self.request.GET.get("order_by", "-created_at"))
