@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+import json
+
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -98,11 +100,14 @@ class ProjectFieldPermissionViewSet(BaseViewSet):
         if not changed_fields:
             return
 
+        # model_activity diffs requested_data against current_instance key by key,
+        # so both must be flat {field: value} maps rather than {field: {old, new}},
+        # and it json.loads() current_instance, so that side must be a JSON string.
         model_activity.delay(
             model_name="project_field_permission",
             model_id=str(obj.id),
-            requested_data=changed_fields,
-            current_instance={f: v["old"] for f, v in changed_fields.items()},
+            requested_data={field: change["new"] for field, change in changed_fields.items()},
+            current_instance=json.dumps({field: change["old"] for field, change in changed_fields.items()}),
             actor_id=request.user.id,
             slug=request.parser_context["kwargs"].get("slug", ""),
             origin=base_host(request=request, is_app=True),
