@@ -27,19 +27,24 @@ Work queued from testing this branch on the dev site. One task, one commit.
       `github_wiki_sync_task.schedule_github_wiki_syncs` but `autodiscover_tasks()`
       does not register it, so the worker discards every message
 - [x] Fix the GitHub wiki sync Celery task never running
-- [ ] Fix the 22 failing / 10 erroring unit tests on this branch. Baseline run
-      2026-08-05: `497 passed, 22 failed, 10 errors, 344 deselected`. Concentrated in:
-      - `views/test_issue_field_permission_enforcement.py` (14) — 500s from
-        `/field-permissions/`, "the JSON object must be str, bytes or bytearray, not dict"
-      - `bg_tasks/test_github_wiki_sync_task.py` (9, all fixture errors)
-      - `views/test_project_field_permission_view.py` (3),
-        `views/test_business_calendar_api.py` (2), `test_menu_registry_parity.py` (2),
-        `views/test_project_field_permission_activity.py` (1),
-        `test_capacity_export_helpers.py` (1)
-- [ ] Raise backend coverage. Note `pytest --cov` needs test deps that are absent
-      from the runtime image; build one with `requirements/test.txt` layered on.
-      `test_menu_registry_parity.py` resolves the repo root via `parents[5]`, so it
-      only collects when run from the real `apps/api` layout.
+- [~] Fix the failing unit tests. `497 passed / 22 failed / 10 errors` →
+      `522 passed / 6 failed / 1 error`. Run with `./scripts/dev-site-test.sh -m unit`.
+      Still open:
+      - `test_issue_field_permission_enforcement.py` (4 + 1 error):
+        - `test_member_set_date_none_to_value_toggle_false_allowed` (x2) —
+          `TypeError: expected string or bytes-like object, got 'NoneType'` raised
+          inside the issue update path once permissions pass. Real code bug.
+        - `test_member_change_date_toggle_true_allowed` (x2) — 400 "A reason is
+          required when changing the due date or completed date." **Product
+          decision needed:** should a reason be required even when the project
+          toggle allows the member to change that date? Test says no, code says yes.
+        - `test_workspace_admin_patch_locked_date_allowed` — fixture IntegrityError,
+          duplicate `project_user_property_unique_user_project_when_deleted_at_null`
+          (the fixture adds a ProjectMember for a user that already has one).
+      - `test_business_calendar_api.py` (2) — duplicate holiday / day-override
+        expected to return 400, not investigated yet.
+- [ ] Raise backend coverage. Baseline is well under half of ~30k statements;
+      agree a realistic target before starting.
 - [ ] Sweep for further unrelated bugs surfaced by the dev site logs
 - [ ] Remove the remaining Shinhan branding: the Vietnamese help-centre fixtures
       (~40 files, note the `lam-quen-shinhan-workspace` slug is cross-referenced)
