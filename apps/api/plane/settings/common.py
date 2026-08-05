@@ -289,7 +289,14 @@ CELERY_IMPORTS = (
     "plane.bgtasks.file_asset_task",
     "plane.bgtasks.email_notification_task",
     "plane.bgtasks.cleanup_task",
+    "plane.bgtasks.deletion_task",
     "plane.license.bgtasks.tracer",
+    # github sync tasks. These must be listed here rather than relying on some
+    # view or signal happening to import them: a scheduled task whose module the
+    # worker never imports is dispatched by beat and then discarded as an
+    # unregistered task, so the job silently never runs.
+    "plane.bgtasks.github_issue_sync_task",
+    "plane.bgtasks.github_wiki_sync_task",
     # management tasks
     "plane.bgtasks.dummy_data_task",
     # issue version tasks
