@@ -28,6 +28,7 @@ from .workspace import (
     WorkspaceHomePreferenceSerializer,
     StickySerializer,
 )
+from .github_sync import ProjectGithubSyncSerializer
 from .project import (
     ProjectSerializer,
     ProjectListSerializer,

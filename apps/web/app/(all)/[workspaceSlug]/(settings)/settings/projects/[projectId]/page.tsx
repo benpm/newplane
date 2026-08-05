@@ -19,8 +19,10 @@ import { useUserPermissions } from "@/hooks/store/user";
 import type { Route } from "./+types/page";
 import { GeneralProjectSettingsHeader } from "./header";
 import { GeneralProjectSettingsControlSection } from "@/components/project/settings/control-section";
+// plane web imports
+import { GithubSyncSettingsRoot } from "@/plane-web/components/projects/settings/github-sync/root";
 
-function ProjectSettingsPage({ params }: Route.ComponentProps) {
+const ProjectSettingsPage = observer(function ProjectSettingsPage({ params }: Route.ComponentProps) {
   // router
   const { workspaceSlug, projectId } = params;
   // store hooks
@@ -45,10 +47,11 @@ function ProjectSettingsPage({ params }: Route.ComponentProps) {
         ) : (
           <ProjectDetailsFormLoader />
         )}
+        <GithubSyncSettingsRoot workspaceSlug={workspaceSlug} projectId={projectId} isAdmin={isAdmin} />
         {isAdmin && <GeneralProjectSettingsControlSection projectId={projectId} />}
       </div>
     </SettingsContentWrapper>
   );
-}
+});
 
-export default observer(ProjectSettingsPage);
+export default ProjectSettingsPage;

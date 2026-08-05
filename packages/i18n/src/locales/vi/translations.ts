@@ -2135,6 +2135,24 @@ export default {
     },
   },
   project_settings: {
+    github_sync: {
+      title: "Kho lưu trữ GitHub",
+      description:
+        "Kết nối dự án này với một kho lưu trữ GitHub. Issue của kho sẽ hiển thị dưới dạng mục công việc và hoàn thành mục công việc sẽ đóng issue trên GitHub.",
+      repository_placeholder: "owner/repo",
+      connect: "Kết nối",
+      disconnect: "Ngắt kết nối",
+      sync_now: "Đồng bộ ngay",
+      last_synced: "Đồng bộ lần cuối",
+      never_synced: "Chưa đồng bộ.",
+      issue_sync_label: "Đồng bộ issue",
+      issue_sync_description: "Nhập issue từ GitHub và đồng bộ trạng thái mở/đóng theo cả hai chiều.",
+      connected: "Đã kết nối kho lưu trữ GitHub.",
+      disconnected: "Đã ngắt kết nối kho lưu trữ GitHub.",
+      updated: "Đã cập nhật cài đặt đồng bộ GitHub.",
+      sync_started: "Đã bắt đầu đồng bộ. Issue sẽ sớm xuất hiện.",
+      request_failed: "Yêu cầu đồng bộ GitHub thất bại. Vui lòng thử lại.",
+    },
     auto_add_new_users: {
       label: "Tự động thêm người dùng mới",
       description:

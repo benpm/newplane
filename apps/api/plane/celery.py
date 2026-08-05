@@ -32,6 +32,10 @@ app.conf.beat_schedule = {
         "task": "plane.bgtasks.email_notification_task.stack_email_notification",
         "schedule": crontab(minute="*/5"),  # Every 5 minutes
     },
+    "sync-github-issues-every-five-minutes": {
+        "task": "plane.bgtasks.github_issue_sync_task.schedule_github_issue_syncs",
+        "schedule": crontab(minute="*/5"),  # Every 5 minutes
+    },
     "run-every-6-hours-for-instance-trace": {
         "task": "plane.license.bgtasks.tracer.instance_traces",
         "schedule": crontab(hour="*/6", minute=0),  # Every 6 hours

@@ -2126,6 +2126,24 @@ export default {
     },
   },
   project_settings: {
+    github_sync: {
+      title: "GitHub repository",
+      description:
+        "Connect this project to a GitHub repository. Issues from the repository show up as work items and completing a work item closes the GitHub issue.",
+      repository_placeholder: "owner/repo",
+      connect: "Connect",
+      disconnect: "Disconnect",
+      sync_now: "Sync now",
+      last_synced: "Last synced",
+      never_synced: "Not synced yet.",
+      issue_sync_label: "Issue sync",
+      issue_sync_description: "Import GitHub issues and keep open/closed state in sync both ways.",
+      connected: "GitHub repository connected.",
+      disconnected: "GitHub repository disconnected.",
+      updated: "GitHub sync settings updated.",
+      sync_started: "Sync started. Issues will appear shortly.",
+      request_failed: "GitHub sync request failed. Please try again.",
+    },
     auto_add_new_users: {
       label: "Auto-add new users",
       description:

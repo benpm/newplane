@@ -21,6 +21,8 @@ from plane.app.views import (
     ProjectWorkLogViewSet,
     ProjectWorklogExportView,
     WorkspaceBankWideProjectsEndpoint,
+    ProjectGithubSyncEndpoint,
+    ProjectGithubSyncNowEndpoint,
     ProjectFieldPermissionViewSet,
     ProjectCopyView,
     ProjectCopyStatusView,
@@ -144,6 +146,16 @@ urlpatterns = [
         "workspaces/<str:slug>/projects/<uuid:project_id>/worklogs/export/",
         ProjectWorklogExportView.as_view(),
         name="project-worklog-export",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/github-sync/",
+        ProjectGithubSyncEndpoint.as_view(),
+        name="project-github-sync",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/github-sync/sync-now/",
+        ProjectGithubSyncNowEndpoint.as_view(),
+        name="project-github-sync-now",
     ),
     path(
         "workspaces/<str:slug>/bank-wide-projects/",

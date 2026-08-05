@@ -2115,6 +2115,24 @@ export default {
     },
   },
   project_settings: {
+    github_sync: {
+      title: "GitHub 저장소",
+      description:
+        "이 프로젝트를 GitHub 저장소에 연결합니다. 저장소의 이슈가 작업 항목으로 표시되며 작업 항목을 완료하면 GitHub 이슈가 닫힙니다.",
+      repository_placeholder: "owner/repo",
+      connect: "연결",
+      disconnect: "연결 해제",
+      sync_now: "지금 동기화",
+      last_synced: "마지막 동기화",
+      never_synced: "아직 동기화되지 않았습니다.",
+      issue_sync_label: "이슈 동기화",
+      issue_sync_description: "GitHub 이슈를 가져오고 열림/닫힘 상태를 양방향으로 동기화합니다.",
+      connected: "GitHub 저장소가 연결되었습니다.",
+      disconnected: "GitHub 저장소 연결이 해제되었습니다.",
+      updated: "GitHub 동기화 설정이 업데이트되었습니다.",
+      sync_started: "동기화가 시작되었습니다. 곧 이슈가 표시됩니다.",
+      request_failed: "GitHub 동기화 요청이 실패했습니다. 다시 시도해 주세요.",
+    },
     auto_add_new_users: {
       label: "신규 사용자 자동 추가",
       description: "신규 사용자가 인스턴스 또는 이 워크스페이스에 참여하면 이 프로젝트에 구성원으로 자동 추가합니다.",
