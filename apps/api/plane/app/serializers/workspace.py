@@ -129,6 +129,33 @@ class WorkSpaceMemberInviteSerializer(BaseSerializer):
         ]
 
 
+class WorkSpaceMemberInvitePublicSerializer(BaseSerializer):
+    """Invite details safe to hand to an unauthenticated caller.
+
+    The join endpoint is deliberately open so an invitee can see who invited
+    them before signing in, but it must not hand back the acceptance token or
+    the invite link that embeds it: anyone able to read those can accept the
+    invitation themselves. Fields are listed explicitly rather than excluded,
+    so a column added to the model is private until someone opts it in.
+    """
+
+    workspace = WorkspaceLiteSerializer(read_only=True)
+
+    class Meta:
+        model = WorkspaceMemberInvite
+        fields = [
+            "id",
+            "email",
+            "workspace",
+            "role",
+            "message",
+            "accepted",
+            "responded_at",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
 class WorkspaceThemeSerializer(BaseSerializer):
     class Meta:
         model = WorkspaceTheme
