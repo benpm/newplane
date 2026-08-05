@@ -99,7 +99,7 @@ apps/web/
 │   └── context/                    # React context
 │       └── store-context.ts        # Provides RootStore
 │
-├── ce/                             # Shinhan customizations (extend core)
+├── ce/                             # Fork customizations (extend core)
 │   ├── store/
 │   │   ├── root.store.ts           # Extends CoreRootStore
 │   │   ├── workflow.store.ts       # Workflow MobX store
@@ -802,7 +802,11 @@ python manage.py seed_help_center
 - Checks if seeded already (by checking for existence of seed marker in DB)
 - If yes, skips (idempotent)
 - If no: seeds 5 categories + 5 articles in all 3 locales
-- Content uses "Shinhan Workspace" terminology (not "Plane")
+- Content uses "Shinhan Workspace" terminology (not "Plane"). This is the last
+  place the old branding survives: the UI, admin, locale files and email
+  templates were switched back to Plane, but these fixtures are authored
+  content whose article slugs are cross-referenced between documents, so
+  renaming them would break the internal links. See TODO.md.
 - Publishes all translations (is_published=True)
 
 ---

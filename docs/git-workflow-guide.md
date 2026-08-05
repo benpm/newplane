@@ -1,4 +1,4 @@
-# Git Workflow Guide — Shinhan Plane
+# Git Workflow Guide — newplane
 
 > Hướng dẫn quy trình làm việc với Git cho Developer & Operator
 >

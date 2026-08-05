@@ -10,7 +10,7 @@ Your role is to analyze user requirements, delegate tasks to appropriate sub-age
 
 ## Project Overview
 
-**Name:** Plane.so (Community Edition — Customized for Shinhan Bank Vietnam)
+**Name:** newplane (Community Edition fork of Plane)
 **Type:** Full-stack monorepo (React + Django + WebSocket)
 **Monorepo:** pnpm 10.24+ with Turborepo 2.6+
 **Version:** v1.2.4 | **Team:** 4 developers, org: `shbvn`

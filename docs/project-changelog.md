@@ -2,6 +2,37 @@
 
 All notable changes to the Plane project are documented here. This file tracks major features, performance improvements, bug fixes, and breaking changes.
 
+## [Unreleased] — 2026-08-05
+
+### Bug Fixes
+
+- **Sub-pages could not be created**: `label_ids`/`project_ids` are `ArrayAgg` annotations on the page queryset but were declared as writable serializer fields, so the sub-page action's payload reached `Page.objects.create()` and raised `TypeError`. Both are now read-only. Latent upstream as well; only the sub-page path sends the field.
+- **The GitHub wiki sync had never run**: task modules live in `plane/bgtasks/*.py`, which is not the app-level `tasks` module `autodiscover_tasks()` looks for, so a task reaches the worker's registry only if `CELERY_IMPORTS` lists it or something else imports it. `github_wiki_sync_task` had neither, so beat dispatched it every five minutes and the worker discarded each message as unregistered. `deletion_task` and `github_issue_sync_task` were registering only through an incidental view and signal import; all three are now declared explicitly, guarded by a test asserting every `beat_schedule` module appears in `CELERY_IMPORTS`.
+- **Page sub-counts disclosed hidden pages**: `sub_pages_count` counted every non-deleted child while the rows themselves are filtered to those the caller owns or that are public, so a page whose children were another user's private pages advertised an expander that opened onto nothing, and the count revealed the hidden pages existed.
+- **Archiving a page could hang**: the recursive descendant walk used `UNION ALL`, which does not terminate on a parent loop — verified against Postgres, where the statement runs until it is killed. Now `UNION`.
+- **The public invite endpoint returned its own acceptance token**: the join endpoint is `AllowAny` so an invitee can see who invited them before signing in, but it serialised with `fields = "__all__"`, returning the token plus an `invite_link` embedding it. Served from an explicitly-listed serializer instead. The remaining half of GHSA-4vj8-p63v-8p24 — requiring an authenticated session whose email matches the invitee — is still open, as it changes who may accept.
+- **The project date-permission toggle had no effect**: changing an existing `target_date`/`completed_at` demanded a justification unconditionally, so a project that had explicitly unlocked a date for members still refused their edits with a 400. The reason is now required only where the restriction binds. `_is_admin` becomes the exported `bypasses_field_locks`, so the view and the permission checker share one definition of who is exempt.
+- **Field-permission changes were never written to activity**: `model_activity` diffs `requested_data` against `current_instance` and `json.loads()` the latter, but the view passed `{field: {old, new}}` for both and a raw dict where a JSON string was expected. Since `.delay()` is asynchronous the request never failed — the activity row simply never appeared.
+- **v1 cycle creation always failed**: the serializer resolved `project_id` from the request body, but it comes from the URL and the view never passed it on, so every `POST /cycles/` returned "Project ID is required" unless the caller redundantly repeated the id.
+- **Service tokens were reachable from the personal token endpoint**: `ApiTokenEndpoint` excluded `is_service=True` from its list and delete paths but not from retrieve and patch.
+- **Two god-mode RBAC gaps**: `bulk-export-projects/` had no `PREFIX_MENU_MAP` entry, and the bulk project-export and bulk member-removal views still declared the pre-RBAC `InstanceAdminPermission`, granting any instance admin regardless of granted menus.
+- **`filter_updated_at` filtered on `created_at`** in both its branches.
+- **`OffsetPaginator` crashed on a sequence `order_by`**, which its own constructor accepts.
+- **`apps/live` and `apps/space` images would not build**: pnpm installs global binaries into `$PNPM_HOME/bin` and refuses `add -g` unless that exact directory is on `PATH`.
+
+### Authentication
+
+- **Restored the stock email sign-in flow.** `AuthRoot` mounted a Staff ID / Swing SSO form for sign-in, so any account without a staff profile had no way to authenticate even with email/password enabled on the instance. The Swing SSO backend provider is retained and stays inert while unconfigured.
+
+### Testing
+
+- **873 → 1097 passing, 0 failed, 0 errors** across unit, contract and smoke; the contract suite alone started at 19 failed / 5 errors. Most pre-existing failures could never have passed: a patch target that does not exist, fixtures using `role=10` for "member" when that value has mapped to nothing since `MEMBER` became 15, `created_by=` silently discarded by `BaseModel.save()`, an assertion skipped by operator precedence, and one suite reading a single developer's own rows by email and workspace slug.
+- New backend test runner `scripts/dev-site-test.sh`, plus the isolated dev-site stack (`scripts/dev-site.sh`) and its log feed (`scripts/dev-site-logs.sh`).
+
+### Notes
+
+- Prioritisation should follow live row counts, not uncovered-statement counts: every fork headline feature (departments, staff profiles, help centre, GitHub sync, HO export, dashboards, worklogs) currently holds zero rows, while pages, issues, invitations, cycles, modules, notifications and the business calendar carry real data.
+
 ## [Unreleased] — 2026-06-03
 
 ### New Features

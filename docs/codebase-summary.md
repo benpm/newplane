@@ -12,7 +12,7 @@ plane/
 │   │   │   ├── layouts/      # App layouts
 │   │   │   ├── store/        # MobX stores (33+)
 │   │   │   └── services/     # API clients (30+)
-│   │   ├── ce/           # Shinhan customizations (extends core)
+│   │   ├── ce/           # Fork customizations (extends core)
 │   │   │   ├── store/    # CE-specific stores (workflows, time tracking)
 │   │   │   ├── services/ # CE API methods
 │   │   │   └── components/ # CE-specific UI
@@ -78,49 +78,49 @@ plane/
 
 ### Backend (Django)
 
-| File/Dir                                   | Purpose                                                   |
-| ------------------------------------------ | --------------------------------------------------------- |
-| `apps/api/plane/settings/base.py`          | Django core config (DB, cache, middleware)                |
-| `apps/api/plane/settings/urls.py`          | API URL routing (v0, v1)                                  |
-| `apps/api/plane/db/models/`                | 37 ORM models (BaseModel, ProjectBaseModel)               |
-| `apps/api/plane/db/models/help_center.py`  | HelpCategory, HelpArticle + translation models            |
-| `apps/api/plane/db/migrations/0178_help_center.py` | Help Center schema migration                    |
-| `apps/api/plane/app/views/`                | 41+ DRF viewsets (@allow_permission)                      |
-| `apps/api/plane/app/views/help_center/`    | Read-layer views (base, category, article)                |
-| `apps/api/plane/app/serializers/v0/`       | Legacy serializers (session auth)                         |
-| `apps/api/plane/app/serializers/v1/`       | External API (API key auth, OpenAPI)                      |
-| `apps/api/plane/app/serializers/help_center.py` | Help Center read serializers                         |
-| `apps/api/plane/app/urls/help_center.py`   | Help Center read routes (/api/help/...)                   |
-| `apps/api/plane/license/api/views/help_center.py` | Write-layer admin views (InstanceAdminPerm)       |
-| `apps/api/plane/license/api/urls/help_center.py` | Write-layer admin routes (/api/instances/help/...) |
-| `apps/api/plane/utils/workflow_checker.py` | Workflow validation logic                                 |
-| `apps/api/plane/utils/help_center/sanitizer.py` | HTML sanitization (nh3 lib)                        |
-| `apps/api/plane/utils/business_calendar/`  | Business calendar service (holidays, schedule, overrides) |
-| `apps/api/plane/utils/celery_helpers.py`   | Celery decorators (@working_day_required)                 |
-| `apps/api/plane/db/management/commands/seed_help_center.py` | Idempotent seed command (run once per instance) |
-| `apps/api/plane/tasks/`                    | Celery async tasks (41 tasks)                             |
-| `apps/api/manage.py`                       | Django CLI                                                |
+| File/Dir                                                    | Purpose                                                   |
+| ----------------------------------------------------------- | --------------------------------------------------------- |
+| `apps/api/plane/settings/base.py`                           | Django core config (DB, cache, middleware)                |
+| `apps/api/plane/settings/urls.py`                           | API URL routing (v0, v1)                                  |
+| `apps/api/plane/db/models/`                                 | 37 ORM models (BaseModel, ProjectBaseModel)               |
+| `apps/api/plane/db/models/help_center.py`                   | HelpCategory, HelpArticle + translation models            |
+| `apps/api/plane/db/migrations/0178_help_center.py`          | Help Center schema migration                              |
+| `apps/api/plane/app/views/`                                 | 41+ DRF viewsets (@allow_permission)                      |
+| `apps/api/plane/app/views/help_center/`                     | Read-layer views (base, category, article)                |
+| `apps/api/plane/app/serializers/v0/`                        | Legacy serializers (session auth)                         |
+| `apps/api/plane/app/serializers/v1/`                        | External API (API key auth, OpenAPI)                      |
+| `apps/api/plane/app/serializers/help_center.py`             | Help Center read serializers                              |
+| `apps/api/plane/app/urls/help_center.py`                    | Help Center read routes (/api/help/...)                   |
+| `apps/api/plane/license/api/views/help_center.py`           | Write-layer admin views (InstanceAdminPerm)               |
+| `apps/api/plane/license/api/urls/help_center.py`            | Write-layer admin routes (/api/instances/help/...)        |
+| `apps/api/plane/utils/workflow_checker.py`                  | Workflow validation logic                                 |
+| `apps/api/plane/utils/help_center/sanitizer.py`             | HTML sanitization (nh3 lib)                               |
+| `apps/api/plane/utils/business_calendar/`                   | Business calendar service (holidays, schedule, overrides) |
+| `apps/api/plane/utils/celery_helpers.py`                    | Celery decorators (@working_day_required)                 |
+| `apps/api/plane/db/management/commands/seed_help_center.py` | Idempotent seed command (run once per instance)           |
+| `apps/api/plane/tasks/`                                     | Celery async tasks (41 tasks)                             |
+| `apps/api/manage.py`                                        | Django CLI                                                |
 
 ### Frontend (React)
 
-| File/Dir                                    | Purpose                                      |
-| ------------------------------------------- | -------------------------------------------- |
-| `apps/web/app/`                             | Next.js app router entry (layouts, pages)    |
-| `apps/web/app/(all)/help/`                  | Help Center reader routes (layout, page, article) |
-| `apps/web/core/store/`                      | MobX root + 33+ feature stores               |
-| `apps/web/core/hooks/store/`                | Store hooks (useWorkspace, useProject, etc.) |
-| `apps/web/core/services/`                   | API client classes (axios)                   |
-| `apps/web/core/components/`                 | Reusable React components (layouts, modals)  |
-| `apps/web/ce/store/root.store.ts`           | CE root store (extends CoreRootStore)        |
-| `apps/web/ce/store/help-center/`            | Help Center stores (category, article, root) |
-| `apps/web/ce/services/help-center.service.ts` | Help Center API client                     |
-| `apps/web/ce/types/help-center.ts`          | Help Center TypeScript types                 |
-| `apps/web/ce/components/help-center/`       | Help Center UI (reader components)           |
-| `apps/web/ce/hooks/store/use-help-center.ts` | Help Center store hook                      |
-| `apps/web/ce/components/workflow/`          | Workflow UI + DnD hook                       |
-| `apps/web/ce/store/workflow.store.ts`       | Workflow MobX store                          |
-| `apps/web/core/hooks/store/use-workflow.ts` | Workflow hook (reads CE store)               |
-| `apps/web/tsconfig.json`                    | Path aliases (@/_, @/plane-web/_)            |
+| File/Dir                                      | Purpose                                           |
+| --------------------------------------------- | ------------------------------------------------- |
+| `apps/web/app/`                               | Next.js app router entry (layouts, pages)         |
+| `apps/web/app/(all)/help/`                    | Help Center reader routes (layout, page, article) |
+| `apps/web/core/store/`                        | MobX root + 33+ feature stores                    |
+| `apps/web/core/hooks/store/`                  | Store hooks (useWorkspace, useProject, etc.)      |
+| `apps/web/core/services/`                     | API client classes (axios)                        |
+| `apps/web/core/components/`                   | Reusable React components (layouts, modals)       |
+| `apps/web/ce/store/root.store.ts`             | CE root store (extends CoreRootStore)             |
+| `apps/web/ce/store/help-center/`              | Help Center stores (category, article, root)      |
+| `apps/web/ce/services/help-center.service.ts` | Help Center API client                            |
+| `apps/web/ce/types/help-center.ts`            | Help Center TypeScript types                      |
+| `apps/web/ce/components/help-center/`         | Help Center UI (reader components)                |
+| `apps/web/ce/hooks/store/use-help-center.ts`  | Help Center store hook                            |
+| `apps/web/ce/components/workflow/`            | Workflow UI + DnD hook                            |
+| `apps/web/ce/store/workflow.store.ts`         | Workflow MobX store                               |
+| `apps/web/core/hooks/store/use-workflow.ts`   | Workflow hook (reads CE store)                    |
+| `apps/web/tsconfig.json`                      | Path aliases (@/_, @/plane-web/_)                 |
 
 ### Packages
 
@@ -382,8 +382,17 @@ t("workspace.settings.title");
 **Backend:** Django test suite + pytest
 
 ```bash
-cd apps/api && python run_tests.py
+cd apps/api && python run_tests.py          # needs a local Python env
+./scripts/dev-site-test.sh                  # or run against the dev-site datastores
 ```
+
+`dev-site-test.sh` builds a test image from `requirements/test.txt` on top of the
+dev-site API image, since the runtime image carries no test dependencies. Markers
+(`-m unit`, `-m contract`, `-m smoke`) and pytest flags pass straight through.
+
+Magic-code auth stores its codes in Redis, so `settings/test.py` leaves
+`REDIS_URL` unset by default and those tests skip themselves; supply a real URL
+to exercise them.
 
 **Frontend:** Vitest + React Testing Library
 
@@ -391,7 +400,8 @@ cd apps/api && python run_tests.py
 pnpm test
 ```
 
-**Coverage Targets:** >80% (code, integration)
+**Coverage Targets:** >80% (code, integration). Backend is currently ~52% — see
+[TODO.md](../TODO.md) for why in-use paths are prioritised over the global figure.
 
 ## Monitoring & Logging
 

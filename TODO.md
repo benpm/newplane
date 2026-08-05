@@ -1,7 +1,8 @@
 # Todo
+
 <!-- AGENT:
     work on these tasks when asked to. Make sure to build and test everything in a separate dev environment before deploying to production. Make sure to thoroughly test your changes before moving on to the next task. One task, one commit.
-    
+
     when a task is completed, mark it as done and copy them to CHANGELOG.md, and make sure to update docs and README.md
      -->
 
@@ -23,38 +24,46 @@ Work queued from testing this branch on the dev site. One task, one commit.
 - [x] Restore the stock email sign-in flow so any account can authenticate
 - [x] Replace Shinhan branding with stock Plane across web, admin, i18n and emails
 - [x] Add an isolated dev-site stack + log feed script
-- [ ] Fix the GitHub wiki sync Celery task never running — beat schedules
-      `github_wiki_sync_task.schedule_github_wiki_syncs` but `autodiscover_tasks()`
-      does not register it, so the worker discards every message
-- [x] Fix the GitHub wiki sync Celery task never running
-- [x] Fix the failing unit tests. `497 passed / 22 failed / 10 errors` →
-      **`529 passed, 0 failed, 0 errors`**. Run: `./scripts/dev-site-test.sh -m unit`.
-- [x] Fix the contract/smoke suites. **All suites green: 975 passed, 0 failed,
-      0 errors** (`./scripts/dev-site-test.sh`).
-- [ ] Raise backend coverage toward 90%. **Currently 50%** (15,448 / 30,922
-      statements). Reaching 90% means covering ~12,400 more statements — the
-      two dense utility suites added here covered ~180 across 102 tests, so
-      this is several thousand more tests, not a single sitting.
-      Highest-value targets by uncovered statements:
-      | module | missing |
-      |---|---|
-      | `license/api/views/department.py` | 328 |
-      | `app/views/asset/v2.py` | 306 |
-      | `app/views/ho.py` | 274 |
-      | `license/api/views/staff.py` | 252 |
-      | `api/views/issue.py` | 250 |
-      | `bgtasks/issue_activities_task.py` | 243 |
-      | `app/views/issue/base.py` | 217 |
-      | `app/views/workspace/staff.py` | 211 |
-      | `app/views/search/base.py` | 206 |
-      | `app/views/analytic/advance.py` | 178 |
-      Suggested order: finish the pure-logic utils (cheap, no DB), then the
-      fork-specific view modules above, which are both the least covered and
-      the least exercised by upstream tests.
-- [ ] Sweep for further unrelated bugs surfaced by the dev site logs
+- [x] Fix the GitHub wiki sync Celery task never running — beat scheduled
+      `github_wiki_sync_task.schedule_github_wiki_syncs` but nothing imported the
+      module, so the worker discarded every message as unregistered
+- [x] Fix the failing tests. `497 passed / 22 failed / 10 errors` →
+      **`1097 passed, 0 failed, 0 errors`** across unit, contract and smoke.
+      Run: `./scripts/dev-site-test.sh`.
+- [x] Fix the sub-page count disagreeing with the sub-page list, and the
+      recursive archive hanging on a parent loop
+- [x] Stop the public invite endpoint returning its own acceptance token
+
+### Prioritising by what this instance actually runs
+
+Row counts on the live database, not uncovered-statement counts, should drive
+what gets hardened next. Every fork headline feature holds **zero rows** —
+departments, staff profiles, help centre, GitHub sync, HO export, dashboards,
+worklogs, capacity exports — so their large uncovered surface is not what puts
+the deployment at risk. The tables carrying real data are core Plane: issue
+activities, notifications, recent visits, issues, states, holidays,
+invitations, pages, module/cycle issues and file assets.
+
+Re-check with:
+
+```sql
+SELECT relname, n_live_tup FROM pg_stat_user_tables
+WHERE n_live_tup > 0 ORDER BY n_live_tup DESC;
+```
+
+- [ ] Continue bug-hunting where in-use features meet fork-modified code. Done:
+      pages, invitations. Not yet examined: issue activities, notifications and
+      their email logs, recent visits, file assets, the business calendar.
+- [ ] Decide the invite-acceptance question left open: acceptance currently
+      needs only the emailed token, with no authenticated session and no check
+      that the caller's email matches the invitee. Upstream requires both
+      (GHSA-4vj8-p63v-8p24). Adding it changes who can accept, so it needs a
+      decision rather than a silent behaviour change.
+- [ ] Raise backend coverage. **Currently 52%** (~16,000 / 30,922 statements).
+      90% means covering ~12,000 more — several thousand tests, not a single
+      sitting. Prefer coverage of in-use paths over the global percentage.
 - [ ] Remove the remaining Shinhan branding: the Vietnamese help-centre fixtures
       (~40 files, note the `lam-quen-shinhan-workspace` slug is cross-referenced)
       and the seed-data org names in `seed_department_staff_data.py`
 - [ ] Audit the UI for dark-theme correctness — no hardcoded colours, semantic
       tokens only, no `dark:` variants (see `.claude/rules/color-tokens.md`)
-
