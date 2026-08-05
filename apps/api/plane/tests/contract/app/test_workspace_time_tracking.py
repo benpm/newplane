@@ -33,21 +33,33 @@ class TestWorkspaceTimeTracking:
     def setup(self, db):
         """Set up test fixtures."""
         # Get or create the test user
-        self.user = User.objects.get(email="ngocyt001@gmail.com")
+        # Build the fixtures rather than reading rows from the developer's own
+        # database: the endpoints only need one member holding a project in two
+        # separate workspaces, which is what the cross-workspace views exercise.
+        self.user = UserFactory(email=f"time-tracking-{uuid4().hex[:8]}@plane.so")
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
 
-        # Get workspaces
-        self.workspace_huhuh = Workspace.objects.get(slug="huhuhhahaha")
-        self.workspace_yesyes = Workspace.objects.get(slug="yesyes")
+        self.workspace_a = WorkspaceFactory(owner=self.user)
+        self.workspace_b = WorkspaceFactory(owner=self.user)
 
-        # Get project IDs
-        self.project_huhuh = Project.objects.filter(
-            workspace=self.workspace_huhuh, archived_at__isnull=True
-        ).first()
-        self.project_yesyes = Project.objects.filter(
-            workspace=self.workspace_yesyes, archived_at__isnull=True
-        ).first()
+        # These endpoints reject a range that starts before the workspace
+        # existed, and their defaults look back several weeks, so a workspace
+        # created moments ago would fail every one. created_at is auto_now_add,
+        # hence the post-hoc update.
+        Workspace.objects.filter(
+            id__in=[self.workspace_a.id, self.workspace_b.id]
+        ).update(created_at=timezone.now() - timedelta(days=365))
+        self.workspace_a.refresh_from_db()
+        self.workspace_b.refresh_from_db()
+
+        self.project_a = None
+        self.project_b = None
+        for workspace, attr in ((self.workspace_a, "project_a"), (self.workspace_b, "project_b")):
+            WorkspaceMemberFactory(workspace=workspace, member=self.user, role=20)
+            project = ProjectFactory(workspace=workspace, created_by=self.user, updated_by=self.user)
+            ProjectMemberFactory(project=project, member=self.user, role=20)
+            setattr(self, attr, project)
 
     def test_workspace_time_tracking_endpoints(self):
         """Test all 8 time tracking endpoints across both workspaces."""
@@ -56,7 +68,10 @@ class TestWorkspaceTimeTracking:
         # Define test cases: (workspace_slug, project_id, endpoint_key, url_pattern)
         test_cases = []
 
-        for slug, project in [("huhuhhahaha", self.project_huhuh), ("yesyes", self.project_yesyes)]:
+        for slug, project in [
+            (self.workspace_a.slug, self.project_a),
+            (self.workspace_b.slug, self.project_b),
+        ]:
             if project is None:
                 pytest.skip(f"No active project found for workspace {slug}")
                 continue

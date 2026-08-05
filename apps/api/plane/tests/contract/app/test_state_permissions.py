@@ -3,6 +3,7 @@
 # See the LICENSE file for details.
 
 import pytest
+from django.utils import timezone
 from rest_framework import status
 
 from plane.db.models import State, Project, ProjectMember, Issue, Workspace
@@ -67,7 +68,9 @@ def instance_admin_user(db, create_user):
     """Create an instance admin user"""
     instance = Instance.objects.create(
         instance_name="Test Instance",
-        is_setup_done=True
+        is_setup_done=True,
+        # NOT NULL on the table; the model has no default for it
+        last_checked_at=timezone.now(),
     )
     InstanceAdmin.objects.create(
         instance=instance,
@@ -211,7 +214,7 @@ class TestStatePermissionGuards:
     def test_mark_system_state_as_default_by_admin_blocked(self, session_client, workspace_with_project, system_state):
         """Admin cannot mark system states as default"""
         workspace, project = workspace_with_project
-        url = get_state_url(workspace.slug, project.id, system_state.id) + "mark_as_default/"
+        url = get_state_url(workspace.slug, project.id, system_state.id) + "mark-default/"
 
         response = session_client.post(url, format="json")
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -224,7 +227,7 @@ class TestStatePermissionGuards:
     def test_mark_custom_state_as_default_by_admin(self, session_client, workspace_with_project, custom_state):
         """Admin can mark custom states as default"""
         workspace, project = workspace_with_project
-        url = get_state_url(workspace.slug, project.id, custom_state.id) + "mark_as_default/"
+        url = get_state_url(workspace.slug, project.id, custom_state.id) + "mark-default/"
 
         response = session_client.post(url, format="json")
         assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -255,7 +258,7 @@ class TestStatePermissionGuards:
 
         # Create an issue in this state
         Issue.objects.create(
-            title="Test Issue",
+            name="Test Issue",
             project=project,
             workspace=workspace,
             state=custom_state,
@@ -286,11 +289,10 @@ class TestStatePermissionGuardsWithInstanceAdmin:
 
         workspace, project = workspace_with_project
         # Add instance admin to project
-        ProjectMember.objects.create(
+        ProjectMember.objects.update_or_create(
             project=project,
             member=instance_admin_user,
-            role=20,
-            is_active=True,
+            defaults={"role": 20, "is_active": True},
         )
 
         url = get_state_url(workspace.slug, project.id)
@@ -317,11 +319,10 @@ class TestStatePermissionGuardsWithInstanceAdmin:
 
         workspace, project = workspace_with_project
         # Add instance admin to project
-        ProjectMember.objects.create(
+        ProjectMember.objects.update_or_create(
             project=project,
             member=instance_admin_user,
-            role=20,
-            is_active=True,
+            defaults={"role": 20, "is_active": True},
         )
 
         system_state = State.objects.create(
@@ -357,11 +358,10 @@ class TestStatePermissionGuardsWithInstanceAdmin:
 
         workspace, project = workspace_with_project
         # Add instance admin to project
-        ProjectMember.objects.create(
+        ProjectMember.objects.update_or_create(
             project=project,
             member=instance_admin_user,
-            role=20,
-            is_active=True,
+            defaults={"role": 20, "is_active": True},
         )
 
         system_state = State.objects.create(
@@ -391,11 +391,10 @@ class TestStatePermissionGuardsWithInstanceAdmin:
 
         workspace, project = workspace_with_project
         # Add instance admin to project
-        ProjectMember.objects.create(
+        ProjectMember.objects.update_or_create(
             project=project,
             member=instance_admin_user,
-            role=20,
-            is_active=True,
+            defaults={"role": 20, "is_active": True},
         )
 
         system_state = State.objects.create(
@@ -408,7 +407,7 @@ class TestStatePermissionGuardsWithInstanceAdmin:
             sequence=10000,
         )
 
-        url = get_state_url(workspace.slug, project.id, system_state.id) + "mark_as_default/"
+        url = get_state_url(workspace.slug, project.id, system_state.id) + "mark-default/"
         response = client.post(url, format="json")
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
