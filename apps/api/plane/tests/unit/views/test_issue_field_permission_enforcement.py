@@ -22,6 +22,7 @@ import pytest
 from rest_framework.test import APIClient
 from unittest.mock import patch
 
+from plane.app.permissions import ROLE
 from plane.db.models import Issue, Project, ProjectFieldPermission, State
 from plane.tests.factories import (
     ProjectFactory,
@@ -63,7 +64,7 @@ def _make_client(user) -> APIClient:
 def workspace(db):
     owner = UserFactory()
     ws = WorkspaceFactory(owner=owner)
-    WorkspaceMemberFactory(workspace=ws, member=owner, role=20)
+    WorkspaceMemberFactory(workspace=ws, member=owner, role=ROLE.ADMIN.value)
     return ws
 
 
@@ -84,16 +85,16 @@ def default_state(project):
 @pytest.fixture
 def member_user(workspace, project):
     user = UserFactory()
-    WorkspaceMemberFactory(workspace=workspace, member=user, role=10)
-    ProjectMemberFactory(project=project, member=user, role=10)  # member (non-admin)
+    WorkspaceMemberFactory(workspace=workspace, member=user, role=ROLE.MEMBER.value)
+    ProjectMemberFactory(project=project, member=user, role=ROLE.MEMBER.value)  # member (non-admin)
     return user
 
 
 @pytest.fixture
 def admin_user(workspace, project):
     user = UserFactory()
-    WorkspaceMemberFactory(workspace=workspace, member=user, role=10)
-    ProjectMemberFactory(project=project, member=user, role=20)  # admin
+    WorkspaceMemberFactory(workspace=workspace, member=user, role=ROLE.MEMBER.value)
+    ProjectMemberFactory(project=project, member=user, role=ROLE.ADMIN.value)  # admin
     return user
 
 
@@ -101,8 +102,8 @@ def admin_user(workspace, project):
 def workspace_admin_user(workspace, project):
     """Workspace admin who also holds minimal project membership for @allow_permission."""
     user = UserFactory()
-    WorkspaceMemberFactory(workspace=workspace, member=user, role=20)
-    ProjectMemberFactory(project=project, member=user, role=10)
+    WorkspaceMemberFactory(workspace=workspace, member=user, role=ROLE.ADMIN.value)
+    ProjectMemberFactory(project=project, member=user, role=ROLE.MEMBER.value)
     return user
 
 
@@ -146,16 +147,23 @@ def field_permission_all_open(project, workspace):
 
 
 def _create_issue(project, workspace, user, default_state, **field_overrides):
-    """Create a minimal Issue for testing."""
-    return Issue.issue_objects.create(
+    """Create a minimal Issue owned by ``user``.
+
+    BaseModel.save() re-derives created_by from the current request, and there is
+    no request here, so passing created_by= to create() is silently discarded and
+    the row lands with created_by=None. That matters because the issue endpoints
+    grant access to the creator, so the ownership has to be set through the
+    created_by_id escape hatch instead.
+    """
+    issue = Issue(
         project=project,
         workspace=workspace,
         name="Test Issue",
         state=default_state,
-        created_by=user,
-        updated_by=user,
         **field_overrides,
     )
+    issue.save(created_by_id=user.id)
+    return issue
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +185,7 @@ class TestDateFieldEnforcementAppLayer:
         assert getattr(issue, date_field) is None
 
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.patch(
                 _app_url(workspace.slug, project.id, issue.id),
@@ -194,7 +202,7 @@ class TestDateFieldEnforcementAppLayer:
         issue = _create_issue(project, workspace, member_user, default_state, **{date_field: "2026-01-01"})
 
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.patch(
                 _app_url(workspace.slug, project.id, issue.id),
@@ -211,7 +219,7 @@ class TestDateFieldEnforcementAppLayer:
         issue = _create_issue(project, workspace, member_user, default_state, **{date_field: "2026-01-01"})
 
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.patch(
                 _app_url(workspace.slug, project.id, issue.id),
@@ -228,7 +236,7 @@ class TestDateFieldEnforcementAppLayer:
         issue = _create_issue(project, workspace, member_user, default_state, **{date_field: "2026-01-01"})
 
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.patch(
                 _app_url(workspace.slug, project.id, issue.id),
@@ -245,7 +253,7 @@ class TestDateFieldEnforcementAppLayer:
             project, workspace, workspace_admin_user, default_state, target_date="2026-01-01"
         )
         client = _make_client(workspace_admin_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.patch(
                 _app_url(workspace.slug, project.id, issue.id),
@@ -269,7 +277,7 @@ class TestDeleteEnforcementAppLayer:
         """DELETE when allow_member_delete_work_item=False → 403."""
         issue = _create_issue(project, workspace, member_user, default_state)
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.delete(_app_url(workspace.slug, project.id, issue.id))
         assert resp.status_code == 403
@@ -280,7 +288,7 @@ class TestDeleteEnforcementAppLayer:
         """DELETE when allow_member_delete_work_item=True → 204."""
         issue = _create_issue(project, workspace, member_user, default_state)
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.delete(_app_url(workspace.slug, project.id, issue.id))
         assert resp.status_code == 204
@@ -304,7 +312,7 @@ class TestExternalApiEnforcement:
             project, workspace, member_user, default_state, target_date="2026-01-01"
         )
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.patch(
                 _ext_url(workspace.slug, project.id, issue.id),
@@ -319,7 +327,7 @@ class TestExternalApiEnforcement:
         """Member DELETE via external API when delete locked → 403."""
         issue = _create_issue(project, workspace, member_user, default_state)
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.delete(_ext_url(workspace.slug, project.id, issue.id))
         assert resp.status_code == 403
@@ -330,7 +338,7 @@ class TestExternalApiEnforcement:
         """Member DELETE via external API when delete allowed → 204."""
         issue = _create_issue(project, workspace, member_user, default_state)
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.delete(_ext_url(workspace.slug, project.id, issue.id))
         assert resp.status_code == 204
