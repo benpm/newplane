@@ -29,17 +29,28 @@ Work queued from testing this branch on the dev site. One task, one commit.
 - [x] Fix the GitHub wiki sync Celery task never running
 - [x] Fix the failing unit tests. `497 passed / 22 failed / 10 errors` →
       **`529 passed, 0 failed, 0 errors`**. Run: `./scripts/dev-site-test.sh -m unit`.
-- [ ] Fix the contract/smoke suites: `320 passed / 19 failed / 5 errors`
-      (`./scripts/dev-site-test.sh -m "contract or smoke"`). By file:
-      `contract/app/test_authentication.py` (8),
-      `contract/app/test_state_permissions.py` (7),
-      `contract/api/test_cycles.py` (5),
-      plus one each in `smoke/test_business_calendar_smoke.py`,
-      `contract/views/test_user_work_items.py`,
-      `contract/app/test_workspace_time_tracking.py`,
-      `contract/app/test_api_token.py`.
-- [ ] Raise backend coverage. Baseline is well under half of ~30k statements;
-      agree a realistic target before starting.
+- [x] Fix the contract/smoke suites. **All suites green: 975 passed, 0 failed,
+      0 errors** (`./scripts/dev-site-test.sh`).
+- [ ] Raise backend coverage toward 90%. **Currently 50%** (15,448 / 30,922
+      statements). Reaching 90% means covering ~12,400 more statements — the
+      two dense utility suites added here covered ~180 across 102 tests, so
+      this is several thousand more tests, not a single sitting.
+      Highest-value targets by uncovered statements:
+      | module | missing |
+      |---|---|
+      | `license/api/views/department.py` | 328 |
+      | `app/views/asset/v2.py` | 306 |
+      | `app/views/ho.py` | 274 |
+      | `license/api/views/staff.py` | 252 |
+      | `api/views/issue.py` | 250 |
+      | `bgtasks/issue_activities_task.py` | 243 |
+      | `app/views/issue/base.py` | 217 |
+      | `app/views/workspace/staff.py` | 211 |
+      | `app/views/search/base.py` | 206 |
+      | `app/views/analytic/advance.py` | 178 |
+      Suggested order: finish the pure-logic utils (cheap, no DB), then the
+      fork-specific view modules above, which are both the least covered and
+      the least exercised by upstream tests.
 - [ ] Sweep for further unrelated bugs surfaced by the dev site logs
 - [ ] Remove the remaining Shinhan branding: the Vietnamese help-centre fixtures
       (~40 files, note the `lam-quen-shinhan-workspace` slug is cross-referenced)
