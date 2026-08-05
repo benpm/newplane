@@ -1,0 +1,95 @@
+# Dev site overlay — a second, fully isolated Plane deployment built from the
+# current working tree, running alongside production without touching it.
+# (Distinct from docker-compose.dev.yml, which is the local hot-reload overlay.)
+#
+# Isolation comes from the compose project name (planedev):
+#   - images   -> planedev-*   (production keeps plane-*)
+#   - volumes  -> planedev_*   (production keeps plane_*)
+#   - network  -> planedev_default
+# Only container_name is hardcoded in the base file, so every one is renamed here.
+#
+# Always drive this stack through scripts/dev-site.sh — a bare `docker compose`
+# command in this directory targets PRODUCTION.
+services:
+  web:
+    container_name: web-dev
+    build:
+      network: host
+
+  admin:
+    container_name: admin-dev
+    build:
+      network: host
+
+  space:
+    container_name: space-dev
+    build:
+      network: host
+
+  api:
+    container_name: api-dev
+    build:
+      network: host
+    env_file: !override
+      - /home/beb/live/plane-dev-env/api.env
+    # Host 8000 is already taken by another service; the proxy reaches api over
+    # the compose network, so nothing needs publishing here.
+    ports: !reset []
+
+  worker:
+    container_name: bgworker-dev
+    build:
+      network: host
+    env_file: !override
+      - /home/beb/live/plane-dev-env/api.env
+
+  beat-worker:
+    container_name: beatworker-dev
+    build:
+      network: host
+    env_file: !override
+      - /home/beb/live/plane-dev-env/api.env
+
+  migrator:
+    container_name: plane-migrator-dev
+    build:
+      network: host
+    env_file: !override
+      - /home/beb/live/plane-dev-env/api.env
+
+  live:
+    container_name: plane-live-dev
+    build:
+      network: host
+    env_file: !override
+      - /home/beb/live/plane-dev-env/api.env
+    environment:
+      PORT: "3000"
+      API_BASE_URL: "http://api:8000"
+    depends_on:
+      - plane-redis
+      - api
+
+  plane-db:
+    container_name: plane-db-dev
+    env_file: !override
+      - /home/beb/live/plane-dev-env/root.env
+
+  plane-redis:
+    container_name: plane-redis-dev
+
+  plane-mq:
+    container_name: plane-mq-dev
+    env_file: !override
+      - /home/beb/live/plane-dev-env/root.env
+
+  plane-minio:
+    container_name: plane-minio-dev
+
+  proxy:
+    container_name: proxy-dev
+    build:
+      network: host
+    environment:
+      SITE_ADDRESS: ":80"
+      TRUSTED_PROXIES: "0.0.0.0/0"
