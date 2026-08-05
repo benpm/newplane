@@ -23,7 +23,7 @@ from rest_framework.test import APIClient
 from unittest.mock import patch
 
 from plane.app.permissions import ROLE
-from plane.db.models import Issue, Project, ProjectFieldPermission, State
+from plane.db.models import Issue, Project, ProjectFieldPermission, ProjectMember, State
 from plane.tests.factories import (
     ProjectFactory,
     ProjectMemberFactory,
@@ -100,10 +100,21 @@ def admin_user(workspace, project):
 
 @pytest.fixture
 def workspace_admin_user(workspace, project):
-    """Workspace admin who also holds minimal project membership for @allow_permission."""
+    """Workspace admin holding only non-admin project membership.
+
+    Granting workspace admin already enrols the user in every project of the
+    workspace, so creating the membership again would violate the one-row-per
+    user-and-project constraint on the project user property. Demote the
+    existing row instead, so the test exercises the workspace-admin bypass
+    rather than project-level admin rights.
+    """
     user = UserFactory()
     WorkspaceMemberFactory(workspace=workspace, member=user, role=ROLE.ADMIN.value)
-    ProjectMemberFactory(project=project, member=user, role=ROLE.MEMBER.value)
+    ProjectMember.objects.update_or_create(
+        project=project,
+        member=user,
+        defaults={"role": ROLE.MEMBER.value, "workspace": workspace, "is_active": True},
+    )
     return user
 
 
@@ -192,7 +203,7 @@ class TestDateFieldEnforcementAppLayer:
                 {date_field: "2026-12-31"},
                 format="json",
             )
-        assert resp.status_code == 200, resp.json()
+        assert resp.status_code == 204, resp.content
 
     @pytest.mark.parametrize("date_field", ["target_date", "start_date"])
     def test_member_change_date_value_to_value_toggle_false_blocked(
@@ -243,7 +254,7 @@ class TestDateFieldEnforcementAppLayer:
                 {date_field: "2026-12-31"},
                 format="json",
             )
-        assert resp.status_code == 200, resp.json()
+        assert resp.status_code == 204, resp.content
 
     def test_workspace_admin_patch_locked_date_allowed(
         self, workspace_admin_user, workspace, project, default_state, field_permission_all_locked
@@ -260,7 +271,7 @@ class TestDateFieldEnforcementAppLayer:
                 {"target_date": "2026-12-31"},
                 format="json",
             )
-        assert resp.status_code == 200, resp.json()
+        assert resp.status_code == 204, resp.content
 
 
 # ---------------------------------------------------------------------------

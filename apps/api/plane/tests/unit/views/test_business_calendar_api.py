@@ -226,27 +226,32 @@ class TestWorkScheduleEndpoint:
         created = WorkSchedule.objects.get(id=resp.json()["id"])
         assert created.workspace is None
 
-    # -- HIGH-5: duplicate Holiday date returns 400 with field error --
+    # -- HIGH-5: duplicate Holiday date is rejected --
 
     def test_create_duplicate_holiday_returns_400(self, admin_client, default_schedule):
-        """POST duplicate (schedule, date) holiday → 400 with 'date' field error."""
+        """POST duplicate (schedule, date) holiday → 400 naming the uniqueness rule.
+
+        The unique_together on (schedule, date) is enforced by DRF's
+        UniqueTogetherValidator, which reports under non_field_errors rather
+        than against a single field, since neither field alone is at fault.
+        """
         url = f"{SCHEDULES_URL}{default_schedule.id}/holidays/"
         payload = {"date": "2026-09-02", "name": "National Day"}
         resp1 = admin_client.post(url, payload, format="json")
         assert resp1.status_code == 201
         resp2 = admin_client.post(url, payload, format="json")
         assert resp2.status_code == 400
-        assert "date" in resp2.json()
+        assert "unique set" in str(resp2.json()["non_field_errors"])
 
     def test_create_duplicate_day_override_returns_400(self, admin_client, default_schedule):
-        """POST duplicate (schedule, date) override → 400 with 'date' field error."""
+        """POST duplicate (schedule, date) override → 400 naming the uniqueness rule."""
         url = f"{SCHEDULES_URL}{default_schedule.id}/overrides/"
         payload = {"date": "2026-09-05", "type": "WORKDAY", "reason": "Swap", "swap_with_date": None}
         resp1 = admin_client.post(url, payload, format="json")
         assert resp1.status_code == 201
         resp2 = admin_client.post(url, payload, format="json")
         assert resp2.status_code == 400
-        assert "date" in resp2.json()
+        assert "unique set" in str(resp2.json()["non_field_errors"])
 
     # -- CRITICAL-1: week_pattern round-trip as boolean[] --
 
