@@ -17,7 +17,12 @@ RUN apk add --no-cache --upgrade \
     "xmlsec" \
     "ca-certificates" \
     "openssl" \
-    "openldap"
+    "openldap" \
+    # GitHub sync shells out to these at runtime: `gh` for the REST API and
+    # `git` for cloning/pushing the wiki repository. They must outlive the
+    # .build-deps virtual package below, which is deleted after pip install.
+    "git" \
+    "github-cli"
 
 COPY requirements.txt ./
 COPY requirements ./requirements
