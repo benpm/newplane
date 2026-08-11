@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# dev-local.sh — One-command local dev launcher (SHBVN MacBook dev).
+# dev-local.sh — One-command local dev launcher.
 #
 # Backend + Caddy reverse proxy run in Docker; the frontends run on the host via
 # turbo (pnpm dev) with hot reload. Everything is reached through ONE origin —

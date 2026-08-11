@@ -3,22 +3,22 @@
 ## Quick Start
 
 ```bash
-cd /Volumes/Data/SHBVN/plane.so/Temp
+cd scripts/mock_swing_sso_api
 .venv/bin/python mock_swing_sso_server.py
 ```
 
-Server chạy tại: `http://0.0.0.0:9001`
+Server runs at: `http://0.0.0.0:9001`
 
 ## Endpoints
 
-| Endpoint                 | Method | Mô tả               |
-| ------------------------ | ------ | ------------------- |
-| `/cau/v1/idpw-authorize` | POST   | Xác thực SSO (main) |
-| `/health`                | GET    | Health check        |
+| Endpoint                 | Method | Description             |
+| ------------------------ | ------ | ----------------------- |
+| `/cau/v1/idpw-authorize` | POST   | SSO authentication (main) |
+| `/health`                | GET    | Health check            |
 
 ## God Mode Config
 
-Cấu hình tại `http://localhost:3001/god-mode/authentication/swing-sso/`
+Configure at `http://localhost:3001/god-mode/authentication/swing-sso/`
 
 | Key                     | Value                                                    |
 | ----------------------- | -------------------------------------------------------- |
@@ -27,49 +27,49 @@ Cấu hình tại `http://localhost:3001/god-mode/authentication/swing-sso/`
 | SWING_SSO_CLIENT_SECRET | `test-secret-123`                                        |
 | SWING_SSO_COMPANY_CODE  | `sh`                                                     |
 
-> **Lưu ý:** Dùng `host.docker.internal` vì Plane API chạy trong Docker, cần truy cập host machine.
+> **Note:** Use `host.docker.internal` — the Plane API runs inside Docker and needs to reach the host machine.
 
 ## Test Users
 
-| Staff ID | Password    | Plane Email                  | Tên            |
+| Staff ID | Password    | Plane Email            | Name           |
 | -------- | ----------- | ---------------------------- | -------------- |
-| 10000001 | password123 | sh10000001@swing.shinhan.com | Nguyen Van A   |
-| 10000002 | password123 | sh10000002@swing.shinhan.com | Tran Thi B     |
-| 10000003 | password123 | sh10000003@swing.shinhan.com | Le Van C       |
-| 10000004 | admin@2024  | sh10000004@swing.shinhan.com | Pham Admin     |
-| 10000005 | admin@2024  | sh10000005@swing.shinhan.com | Hoang Security |
+| 10000001 | password123 | sh10000001@swing.local | Nguyen Van A   |
+| 10000002 | password123 | sh10000002@swing.local | Tran Thi B     |
+| 10000003 | password123 | sh10000003@swing.local | Le Van C       |
+| 10000004 | admin@2024  | sh10000004@swing.local | Pham Admin     |
+| 10000005 | admin@2024  | sh10000005@swing.local | Hoang Security |
 
-## Test bằng curl
+## Testing with curl
 
 ```bash
 # Health check
 curl -s http://0.0.0.0:9001/health | python3 -m json.tool
 
-# Auth thành công
+# Successful auth
 PASS_HASH=$(python3 -c "import hashlib; print(hashlib.sha256(b'password123').hexdigest())")
 curl -s -X POST http://0.0.0.0:9001/cau/v1/idpw-authorize \
   -H "Content-Type: application/json" \
   -d "{\"common\":{\"companyCode\":\"sh\",\"clientId\":\"TEST_CLIENT_ID\",\"clientSecret\":\"test-secret-123\",\"employeeNo\":\"10000001\"},\"data\":{\"loginPassword\":\"$PASS_HASH\"}}" | python3 -m json.tool
 
-# Auth sai password
+# Auth with the wrong password
 curl -s -X POST http://0.0.0.0:9001/cau/v1/idpw-authorize \
   -H "Content-Type: application/json" \
   -d "{\"common\":{\"companyCode\":\"sh\",\"clientId\":\"TEST_CLIENT_ID\",\"clientSecret\":\"test-secret-123\",\"employeeNo\":\"10000001\"},\"data\":{\"loginPassword\":\"wrong\"}}" | python3 -m json.tool
 ```
 
-## Test trên Plane UI
+## Testing through the Plane UI
 
-1. Mở `http://localhost:3000` → trang login
-2. Chọn **Swing SSO**
-3. Nhập Staff ID: `10000001`, Password: `password123`
-4. Đăng nhập thành công → redirect vào workspace
+1. Open `http://localhost:3000` → the login page
+2. Choose **Swing SSO**
+3. Enter Staff ID `10000001` and password `password123`
+4. On success you are redirected into the workspace
 
-## Tạo thêm user trong Plane DB
+## Adding another user to the Plane DB
 
 ```bash
 docker exec -i planeso-api-1 python manage.py shell <<'EOF'
 from plane.db.models import User
-email = "sh99999999@swing.shinhan.com"
+email = "sh99999999@swing.local"
 user, created = User.objects.get_or_create(
     email=email,
     defaults={"username": email, "first_name": "New", "last_name": "User", "display_name": "New User", "is_active": True, "is_password_autoset": True}
@@ -78,9 +78,9 @@ print(f"{'CREATED' if created else 'EXISTS'}: {email}")
 EOF
 ```
 
-Sau đó thêm user tương ứng vào `MOCK_USERS` trong `mock_swing_sso_server.py` và restart server.
+Then add the matching user to `MOCK_USERS` in `mock_swing_sso_server.py` and restart the server.
 
-## Cấu hình lại DB (nếu cần reset)
+## Reconfiguring the DB (if you need to reset)
 
 ```bash
 docker exec planeso-api-1 python -c "
@@ -103,9 +103,9 @@ print('Done!')
 
 ## Files
 
-| File                       | Mô tả                           |
-| -------------------------- | ------------------------------- |
-| `mock_swing_sso_server.py` | Mock SSO server (Flask)         |
-| `setup_mock_sso_users.py`  | Script tạo users trong Plane DB |
-| `sso_json_sample.md`       | Spec gốc từ Swing API docs      |
-| `.venv/`                   | Python venv có Flask            |
+| File                       | Description                          |
+| -------------------------- | ------------------------------------ |
+| `mock_swing_sso_server.py` | Mock SSO server (Flask)              |
+| `setup_mock_sso_users.py`  | Script that creates users in Plane DB |
+| `sso_json_sample.md`       | Original spec from the Swing API docs |
+| `.venv/`                   | Python venv with Flask               |

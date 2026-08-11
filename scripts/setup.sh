@@ -18,7 +18,7 @@ UPPER_CPU_ARCH=$(tr '[:lower:]' '[:upper:]' <<< "$CPU_ARCH")
 mkdir -p $PLANE_INSTALL_DIR/archive
 DOCKER_FILE_PATH=$PLANE_INSTALL_DIR/docker-compose.yaml
 DOCKER_ENV_PATH=$PLANE_INSTALL_DIR/plane.env
-DOCKER_SHB_FILE_PATH=$PLANE_INSTALL_DIR/docker-compose.shb.yml
+DOCKER_RELEASE_FILE_PATH=$PLANE_INSTALL_DIR/docker-compose.release.yml
 
 function print_header() {
 clear
@@ -418,8 +418,8 @@ function startServices() {
     echo ""
 
 }
-function startSHBServices() {
-    docker compose --env-file=$DOCKER_ENV_PATH -f $DOCKER_FILE_PATH -f $DOCKER_SHB_FILE_PATH up -d --no-build
+function startReleaseServices() {
+    docker compose --env-file=$DOCKER_ENV_PATH -f $DOCKER_FILE_PATH -f $DOCKER_RELEASE_FILE_PATH up -d --no-build
 
     local migrator_container_id=$(docker container ls -aq -f "name=$SERVICE_FOLDER-migrator")
     if [ -n "$migrator_container_id" ]; then
@@ -727,9 +727,9 @@ function askForAction() {
     then
         startServices
         # askForAction
-    elif [ "$ACTION" == "9" ] || [ "$DEFAULT_ACTION" == "start-shbvn" ];
+    elif [ "$ACTION" == "9" ] || [ "$DEFAULT_ACTION" == "start-release" ];
     then
-        startSHBServices
+        startReleaseServices
     elif [ "$ACTION" == "3" ] || [ "$DEFAULT_ACTION" == "stop" ];
     then
         stopServices

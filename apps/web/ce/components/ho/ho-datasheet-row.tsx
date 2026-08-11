@@ -75,7 +75,7 @@ export const HoDatasheetRow = observer(function HoDatasheetRow({
     sub_issue_count: "min-w-[100px]",
     project_lead: "min-w-[150px]",
     assignee: "min-w-[180px]",
-    bank_wide_project: "min-w-[120px]",
+    global_project: "min-w-[120px]",
     priority: "min-w-[120px]",
     state: "min-w-[140px]",
     progress_tracking: "min-w-[140px]",
@@ -159,7 +159,7 @@ export const HoDatasheetRow = observer(function HoDatasheetRow({
             </Tooltip>
           )
         )}
-      {displayProperties.bank_wide_project && renderTd("bank_wide_project", issue.is_bank_wide_project ? "Yes" : "No")}
+      {displayProperties.global_project && renderTd("global_project", issue.is_global_project ? "Yes" : "No")}
       {displayProperties.priority && renderTd("priority", issue.priority || "—", "capitalize")}
       {displayProperties.state &&
         renderTd(

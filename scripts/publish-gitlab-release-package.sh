@@ -8,11 +8,11 @@
 #   CI_PROJECT_ID         GitLab project ID
 #   GITLAB_PUBLISH_TOKEN  Project access token — write_package_registry + api scopes
 #                         (NOT api-only — separate from the deploy read token)
-#   SHB_VERSION           Package version string (e.g. shb_v1.2.0)
-#   RELEASE_TAG           Git tag to create (dev/shb_v1.2.0-build.5 or prod/shb_v1.2.0)
+#   RELEASE_VERSION           Package version string (e.g. v1.2.0)
+#   RELEASE_TAG           Git tag to create (dev/v1.2.0-build.5 or prod/v1.2.0)
 #
 # Optional:
-#   PACKAGE_NAME          Registry package name (default: plane-shb-release)
+#   PACKAGE_NAME          Registry package name (default: plane-release)
 #   DIST_DIR              Source dist directory   (default: dist)
 #   TAG_REF               Git ref for tag target (default: develop for dev/*, preview for prod/*)
 
@@ -30,16 +30,16 @@ cd "${ROOT_DIR}"
 
 GITLAB_URL="${GITLAB_URL:-${CI_SERVER_URL:-}}"
 
-for VAR in GITLAB_URL CI_PROJECT_ID GITLAB_PUBLISH_TOKEN SHB_VERSION RELEASE_TAG; do
+for VAR in GITLAB_URL CI_PROJECT_ID GITLAB_PUBLISH_TOKEN RELEASE_VERSION RELEASE_TAG; do
   [ -n "${!VAR:-}" ] || { echo "ERROR: ${VAR} is required but not set"; exit 1; }
 done
 
-PACKAGE_NAME="${PACKAGE_NAME:-plane-shb-release}"
+PACKAGE_NAME="${PACKAGE_NAME:-plane-release}"
 DIST_DIR="${DIST_DIR:-dist}"
 PKG_VERSION=$(echo "${RELEASE_TAG}" | sed 's|.*/||')
 ARCHIVE_NAME="${PACKAGE_NAME}-${PKG_VERSION}.zip"
 CHECKSUMS_FILE="${PACKAGE_NAME}-${PKG_VERSION}.SHA256SUMS"
-STAGE_DIR="release-stage-${SHB_VERSION}"
+STAGE_DIR="release-stage-${RELEASE_VERSION}"
 API_BASE="${GITLAB_URL}/api/v4/projects/${CI_PROJECT_ID}"
 PKG_BASE="${API_BASE}/packages/generic/${PACKAGE_NAME}/${PKG_VERSION}"
 TAG_REF="${TAG_REF:-}"
@@ -87,7 +87,7 @@ ensure_release_asset_link() {
 echo "========================================="
 echo " Publish Release Package"
 echo "========================================="
-echo " Version    : ${SHB_VERSION}"
+echo " Version    : ${RELEASE_VERSION}"
 echo " Release tag: ${RELEASE_TAG}"
 echo " Pkg version: ${PKG_VERSION}"
 echo "========================================="
@@ -120,7 +120,7 @@ esac
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 command -v curl >/dev/null 2>&1 || { echo "ERROR: curl not found"; exit 1; }
-[ -f "${DIST_DIR}/.shb-version" ] || { echo "ERROR: ${DIST_DIR}/.shb-version not found — run builds first"; exit 1; }
+[ -f "${DIST_DIR}/.release-version" ] || { echo "ERROR: ${DIST_DIR}/.release-version not found — run builds first"; exit 1; }
 
 # sha256sum: Linux/Windows Git Bash use sha256sum; macOS uses shasum -a 256
 if ! command -v sha256sum >/dev/null 2>&1; then
@@ -163,41 +163,41 @@ echo "[1/5] Assembling release package ..."
 rm -rf "${STAGE_DIR}"
 mkdir -p "${STAGE_DIR}/dist" "${STAGE_DIR}/scripts"
 
-cp "${DIST_DIR}/.shb-version" "${STAGE_DIR}/dist/"
-cp scripts/deploy-shb.sh "${STAGE_DIR}/scripts/"
-chmod +x "${STAGE_DIR}/scripts/deploy-shb.sh"
+cp "${DIST_DIR}/.release-version" "${STAGE_DIR}/dist/"
+cp scripts/deploy-release.sh "${STAGE_DIR}/scripts/"
+chmod +x "${STAGE_DIR}/scripts/deploy-release.sh"
 
 for IMG in plane-frontend plane-admin plane-backend; do
-  FILE="${DIST_DIR}/${IMG}-${SHB_VERSION}.tar.gz"
+  FILE="${DIST_DIR}/${IMG}-${RELEASE_VERSION}.tar.gz"
   [ -f "${FILE}" ] || { echo "ERROR: ${FILE} not found"; exit 1; }
   cp "${FILE}" "${STAGE_DIR}/dist/"
 done
 
-cat > "${STAGE_DIR}/docker-compose.shb.yml" <<COMPOSE
+cat > "${STAGE_DIR}/docker-compose.release.yml" <<COMPOSE
 # Auto-generated — ${RELEASE_TAG}
 services:
   web:
-    image: makeplane/plane-frontend:${SHB_VERSION}
+    image: makeplane/plane-frontend:${RELEASE_VERSION}
   admin:
-    image: makeplane/plane-admin:${SHB_VERSION}
+    image: makeplane/plane-admin:${RELEASE_VERSION}
   api:
-    image: makeplane/plane-backend:${SHB_VERSION}
+    image: makeplane/plane-backend:${RELEASE_VERSION}
   worker:
-    image: makeplane/plane-backend:${SHB_VERSION}
+    image: makeplane/plane-backend:${RELEASE_VERSION}
   beat-worker:
-    image: makeplane/plane-backend:${SHB_VERSION}
+    image: makeplane/plane-backend:${RELEASE_VERSION}
   migrator:
-    image: makeplane/plane-backend:${SHB_VERSION}
+    image: makeplane/plane-backend:${RELEASE_VERSION}
 COMPOSE
 
 cat > "${STAGE_DIR}/MANIFEST" <<MANIFEST
-VERSION=${SHB_VERSION}
+VERSION=${RELEASE_VERSION}
 RELEASE_TAG=${RELEASE_TAG}
 BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 COMMIT_REF=${TAG_REF}
 TAG_REF=${TAG_REF}
 TARGET_ARCH=linux/amd64
-IMAGES=makeplane/plane-frontend:${SHB_VERSION},makeplane/plane-admin:${SHB_VERSION},makeplane/plane-backend:${SHB_VERSION}
+IMAGES=makeplane/plane-frontend:${RELEASE_VERSION},makeplane/plane-admin:${RELEASE_VERSION},makeplane/plane-backend:${RELEASE_VERSION}
 MANIFEST
 
 zip_create "${ARCHIVE_NAME}" "${STAGE_DIR}"
@@ -268,7 +268,7 @@ fi
 echo "[4/5] Creating GitLab Release ..."
 
 # Plain-ASCII single-line description for max GitLab API compatibility.
-RELEASE_DESC="Release ${SHB_VERSION} (ref ${TAG_REF}). Package: ${PACKAGE_URL}. SHA256: ${ARCHIVE_SHA256}"
+RELEASE_DESC="Release ${RELEASE_VERSION} (ref ${TAG_REF}). Package: ${PACKAGE_URL}. SHA256: ${ARCHIVE_SHA256}"
 
 RELEASE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
   --header "PRIVATE-TOKEN: ${GITLAB_PUBLISH_TOKEN}" \

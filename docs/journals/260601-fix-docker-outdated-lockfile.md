@@ -7,7 +7,7 @@
 
 ## Summary
 
-Resolved a Docker build failure (`ERR_PNPM_OUTDATED_LOCKFILE`) in `build-shb-images.sh` caused by a mismatch between `apps/web/package.json` and the root `pnpm-lock.yaml`. The mismatch arose because two Tailwind dependencies (`@tailwindcss/postcss` and `tailwindcss`) were removed from the package file, but the lockfile wasn't regenerated. Running `pnpm install` locally updated and synchronized the lockfile, which successfully restored the Docker image build functionality.
+Resolved a Docker build failure (`ERR_PNPM_OUTDATED_LOCKFILE`) in `build-release-images.sh` caused by a mismatch between `apps/web/package.json` and the root `pnpm-lock.yaml`. The mismatch arose because two Tailwind dependencies (`@tailwindcss/postcss` and `tailwindcss`) were removed from the package file, but the lockfile wasn't regenerated. Running `pnpm install` locally updated and synchronized the lockfile, which successfully restored the Docker image build functionality.
 
 ## Root Cause & Investigation
 
@@ -24,7 +24,7 @@ Resolved a Docker build failure (`ERR_PNPM_OUTDATED_LOCKFILE`) in `build-shb-ima
 - Updated `pnpm-lock.yaml`, cleanly pruning the obsolete tailwind references.
 - Verified the fix by executing a standalone Docker build of the frontend service:
   ```bash
-  docker buildx build --platform linux/amd64 --load -f apps/web/Dockerfile.web -t makeplane/plane-frontend:shb_v1.2.0 .
+  docker buildx build --platform linux/amd64 --load -f apps/web/Dockerfile.web -t makeplane/plane-frontend:v1.2.0 .
   ```
   The build compiled successfully, passing all turborepo caching tasks and exporting the final layers without errors.
 

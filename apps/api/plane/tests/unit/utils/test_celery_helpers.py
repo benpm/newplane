@@ -12,7 +12,10 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from plane.utils.celery_helpers import VN_TZ, working_day_required
+from zoneinfo import ZoneInfo
+
+from plane.utils.celery_helpers import working_day_required
+from plane.utils.business_calendar import CALENDAR_TZ
 
 
 # ---------------------------------------------------------------------------
@@ -143,10 +146,10 @@ class TestWorkingDayRequired:
         _date_arg, sid_arg = mock_is_working.call_args.args
         assert sid_arg is None
 
-    # --- timezone handling: UTC 23:00 → VN next day ---
+    # --- timezone handling: UTC 23:00 → next day in a UTC+07 calendar ---
 
-    def test_utc_2300_uses_vn_next_day_date(self):
-        """UTC 23:00 on Monday = VN 06:00 Tuesday. Should use Tuesday's VN date."""
+    def test_utc_2300_uses_calendar_next_day_date(self):
+        """UTC 23:00 Monday = 06:00 Tuesday at UTC+07 → should use Tuesday."""
         wrapped, inner = _make_task()
 
         captured_dates = []
@@ -156,15 +159,16 @@ class TestWorkingDayRequired:
             return True
 
         with (
+            patch("plane.utils.celery_helpers.CALENDAR_TZ", ZoneInfo("Asia/Bangkok")),
             patch("plane.utils.celery_helpers.timezone") as mock_tz,
             patch("plane.utils.celery_helpers.BusinessCalendarService.is_working_day", side_effect=capture_date),
         ):
-            # Monday 2025-04-28 23:00 UTC = Tuesday 2025-04-29 06:00 VN
+            # Monday 2025-04-28 23:00 UTC = Tuesday 2025-04-29 06:00 at UTC+07
             mock_tz.now.return_value = datetime(2025, 4, 28, 23, 0, tzinfo=dt_timezone.utc)
             wrapped()
 
         from datetime import date
-        assert captured_dates[0] == date(2025, 4, 29), f"Expected 2025-04-29 VN date, got {captured_dates[0]}"
+        assert captured_dates[0] == date(2025, 4, 29), f"Expected 2025-04-29 calendar date, got {captured_dates[0]}"
 
     # --- functools.wraps preserves name ---
 

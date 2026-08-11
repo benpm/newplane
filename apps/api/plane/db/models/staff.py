@@ -78,7 +78,11 @@ class StaffProfile(BaseModel):
 
     @property
     def email(self):
-        return f"sh{self.staff_id}@swing.shinhan.com"
+        # Imported here rather than at module scope: the helper reads instance
+        # configuration, which pulls in plane.license — and that imports this module.
+        from plane.utils.staff_email import staff_email
+
+        return staff_email(self.staff_id)
 
     def __str__(self):
         return f"{self.staff_id} - {self.user.full_name}"

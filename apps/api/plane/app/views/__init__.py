@@ -15,7 +15,7 @@ from .project.copy import ProjectCopyView, ProjectCopyStatusView
 
 from .project.worklog import ProjectWorkLogViewSet, ProjectWorklogExportView
 
-from .project.bank_wide import WorkspaceBankWideProjectsEndpoint
+from .project.global_projects import WorkspaceGlobalProjectsEndpoint
 from .project.github_sync import ProjectGithubSyncEndpoint, ProjectGithubSyncNowEndpoint
 
 from .project.invite import (
@@ -253,7 +253,6 @@ from .notification.base import (
 )
 
 from .exporter.base import ExportIssuesEndpoint
-from .help_center import HelpCategoryViewSet, HelpArticleViewSet
 
 
 from .webhook.base import (

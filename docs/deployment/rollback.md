@@ -5,13 +5,13 @@
 Every deployment automatically archives the previous release package for instant rollback.
 
 ```
-Deploy prod/shb_v1.2.0
+Deploy prod/v1.2.0
   ↓
 Script extracts and loads images
   ↓
 Scripts runs migrations + docker-compose up
   ↓
-If successful: archive prod/shb_v1.2.0-plane-shb-release.zip
+If successful: archive prod/v1.2.0-plane-release.zip
   ↓
 Keep last ARCHIVE_KEEP releases (default: 3)
   ↓
@@ -22,12 +22,12 @@ Older archives automatically deleted
 
 ```bash
 # View all archived releases
-ls -lh /opt/shb-deploy/plane-app/archive/
+ls -lh /opt/plane-deploy/plane-app/archive/
 
 # Example output
--rw-r--r-- 1 gitlab-runner gitlab-runner  700M May 3 14:22 prod-shb_v1.1.9-plane-shb-release.zip
--rw-r--r-- 1 gitlab-runner gitlab-runner  705M Apr 29 10:15 prod-shb_v1.1.8-plane-shb-release.zip
--rw-r--r-- 1 gitlab-runner gitlab-runner  702M Apr 25 08:44 prod-shb_v1.1.7-plane-shb-release.zip
+-rw-r--r-- 1 gitlab-runner gitlab-runner  700M May 3 14:22 prod-v1.1.9-plane-release.zip
+-rw-r--r-- 1 gitlab-runner gitlab-runner  705M Apr 29 10:15 prod-v1.1.8-plane-release.zip
+-rw-r--r-- 1 gitlab-runner gitlab-runner  702M Apr 25 08:44 prod-v1.1.7-plane-release.zip
 ```
 
 ### Archive Retention Policy
@@ -60,23 +60,23 @@ When you need to revert to a previous release immediately:
 ssh prod-server
 
 # List available archived releases
-ls -lh /opt/shb-deploy/plane-app/archive/
+ls -lh /opt/plane-deploy/plane-app/archive/
 
 # Extract the desired archive to a temp location
 # Example: rolling back from v1.2.0 to v1.1.9
-ARCHIVE_FILE="/opt/shb-deploy/plane-app/archive/prod-shb_v1.1.9-plane-shb-release.zip"
+ARCHIVE_FILE="/opt/plane-deploy/plane-app/archive/prod-v1.1.9-plane-release.zip"
 ROLLBACK_DIR="/tmp/rollback-v1.1.9"
 
 unzip -q "${ARCHIVE_FILE}" -d "${ROLLBACK_DIR}"
 
 # Run the deploy script from the archived release
-bash "${ROLLBACK_DIR}/release-stage-*/scripts/deploy-shb.sh" \
+bash "${ROLLBACK_DIR}/release-stage-*/scripts/deploy-release.sh" \
   "${ROLLBACK_DIR}/release-stage-*/dist" \
-  "/opt/shb-deploy/plane-app/plane.env" \
-  "/opt/shb-deploy/plane-app/docker-compose.yaml"
+  "/opt/plane-deploy/plane-app/plane.env" \
+  "/opt/plane-deploy/plane-app/docker-compose.yaml"
 
 # Verify rollback succeeded
-docker-compose -f /opt/shb-deploy/plane-app/docker-compose.yaml ps
+docker-compose -f /opt/plane-deploy/plane-app/docker-compose.yaml ps
 curl https://app.example.com/health
 ```
 
@@ -87,32 +87,32 @@ If you need to roll back with verification at each step:
 **Step 1: Stop Current Services**
 
 ```bash
-docker-compose -f /opt/shb-deploy/plane-app/docker-compose.yaml down
+docker-compose -f /opt/plane-deploy/plane-app/docker-compose.yaml down
 
 # Verify all containers stopped
-docker-compose -f /opt/shb-deploy/plane-app/docker-compose.yaml ps
+docker-compose -f /opt/plane-deploy/plane-app/docker-compose.yaml ps
 ```
 
 **Step 2: Prepare Archived Release**
 
 ```bash
 # Find the target release
-ls -lh /opt/shb-deploy/plane-app/archive/ | grep "shb_v1.1.9"
+ls -lh /opt/plane-deploy/plane-app/archive/ | grep "v1.1.9"
 
 # Extract to temp directory
-ARCHIVE="/opt/shb-deploy/plane-app/archive/prod-shb_v1.1.9-plane-shb-release.zip"
+ARCHIVE="/opt/plane-deploy/plane-app/archive/prod-v1.1.9-plane-release.zip"
 unzip -q "${ARCHIVE}" -d /tmp/rollback-v1.1.9
 
 # Verify extraction
 ls -la /tmp/rollback-v1.1.9/
-# Should show: release-stage-shb_v1.1.9/
+# Should show: release-stage-v1.1.9/
 ```
 
 **Step 3: Load Docker Images**
 
 ```bash
 # Change to extracted directory
-cd /tmp/rollback-v1.1.9/release-stage-shb_v1.1.9
+cd /tmp/rollback-v1.1.9/release-stage-v1.1.9
 
 # Load images one by one with verification
 for TAR in dist/*.tar.gz; do
@@ -129,11 +129,11 @@ docker image ls | grep makeplane
 
 ```bash
 # Get the compose file path
-COMPOSE_FILE="/opt/shb-deploy/plane-app/docker-compose.yaml"
+COMPOSE_FILE="/opt/plane-deploy/plane-app/docker-compose.yaml"
 
 # Set environment (read from plane.env)
 set -a
-source /opt/shb-deploy/plane-app/plane.env
+source /opt/plane-deploy/plane-app/plane.env
 set +a
 
 # Run migrations (these should be safe to run multiple times)
@@ -143,13 +143,13 @@ docker-compose -f "${COMPOSE_FILE}" run --rm api python manage.py migrate
 **Step 5: Start Services**
 
 ```bash
-docker-compose -f /opt/shb-deploy/plane-app/docker-compose.yaml up -d
+docker-compose -f /opt/plane-deploy/plane-app/docker-compose.yaml up -d
 
 # Wait for services to be healthy
 sleep 30
 
 # Check status
-docker-compose -f /opt/shb-deploy/plane-app/docker-compose.yaml ps
+docker-compose -f /opt/plane-deploy/plane-app/docker-compose.yaml ps
 ```
 
 **Step 6: Verify Rollback**
@@ -159,7 +159,7 @@ docker-compose -f /opt/shb-deploy/plane-app/docker-compose.yaml ps
 curl https://app.example.com/health
 
 # Check logs for errors
-docker-compose -f /opt/shb-deploy/plane-app/docker-compose.yaml logs --tail=50
+docker-compose -f /opt/plane-deploy/plane-app/docker-compose.yaml logs --tail=50
 
 # Quick functionality test
 curl -s https://app.example.com/auth/sign-in | grep -q "login" && echo "✓ Frontend loads"
@@ -193,13 +193,13 @@ If the desired archive is unavailable or damaged:
 
 ```bash
 # Create a new release tag from an old commit
-git tag prod/shb_v1.1.9-recovery <commit-hash>
-git push origin prod/shb_v1.1.9-recovery
+git tag prod/v1.1.9-recovery <commit-hash>
+git push origin prod/v1.1.9-recovery
 
 # Trigger pipeline, build, publish, deploy as normal
 # Then delete recovery tag
-git tag -d prod/shb_v1.1.9-recovery
-git push origin --delete prod/shb_v1.1.9-recovery
+git tag -d prod/v1.1.9-recovery
+git push origin --delete prod/v1.1.9-recovery
 ```
 
 **Option 2: Manual Deployment**
@@ -208,9 +208,9 @@ If you have images built and cached locally:
 
 ```bash
 # Load cached images
-docker load < /path/to/cached/plane-frontend-shb_v1.1.9.tar.gz
-docker load < /path/to/cached/plane-admin-shb_v1.1.9.tar.gz
-docker load < /path/to/cached/plane-backend-shb_v1.1.9.tar.gz
+docker load < /path/to/cached/plane-frontend-v1.1.9.tar.gz
+docker load < /path/to/cached/plane-admin-v1.1.9.tar.gz
+docker load < /path/to/cached/plane-backend-v1.1.9.tar.gz
 
 # Create docker-compose file with correct image tags
 # Then: docker-compose up -d
@@ -240,14 +240,14 @@ docker-compose restart
 
 ```bash
 # Check available space
-df -h /opt/shb-deploy/plane-app
+df -h /opt/plane-deploy/plane-app
 
 # Free up space: delete old archives
 # WARNING: This prevents rollback to very old releases
-ls -t /opt/shb-deploy/plane-app/archive/*.zip | tail -n +4 | xargs rm -f
+ls -t /opt/plane-deploy/plane-app/archive/*.zip | tail -n +4 | xargs rm -f
 
 # Verify
-ls -lh /opt/shb-deploy/plane-app/archive/
+ls -lh /opt/plane-deploy/plane-app/archive/
 
 # Alternatively: expand disk or increase retention value
 ```
@@ -258,12 +258,12 @@ Every deployment and rollback is logged:
 
 ```bash
 # View deployment history
-cat /opt/shb-deploy/plane-app/deploy-audit.log
+cat /opt/plane-deploy/plane-app/deploy-audit.log
 
 # Example output
-2026-05-04T14:22:15Z | prod/shb_v1.2.0          | 0:gitlab-runner | 5f9c4ab08cac7457e9111a30e4664882556e518d66660e7b52b5c604d89f28f4 | 0
-2026-05-03T10:15:30Z | prod/shb_v1.1.9          | 0:gitlab-runner | 3e8f2c1d9b4a6f5e2c8d7a9b3e1f4c5d6e7a8b9c0d1e2f3a4b5c6d7e8f9a0b | 0
-2026-04-29T08:44:22Z | prod/shb_v1.1.8          | 0:gitlab-runner | 7c2a1e9d4f5b8c3e6d1a9f2c5e8b1d4a7f0c3e6a9d2f5b8c1e4a7d0f3c6a9 | 0
+2026-05-04T14:22:15Z | prod/v1.2.0          | 0:gitlab-runner | 5f9c4ab08cac7457e9111a30e4664882556e518d66660e7b52b5c604d89f28f4 | 0
+2026-05-03T10:15:30Z | prod/v1.1.9          | 0:gitlab-runner | 3e8f2c1d9b4a6f5e2c8d7a9b3e1f4c5d6e7a8b9c0d1e2f3a4b5c6d7e8f9a0b | 0
+2026-04-29T08:44:22Z | prod/v1.1.8          | 0:gitlab-runner | 7c2a1e9d4f5b8c3e6d1a9f2c5e8b1d4a7f0c3e6a9d2f5b8c1e4a7d0f3c6a9 | 0
 
 # Format: timestamp | release_tag | uid:username | sha256_of_archive | exit_code
 ```
@@ -280,8 +280,8 @@ Periodically test rollback procedures to ensure they work:
 
 ```bash
 # On non-prod environment (dev)
-# 1. Deploy current version (e.g., prod/shb_v1.2.0)
-# 2. Make a change and deploy next version (prod/shb_v1.2.1)
+# 1. Deploy current version (e.g., prod/v1.2.0)
+# 2. Make a change and deploy next version (prod/v1.2.1)
 # 3. Roll back to v1.2.0 using archive
 # 4. Verify all services healthy and data intact
 ```

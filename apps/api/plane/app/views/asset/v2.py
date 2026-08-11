@@ -461,7 +461,6 @@ class StaticFileAssetEndpoint(BaseAPIView):
             FileAsset.EntityTypeContext.USER_COVER,
             FileAsset.EntityTypeContext.WORKSPACE_LOGO,
             FileAsset.EntityTypeContext.PROJECT_COVER,
-            FileAsset.EntityTypeContext.HELP_ARTICLE_CONTENT,
         ]:
             return Response(
                 {"error": "Invalid entity type.", "status": False},

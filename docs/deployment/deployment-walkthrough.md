@@ -32,7 +32,7 @@ No manual steps needed. Used for continuous integration.
 
 ```
 PR merged to develop
-  → lint → test → build (on shb-dev runner)
+  → lint → test → build (on plane-dev runner)
   → deploy:dev (loads images, runs migrations, docker compose up)
   → release:publish:dev (publishes package to registry for later use)
 ```
@@ -44,7 +44,7 @@ PR merged to develop
 **To verify on dev server:**
 
 ```bash
-docker compose -f docker-compose.yaml -f docker-compose.shb.yml ps
+docker compose -f docker-compose.yaml -f docker-compose.release.yml ps
 curl -sf http://localhost:3000/api/health/
 cat /root/Documents/plane-offline-pack/plane-app/deploy-audit.log | tail -1
 ```
@@ -59,16 +59,16 @@ Use when you build images on your Mac and need to deploy without SCP'ing files t
 
 ```bash
 # In the repo root on your Mac
-./scripts/build-shb-images.sh
+./scripts/build-release-images.sh
 ```
 
 Produces in `dist/`:
 
 ```
-dist/.shb-version                      ← e.g. shb_v1.2.0
-dist/plane-frontend-shb_v1.2.0.tar.gz  ← ~400 MB
-dist/plane-admin-shb_v1.2.0.tar.gz     ← ~200 MB
-dist/plane-backend-shb_v1.2.0.tar.gz   ← ~300 MB
+dist/.release-version                      ← e.g. v1.2.0
+dist/plane-frontend-v1.2.0.tar.gz  ← ~400 MB
+dist/plane-admin-v1.2.0.tar.gz     ← ~200 MB
+dist/plane-backend-v1.2.0.tar.gz   ← ~300 MB
 ```
 
 Also note the current commit SHA — you'll need it:
@@ -86,10 +86,10 @@ Transfer the `dist/` folder from Mac to the internal machine (USB, internal file
 
 ```
 dist/
-├── .shb-version
-├── plane-frontend-shb_v1.2.0.tar.gz
-├── plane-admin-shb_v1.2.0.tar.gz
-└── plane-backend-shb_v1.2.0.tar.gz
+├── .release-version
+├── plane-frontend-v1.2.0.tar.gz
+├── plane-admin-v1.2.0.tar.gz
+└── plane-backend-v1.2.0.tar.gz
 ```
 
 Also transfer the repo's `scripts/` folder (needed by `upload-release.sh`).
@@ -108,7 +108,7 @@ nano upload-release.env
 Fill in:
 
 ```bash
-GITLAB_URL=http://gitlabvn.shinhan.com          # internal GitLab URL
+GITLAB_URL=http://gitlab.internal.example.com          # internal GitLab URL
 CI_PROJECT_ID=12345                              # GitLab Settings → General → Project ID
 GITLAB_PUBLISH_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx  # Project access token (write_package_registry + api)
 CI_COMMIT_SHA=a1b2c3d4...                        # full SHA from git rev-parse HEAD (Step 1)
@@ -129,10 +129,10 @@ DIST_DIR=./dist                                  # path to the transferred dist/
 
 ```bash
 # For dev environment
-bash scripts/upload-release.sh dev/shb_v1.2.0-build.5
+bash scripts/upload-release.sh dev/v1.2.0-build.5
 
 # For prod environment (requires Maintainer permission to create prod/* tag)
-bash scripts/upload-release.sh prod/shb_v1.2.0
+bash scripts/upload-release.sh prod/v1.2.0
 ```
 
 The script:
@@ -148,16 +148,16 @@ The script:
 
 Go to GitLab → CI/CD → Pipelines → find the pipeline for your tag.
 
-**For `dev/shb_v1.2.0-build.5`:**
+**For `dev/v1.2.0-build.5`:**
 
 ```
-deploy:dev:release   → shb-dev runner pulls package from registry → deploys to dev server
+deploy:dev:release   → plane-dev runner pulls package from registry → deploys to dev server
 ```
 
-**For `prod/shb_v1.2.0`:**
+**For `prod/v1.2.0`:**
 
 ```
-deploy:prod:release  → shb-prod runner pulls package from registry → deploys to prod server
+deploy:prod:release  → plane-prod runner pulls package from registry → deploys to prod server
 ```
 
 Both jobs run `scripts/deploy-from-internal-gitlab-release.sh` which:
@@ -166,7 +166,7 @@ Both jobs run `scripts/deploy-from-internal-gitlab-release.sh` which:
 2. Downloads zip from Package Registry using deploy token
 3. Verifies SHA256 — aborts if mismatch
 4. Loads Docker images
-5. Runs `deploy-shb.sh` (migrations + docker compose up)
+5. Runs `deploy-release.sh` (migrations + docker compose up)
 6. Archives previous package (rollback point)
 7. Writes audit log entry
 
@@ -176,7 +176,7 @@ Both jobs run `scripts/deploy-from-internal-gitlab-release.sh` which:
 
 ```bash
 # On the server (or watch in GitLab job logs)
-docker compose -f docker-compose.yaml -f docker-compose.shb.yml ps
+docker compose -f docker-compose.yaml -f docker-compose.release.yml ps
 curl -sf http://localhost:3000/api/health/
 cat /root/Documents/plane-offline-pack/plane-app/deploy-audit.log | tail -1
 ```
@@ -185,13 +185,13 @@ cat /root/Documents/plane-offline-pack/plane-app/deploy-audit.log | tail -1
 
 ## Strategy C — Server Build → Release (tag-triggered)
 
-Used when you want the CI server (shb-dev) to rebuild images from a specific commit.
+Used when you want the CI server (plane-dev) to rebuild images from a specific commit.
 
 **For dev:**
 
 ```
 # GitLab → Repository → Tags → New tag
-Tag: dev/shb_v1.2.0-build.5
+Tag: dev/v1.2.0-build.5
 Create from: develop (or specific commit SHA)
 
 Pipeline: build:web:shell → build:admin:shell → build:api:shell
@@ -202,7 +202,7 @@ Pipeline: build:web:shell → build:admin:shell → build:api:shell
 
 ```
 # GitLab → Repository → Tags → New tag
-Tag: prod/shb_v1.2.0
+Tag: prod/v1.2.0
 Create from: preview branch
 
 Pipeline: build:web:shell → build:admin:shell → build:api:shell
@@ -223,7 +223,7 @@ GitLab → CI/CD → Pipelines
 ### View releases and packages
 
 GitLab → Deploy → Releases
-GitLab → Deploy → Package Registry → `plane-shb-release`
+GitLab → Deploy → Package Registry → `plane-release`
 
 ### Re-run a failed job
 
@@ -237,7 +237,7 @@ GitLab → CI/CD → Pipelines → find pipeline → click ▶ Play on the job
 
 GitLab → Repository → Tags → New tag
 
-- Tag name: `dev/shb_v1.2.0-build.5` or `prod/shb_v1.2.0`
+- Tag name: `dev/v1.2.0-build.5` or `prod/v1.2.0`
 - Create from: branch or commit SHA
 
 ---
@@ -253,7 +253,7 @@ mkdir -p /tmp/rollback-pkg
 unzip /root/Documents/plane-offline-pack/plane-app/archive/<previous-release>.zip -d /tmp/rollback-pkg/
 
 PLANE_DIR=/root/Documents/plane-offline-pack/plane-app \
-  bash /tmp/rollback-pkg/*/scripts/deploy-shb.sh \
+  bash /tmp/rollback-pkg/*/scripts/deploy-release.sh \
     /tmp/rollback-pkg/*/dist \
     /root/Documents/plane-offline-pack/plane-app/plane.env \
     /root/Documents/plane-offline-pack/plane-app/docker-compose.yaml
@@ -267,14 +267,14 @@ curl -sf http://localhost:3000/api/health/
 
 | Problem                                    | Fix                                                                                                 |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `gitlabvn.shinhan.com` — DNS lookup failed | Add to `/etc/hosts`: `<GITLAB_LAN_IP> gitlabvn.shinhan.com`                                         |
+| `gitlab.internal.example.com` — DNS lookup failed | Add to `/etc/hosts`: `<GITLAB_LAN_IP> gitlab.internal.example.com`                                         |
 | `upload-release.env not found`             | `cp scripts/upload-release.env.example upload-release.env` and fill it in                           |
 | `CI_COMMIT_SHA is not a valid full SHA`    | Run `git rev-parse HEAD` on your Mac at the exact commit you built from                             |
-| Runner not picking up jobs                 | GitLab → Settings → CI/CD → Runners → verify `shb-dev` / `shb-prod` tags match                      |
+| Runner not picking up jobs                 | GitLab → Settings → CI/CD → Runners → verify `plane-dev` / `plane-prod` tags match                      |
 | `RELEASE_TAG must be set explicitly`       | The deploy env file on the server is missing `RELEASE_TAG` — CI variable overrides it automatically |
 | SHA256 mismatch on deploy                  | Archive corrupt in transit — re-upload with `upload-release.sh`                                     |
 | Package upload fails (413)                 | GitLab `client_max_body_size` too small — ask GitLab admin to increase                              |
-| `Image not available after load`           | tar.gz corrupt — rebuild with `build-shb-images.sh` and re-upload                                   |
+| `Image not available after load`           | tar.gz corrupt — rebuild with `build-release-images.sh` and re-upload                                   |
 | `No space left on device`                  | Needs 4 GB free on `PLANE_DIR` partition — `docker system prune -a` on the server                   |
 
 ---

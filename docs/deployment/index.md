@@ -47,7 +47,7 @@ Archive previous for rollback
 | --------------------------- | ------------------------------------------------------------ |
 | **Deploy Runner**           | Executes on target server, no SSH credentials needed         |
 | **GitLab Package Registry** | Stores release packages (zip) as source-of-truth             |
-| **Release Tags**            | `dev/shb_vX.Y.Z-build.N` or `prod/shb_vX.Y.Z` trigger stages |
+| **Release Tags**            | `dev/vX.Y.Z-build.N` or `prod/vX.Y.Z` trigger stages |
 | **Archive Retention**       | Keeps last N releases for instant rollback                   |
 | **Offline Cache**           | `/opt/plane-cache/` on dev server for air-gapped builds      |
 
@@ -57,7 +57,7 @@ Archive previous for rollback
 | ------------------------------------------------ | ----------------------------------------------------------- |
 | `scripts/ci-deploy.sh`                           | Automatic dev deployment (CI artifacts → docker-compose up) |
 | `scripts/deploy-from-internal-gitlab-release.sh` | Release deploy (GitLab Registry → verify → deploy)          |
-| `scripts/deploy-shb.sh`                          | Core deployment logic (migrations, health checks)           |
+| `scripts/deploy-release.sh`                          | Core deployment logic (migrations, health checks)           |
 | `scripts/publish-gitlab-release-package.sh`      | Create zip, upload to GitLab                                |
 | `scripts/verify-release-package-architecture.sh` | Verify all images are linux/amd64                           |
 | `scripts/plane-release-deploy.env.example`       | Env template for deploy credentials                         |

@@ -1,4 +1,4 @@
-# Management command: seed Shinhan Bank VN departments, staff, projects & issues.
+# Management command: seed demo departments, staff, projects & issues.
 # Data definitions in: plane/bgtasks/seed_department_staff_data.py
 
 import random
@@ -17,6 +17,11 @@ from plane.bgtasks.seed_department_staff_data import (
     DEPARTMENTS, STAFF_DATA, LINKED_PROJECTS, CROSS_PROJECTS,
     CROSS_TEAM_MEMBERS, ISSUE_TEMPLATES,
 )
+from plane.utils.staff_email import get_staff_email_domain, staff_email
+
+# Shared password for every seeded demo account. Seeding is a dev/staging tool —
+# the command already refuses to touch a workspace it did not create.
+SEED_PASSWORD = "SeedUser@2026"
 
 
 def _all_seed_identifiers():
@@ -24,7 +29,7 @@ def _all_seed_identifiers():
 
 
 class Command(BaseCommand):
-    help = "Seed departments, staff, projects & dummy issues for Shinhan Bank VN"
+    help = "Seed demo departments, staff, projects & dummy issues"
 
     def add_arguments(self, parser):
         parser.add_argument("--workspace", type=str, help="Workspace slug")
@@ -69,7 +74,7 @@ class Command(BaseCommand):
         StaffProfile.objects.filter(workspace=ws).delete()
         Project.objects.filter(workspace=ws, identifier__in=_all_seed_identifiers()).delete()
         Department.objects.filter(workspace=ws).delete()
-        User.objects.filter(email__endswith="@swing.shinhan.com").delete()
+        User.objects.filter(email__endswith=f"@{get_staff_email_domain()}").delete()
 
     def _seed_departments(self, ws, admin):
         self.stdout.write("Seeding departments...")
@@ -136,7 +141,7 @@ class Command(BaseCommand):
         self.stdout.write("Seeding staff...")
         user_map = {}
         for sid, ln, fn, dc, pos, grade, is_mgr, phone, joining in STAFF_DATA:
-            email = f"sh{sid}@swing.shinhan.com"
+            email = staff_email(sid)
             user, uc = User.objects.get_or_create(
                 email=email,
                 defaults={
@@ -147,7 +152,7 @@ class Command(BaseCommand):
                 },
             )
             if uc:
-                user.set_password("Shinhan@2026")
+                user.set_password(SEED_PASSWORD)
                 user.save(update_fields=["password"])
             user_map[sid] = user
             WorkspaceMember.objects.get_or_create(workspace=ws, member=user, defaults={"role": 20 if is_mgr else 15})

@@ -98,9 +98,9 @@ def build_ho_export_queryset(user, filters: dict):
         if val:
             qs = qs.filter(**{field: val.split(",")})
 
-    bank_wide = filters.get("bank_wide")
-    if bank_wide:
-        qs = qs.filter(project__is_bank_wide=bank_wide.lower() == "true")
+    is_global = filters.get("is_global")
+    if is_global:
+        qs = qs.filter(project__is_global=is_global.lower() == "true")
 
     progress = filters.get("progress")
     if progress:
@@ -145,7 +145,7 @@ _HEADERS = [
     "Sub Items",
     "Team/Project Lead",
     "Assignee",
-    "Bank-wide Project",
+    "Global Project",
     "Priority",
     "Status",
     "Progress Tracking",
@@ -169,7 +169,7 @@ _COLUMN_KEYS = [
     "sub_issue_count",
     "project_lead",
     "assignee",
-    "bank_wide_project",
+    "global_project",
     "priority",
     "state",
     "progress_tracking",
@@ -285,7 +285,7 @@ def write_ho_workbook(wb, issues, columns=None) -> int:
                 else "-"
             ),
             assignee_names,
-            "Y" if (issue.project_id and issue.project.is_bank_wide) else "N",
+            "Y" if (issue.project_id and issue.project.is_global) else "N",
             issue.priority or "-",
             issue.state.name if issue.state_id else "-",
             _progress_label(issue.target_date),

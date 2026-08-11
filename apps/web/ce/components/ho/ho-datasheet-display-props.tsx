@@ -15,7 +15,7 @@ export const HoDatasheetDisplayProps = observer(function HoDatasheetDisplayProps
     sub_issue_count: "Number of Sub Work Items",
     project_lead: t("spreadsheet.columns.project_lead"),
     assignee: "Assignee",
-    bank_wide_project: t("spreadsheet.columns.bank_wide_project"),
+    global_project: t("spreadsheet.columns.global_project"),
     priority: "Priority",
     state: "Status",
     progress_tracking: t("spreadsheet.columns.progress_tracking"),

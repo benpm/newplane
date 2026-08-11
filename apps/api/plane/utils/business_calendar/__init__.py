@@ -6,7 +6,7 @@
 
 Public surface:
     BusinessCalendarService  — working-day computation (is_working_day, next_working_day, …)
-    VN_TZ                    — ZoneInfo("Asia/Ho_Chi_Minh") constant
+    CALENDAR_TZ              — timezone dates are normalised to (BUSINESS_CALENDAR_TIMEZONE, default UTC)
 
 Internal modules (not part of public API):
     cache.py    — Redis key helpers + TTL constants
@@ -14,6 +14,6 @@ Internal modules (not part of public API):
     service.py  — BusinessCalendarService implementation
 """
 
-from plane.utils.business_calendar.service import VN_TZ, BusinessCalendarService
+from plane.utils.business_calendar.service import CALENDAR_TZ, BusinessCalendarService
 
-__all__ = ["BusinessCalendarService", "VN_TZ"]
+__all__ = ["BusinessCalendarService", "CALENDAR_TZ"]

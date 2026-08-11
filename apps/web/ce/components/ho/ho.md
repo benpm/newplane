@@ -97,7 +97,7 @@ Paginated table of work items across workspaces.
 
 **Display Properties (toggleable columns):**
 `department_name`, `project_name`, `main_task_category`, `sub_task_category`,
-`sub_issue_count`, `project_lead`, `assignee`, `bank_wide_project`, `priority`,
+`sub_issue_count`, `project_lead`, `assignee`, `global_project`, `priority`,
 `state`, `progress_tracking`, `modules`, `cycle`, `start_date`, `due_date`,
 `completed_date`, `total_log_time`, `reference_link`
 
@@ -187,7 +187,7 @@ Read-only summary of task categories per department (no issue counts — just th
 | `sub_task_category`  | csv            | Sub-category names                                        |
 | `cycle`              | csv            | Cycle names                                               |
 | `module`             | csv            | Module names                                              |
-| `bank_wide`          | `true`/`false` | Bank-wide project flag                                    |
+| `is_global`          | `true`/`false` | Global project flag                                       |
 | `progress`           | csv            | `off_track`, `due_today`, `at_risk`, `on_track`           |
 
 ### Progress Filter Logic
@@ -247,7 +247,7 @@ Located at `apps/web/ce/store/ho/`
 THoIssue {
   id, project_id, workspace_slug, department_name, project_name, name,
   main_task_category_name, sub_task_category_name, sub_issues_count,
-  project_lead, assignees: THoIssueAssignee[], is_bank_wide_project,
+  project_lead, assignees: THoIssueAssignee[], is_global_project,
   priority, state_name, state_color, start_date, target_date, completed_at,
   cycle_name, module_names: string[], total_log_time, reference_link_count
 }

@@ -38,7 +38,7 @@ export interface IHoIssueStore {
     sub_task_category: string[];
     cycle: string[];
     module: string[];
-    bank_wide: string | null;
+    is_global: string | null;
     progress: string[];
   };
   isLoading: boolean;
@@ -92,7 +92,7 @@ export class HoIssueStore implements IHoIssueStore {
     sub_task_category: [],
     cycle: [],
     module: [],
-    bank_wide: null,
+    is_global: null,
     progress: [],
   };
   isLoading = false;
@@ -199,7 +199,7 @@ export class HoIssueStore implements IHoIssueStore {
     if (this.filters.sub_task_category.length > 0) params.sub_task_category = this.filters.sub_task_category.join(",");
     if (this.filters.cycle.length > 0) params.cycle = this.filters.cycle.join(",");
     if (this.filters.module.length > 0) params.module = this.filters.module.join(",");
-    if (this.filters.bank_wide !== null) params.bank_wide = this.filters.bank_wide;
+    if (this.filters.is_global !== null) params.is_global = this.filters.is_global;
     if (this.filters.progress.length > 0) params.progress = this.filters.progress.join(",");
 
     return params;
@@ -417,7 +417,7 @@ export class HoIssueStore implements IHoIssueStore {
         sub_task_category: [],
         cycle: [],
         module: [],
-        bank_wide: null,
+        is_global: null,
         progress: [],
       };
       this.currentPage = 1;

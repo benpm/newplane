@@ -303,7 +303,7 @@ export const getComputedDisplayProperties = (
   sub_issue_count: displayProperties?.sub_issue_count ?? true,
   project_lead: displayProperties?.project_lead ?? true,
   assignee: displayProperties?.assignee ?? true,
-  bank_wide_project: displayProperties?.bank_wide_project ?? true,
+  global_project: displayProperties?.global_project ?? true,
   priority: displayProperties?.priority ?? true,
   state: displayProperties?.state ?? true,
   progress_tracking: displayProperties?.progress_tracking ?? true,

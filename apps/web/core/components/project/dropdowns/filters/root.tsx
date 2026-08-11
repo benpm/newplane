@@ -66,13 +66,13 @@ export const ProjectFiltersSelection = observer(function ProjectFiltersSelection
             title="My projects"
           />
           <FilterOption
-            isChecked={!!displayFilters.is_bank_wide}
+            isChecked={!!displayFilters.is_global}
             onClick={() =>
               handleDisplayFiltersUpdate({
-                is_bank_wide: !displayFilters.is_bank_wide,
+                is_global: !displayFilters.is_global,
               })
             }
-            title="Bank-wide only"
+            title="Global only"
           />
         </div>
 

@@ -39,7 +39,7 @@ GITLAB_URL=https://gitlab.internal.example.com
 PROJECT_ID=12345
 
 # Package name — must match .gitlab-ci.yml PACKAGE_NAME variable
-PACKAGE_NAME=plane-shb-release
+PACKAGE_NAME=plane-release
 
 # Deploy token from: Settings → Repository → Deploy tokens
 # Scope: read_package_registry ONLY
@@ -51,14 +51,14 @@ DEPLOY_TOKEN=gldt-xxxxxxxxxxxxxxxxxxxx
 TARGET_ENV=dev
 
 # Deployment directory (must match .gitlab-ci.yml PLANE_DIR)
-PLANE_DIR=/opt/shb-deploy/plane-app
+PLANE_DIR=/opt/plane-deploy/plane-app
 
 # Number of archived releases to keep for rollback (default: 3)
 ARCHIVE_KEEP=3
 
 # Optional: Set if overriding via env file instead of CI variable
 # CI variables take precedence over this file value
-# RELEASE_TAG=dev/shb_v1.2.0-build.5
+# RELEASE_TAG=dev/v1.2.0-build.5
 ```
 
 ### Step 3: Secure File
@@ -101,7 +101,7 @@ Example: `12345`
 
 ```yaml
 variables:
-  PACKAGE_NAME: "plane-shb-release"
+  PACKAGE_NAME: "plane-release"
 ```
 
 Packages in GitLab Registry are organized by this name and version.
@@ -142,7 +142,7 @@ Controls tag validation — prevents accidentally deploying dev release to produ
 
 ```yaml
 variables:
-  PLANE_DIR: "/opt/shb-deploy/plane-app"
+  PLANE_DIR: "/opt/plane-deploy/plane-app"
 ```
 
 This is where releases are extracted and docker-compose runs.
@@ -150,9 +150,9 @@ This is where releases are extracted and docker-compose runs.
 **Permissions:**
 
 ```bash
-sudo mkdir -p /opt/shb-deploy/plane-app
-sudo chown gitlab-runner:gitlab-runner /opt/shb-deploy/plane-app
-sudo chmod 0755 /opt/shb-deploy/plane-app
+sudo mkdir -p /opt/plane-deploy/plane-app
+sudo chown gitlab-runner:gitlab-runner /opt/plane-deploy/plane-app
+sudo chmod 0755 /opt/plane-deploy/plane-app
 ```
 
 ### ARCHIVE_KEEP
@@ -163,7 +163,7 @@ After each deployment, previous releases are archived in `${PLANE_DIR}/archive/`
 
 ```bash
 # View archives
-ls -lh /opt/shb-deploy/plane-app/archive/
+ls -lh /opt/plane-deploy/plane-app/archive/
 
 # Manually increase retention
 # Edit /etc/plane-release-deploy.env
@@ -179,7 +179,7 @@ Most deployments pass RELEASE_TAG as a CI variable when triggering the job:
 ```bash
 # Manual trigger in GitLab UI
 # Job: deploy:dev:release
-# Variable: RELEASE_TAG=dev/shb_v1.2.0-build.123
+# Variable: RELEASE_TAG=dev/v1.2.0-build.123
 ```
 
 If set in env file, provides a fallback — but CI variable always overrides.
@@ -230,7 +230,7 @@ sudo -u gitlab-runner bash -c '
 '
 
 # Verify directory permissions
-ls -ld /opt/shb-deploy/plane-app
+ls -ld /opt/plane-deploy/plane-app
 # Expected: drwxr-xr-x  gitlab-runner gitlab-runner
 
 # Test API connectivity (requires curl)
@@ -275,12 +275,12 @@ Check three things:
 
 ```bash
 # Runner user needs write access to PLANE_DIR
-sudo chown gitlab-runner:gitlab-runner /opt/shb-deploy/plane-app
-sudo chmod 0755 /opt/shb-deploy/plane-app
+sudo chown gitlab-runner:gitlab-runner /opt/plane-deploy/plane-app
+sudo chmod 0755 /opt/plane-deploy/plane-app
 
 # Verify
-sudo -u gitlab-runner touch /opt/shb-deploy/plane-app/test.txt
-sudo rm /opt/shb-deploy/plane-app/test.txt
+sudo -u gitlab-runner touch /opt/plane-deploy/plane-app/test.txt
+sudo rm /opt/plane-deploy/plane-app/test.txt
 ```
 
 **Last Updated:** 2026-05-04

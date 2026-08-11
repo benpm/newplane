@@ -9,7 +9,7 @@ type Stores = {
   getStateById: (id: string | null | undefined) => { name: string } | undefined;
   getProjectById: (
     id: string | null | undefined
-  ) => { name?: string; project_lead?: IUserLite | string | null; is_bank_wide?: boolean } | undefined | null;
+  ) => { name?: string; project_lead?: IUserLite | string | null; is_global?: boolean } | undefined | null;
   getModuleById: (id: string) => IModule | null;
   getCycleById: (id: string) => ICycle | null;
   getLabelById: (id: string) => IIssueLabel | null;
@@ -53,7 +53,7 @@ export function buildExportRow(issue: TIssue, t: TFunction, stores: Stores): Rec
     [t("workspace_views.export.col_assignees")]: issue.assignee_ids?.length
       ? issue.assignee_ids.map((uid) => stores.getWorkspaceMemberDetails(uid)?.member?.display_name ?? uid).join(", ")
       : "-",
-    [t("workspace_views.export.col_bank_wide")]: project?.is_bank_wide ? "Y" : "N",
+    [t("workspace_views.export.col_global")]: project?.is_global ? "Y" : "N",
     [t("workspace_views.export.col_priority")]: issue.priority
       ? issue.priority.charAt(0).toUpperCase() + issue.priority.slice(1)
       : "-",

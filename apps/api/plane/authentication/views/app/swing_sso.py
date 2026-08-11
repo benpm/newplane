@@ -22,6 +22,7 @@ from plane.authentication.adapter.error import (
     AuthenticationException,
 )
 from plane.authentication.provider.credentials.swing_sso import SwingSSOProvider
+from plane.utils.staff_email import staff_email
 from plane.authentication.utils.host import base_host
 from plane.authentication.utils.login import user_login
 from plane.authentication.utils.redirection_path import get_redirection_path
@@ -190,7 +191,7 @@ class SwingSSOTestEndpoint(BaseAPIView):
             success = result_code == "200" and auth_result == "SUCCESS"
 
             # Check if Plane user exists
-            email = f"sh{username}@swing.shinhan.com"
+            email = staff_email(username)
             plane_user = User.objects.filter(email=email).first()
 
             return Response({

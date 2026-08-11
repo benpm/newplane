@@ -81,11 +81,11 @@ export const HoDatasheetHeader = observer(function HoDatasheetHeader({ displayPr
       filterKey: "assignees",
       width: "min-w-[180px]",
     },
-    bank_wide_project: {
-      label: t("spreadsheet.columns.bank_wide_project"),
-      asc: "project__is_bank_wide",
-      desc: "-project__is_bank_wide",
-      filterKey: "bank_wide",
+    global_project: {
+      label: t("spreadsheet.columns.global_project"),
+      asc: "project__is_global",
+      desc: "-project__is_global",
+      filterKey: "is_global",
       width: "min-w-[120px]",
     },
     priority: {
@@ -152,8 +152,8 @@ export const HoDatasheetHeader = observer(function HoDatasheetHeader({ displayPr
   };
 
   const getFilterOptions = (key: string) => {
-    // bank_wide options are hardcoded — not dependent on server filterOptions
-    if (key === "bank_wide") {
+    // is_global options are hardcoded — not dependent on server filterOptions
+    if (key === "is_global") {
       return [
         { value: "true", label: t("common.yes") },
         { value: "false", label: t("common.no") },
@@ -208,7 +208,7 @@ export const HoDatasheetHeader = observer(function HoDatasheetHeader({ displayPr
           desc={meta.desc}
           filterKey={meta.filterKey}
           options={getFilterOptions(meta.filterKey || "")}
-          multiple={meta.filterKey !== "bank_wide"}
+          multiple={meta.filterKey !== "is_global"}
         />
       </th>
     );

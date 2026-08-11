@@ -20,7 +20,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from plane.utils.business_calendar.service import BusinessCalendarService, VN_TZ
+from zoneinfo import ZoneInfo
+
+from plane.utils.business_calendar.service import BusinessCalendarService, CALENDAR_TZ
+
+# A deliberately non-UTC zone, so the tz-normalisation tests below still
+# exercise a real date shift now that CALENDAR_TZ defaults to UTC.
+SHIFTED_TZ = ZoneInfo("Asia/Bangkok")  # UTC+07, no DST
 
 
 # ---------------------------------------------------------------------------
@@ -30,7 +36,7 @@ from plane.utils.business_calendar.service import BusinessCalendarService, VN_TZ
 def _make_schedule(
     week_pattern: list[bool] | None = None,
     schedule_id: uuid.UUID | None = None,
-    timezone: str = "Asia/Ho_Chi_Minh",
+    timezone: str = "UTC",
 ) -> MagicMock:
     """Return a mock WorkSchedule with Mon–Fri working, Sat/Sun off by default."""
     schedule = MagicMock()
@@ -91,7 +97,7 @@ class TestIsWorkingDay:
         """30/4/2025 in holidays → False."""
         assert self._run(
             date(2025, 4, 30),
-            holidays={date(2025, 4, 30): "Giải Phóng Miền Nam"},
+            holidays={date(2025, 4, 30): "Spring Holiday"},
         ) is False
 
     def test_normal_weekday_not_in_holiday_list_is_working(self):
@@ -118,7 +124,7 @@ class TestIsWorkingDay:
         d = date(2025, 4, 30)
         assert self._run(
             d,
-            holidays={d: "Giải Phóng Miền Nam"},
+            holidays={d: "Spring Holiday"},
             overrides={d: {"type": "WORKDAY", "reason": "special"}},
         ) is True
 
@@ -279,32 +285,33 @@ class TestWorkingDaysBetween:
 
 @pytest.mark.unit
 class TestTimezoneHandling:
-    """Tests for BusinessCalendarService._to_vn_date timezone normalisation."""
+    """Tests for BusinessCalendarService._to_calendar_date timezone normalisation."""
 
     def _run(self, d, holidays: dict | None = None) -> bool:
         schedule = _make_schedule()
         year_data = _make_year_data(holidays=holidays)
         with (
+            patch("plane.utils.business_calendar.service.CALENDAR_TZ", SHIFTED_TZ),
             patch("plane.utils.business_calendar.service.resolve_schedule", return_value=schedule),
             patch("plane.utils.business_calendar.service.get_or_build_year_data", return_value=year_data),
         ):
             return BusinessCalendarService.is_working_day(d)
 
-    def test_utc_datetime_crossing_midnight_uses_vn_date(self):
+    def test_utc_datetime_crossing_midnight_uses_calendar_date(self):
         """
-        2025-04-29 18:00 UTC = 2025-04-30 01:00 VN+07.
-        30/4 is a holiday → should return False when checked as VN date.
+        2025-04-29 18:00 UTC = 2025-04-30 01:00 at UTC+07.
+        30/4 is a holiday → should return False when checked as the calendar date.
         """
         utc_dt = datetime(2025, 4, 29, 18, 0, 0, tzinfo=dt_timezone.utc)
         result = self._run(
             utc_dt,
-            holidays={date(2025, 4, 30): "Giải Phóng Miền Nam"},
+            holidays={date(2025, 4, 30): "Spring Holiday"},
         )
         assert result is False
 
-    def test_utc_datetime_before_midnight_vn_uses_previous_date(self):
+    def test_utc_datetime_before_midnight_uses_previous_date(self):
         """
-        2025-04-29 16:00 UTC = 2025-04-29 23:00 VN+07 → still 29/4.
+        2025-04-29 16:00 UTC = 2025-04-29 23:00 at UTC+07 → still 29/4.
         29/4 is a Tuesday (working day) → True.
         """
         utc_dt = datetime(2025, 4, 29, 16, 0, 0, tzinfo=dt_timezone.utc)
@@ -312,8 +319,8 @@ class TestTimezoneHandling:
         assert result is True
 
     def test_naive_datetime_treated_as_utc(self):
-        """Naive datetime crossing midnight VN treated as UTC."""
-        naive_dt = datetime(2025, 4, 29, 18, 0, 0)  # naive → UTC → VN = 30/4
+        """A naive datetime is read as UTC, then shifted into the calendar tz."""
+        naive_dt = datetime(2025, 4, 29, 18, 0, 0)  # naive → UTC → UTC+07 = 30/4
         result = self._run(
             naive_dt,
             holidays={date(2025, 4, 30): "holiday"},
@@ -385,9 +392,9 @@ class TestSignalHandlers:
         schedule = WorkSchedule.objects.create(
             name="Test Schedule",
             week_pattern=[True, True, True, True, True, False, False],
-            timezone="Asia/Ho_Chi_Minh",
+            timezone="UTC",
             is_default=False,
-            country_code="VN",
+            country_code="",
         )
         expected_key = f"calendar:{schedule.id}:2025"
         mock_cache = MagicMock()
@@ -404,9 +411,9 @@ class TestSignalHandlers:
         schedule = WorkSchedule.objects.create(
             name="Test Schedule 2",
             week_pattern=[True, True, True, True, True, False, False],
-            timezone="Asia/Ho_Chi_Minh",
+            timezone="UTC",
             is_default=False,
-            country_code="VN",
+            country_code="",
         )
         holiday = Holiday.objects.create(
             schedule=schedule, date=date(2025, 5, 1), name="Labour Day"
@@ -430,9 +437,9 @@ class TestSignalHandlers:
         schedule = WorkSchedule.objects.create(
             name="Test Schedule 3",
             week_pattern=[True, True, True, True, True, False, False],
-            timezone="Asia/Ho_Chi_Minh",
+            timezone="UTC",
             is_default=False,
-            country_code="VN",
+            country_code="",
         )
         expected_key = f"calendar:{schedule.id}:2025"
         mock_cache = MagicMock()
@@ -458,9 +465,9 @@ class TestSignalHandlers:
         schedule = WorkSchedule.objects.create(
             name="Test Schedule 4",
             week_pattern=[True, True, True, True, True, False, False],
-            timezone="Asia/Ho_Chi_Minh",
+            timezone="UTC",
             is_default=False,
-            country_code="VN",
+            country_code="",
         )
         schedule_id = schedule.id
         mock_cache = MagicMock()
@@ -490,28 +497,28 @@ class TestSeedDataIntegration:
 
         self.schedule = WorkSchedule.objects.create(
             id=uuid.UUID("00000000-0000-0000-0000-000000000099"),
-            name="Vietnam Banking (test)",
+            name="Business Calendar (test)",
             week_pattern=[True, True, True, True, True, False, False],
-            timezone="Asia/Ho_Chi_Minh",
+            timezone="UTC",
             is_default=True,
-            country_code="VN",
+            country_code="",
         )
         # Seed key 2025 dates
-        Holiday.objects.create(schedule=self.schedule, date=date(2025, 4, 30), name="Giải Phóng Miền Nam")
-        Holiday.objects.create(schedule=self.schedule, date=date(2025, 5, 1), name="Quốc tế Lao động")
-        Holiday.objects.create(schedule=self.schedule, date=date(2025, 5, 2), name="Nghỉ bù")
+        Holiday.objects.create(schedule=self.schedule, date=date(2025, 4, 30), name="Spring Holiday")
+        Holiday.objects.create(schedule=self.schedule, date=date(2025, 5, 1), name="Labour Day")
+        Holiday.objects.create(schedule=self.schedule, date=date(2025, 5, 2), name="Substitute Day Off")
         DayOverride.objects.create(
             schedule=self.schedule,
             date=date(2025, 4, 26),
             type="WORKDAY",
-            reason="Làm bù cho ngày nghỉ 2/5/2025",
+            reason="Worked in lieu of the 2 May 2025 holiday",
             swap_with_date=date(2025, 5, 2),
         )
         DayOverride.objects.create(
             schedule=self.schedule,
             date=date(2025, 4, 27),
             type="WORKDAY",
-            reason="Làm bù cho ngày nghỉ 30/4/2025",
+            reason="Worked in lieu of the 30 Apr 2025 holiday",
             swap_with_date=date(2025, 4, 30),
         )
 

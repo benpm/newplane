@@ -27,7 +27,6 @@ from .staff import urlpatterns as staff_urls
 from .workflow import urlpatterns as workflow_urls
 from .task_category import urlpatterns as task_category_urls
 from .ho import urlpatterns as ho_urls
-from .help_center import urlpatterns as help_center_urls
 
 urlpatterns = [
     *analytic_urls,
@@ -55,5 +54,4 @@ urlpatterns = [
     *workflow_urls,
     *task_category_urls,
     *ho_urls,
-    *help_center_urls,
 ]

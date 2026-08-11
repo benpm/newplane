@@ -19,9 +19,9 @@ paths:
 
 ```tsx
 // ❌ WRONG — non-English string in admin
-setToast({ type: TOAST_TYPE.SUCCESS, title: "Đã lưu" });
-<Button>Huỷ</Button>
-<p>Chưa có dữ liệu</p>
+setToast({ type: TOAST_TYPE.SUCCESS, title: "Gespeichert" });
+<Button>Abbrechen</Button>
+<p>Keine Daten</p>
 
 // ❌ WRONG — i18n in admin
 const { t } = useTranslation();

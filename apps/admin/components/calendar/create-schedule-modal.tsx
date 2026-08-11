@@ -54,7 +54,7 @@ export const CreateScheduleModal = observer(function CreateScheduleModal({ open,
   } = useForm<FormValues>({
     defaultValues: {
       name: "",
-      timezone: "Asia/Ho_Chi_Minh",
+      timezone: "UTC",
       country_code: "VN",
       is_default: false,
       week_pattern: DEFAULT_WEEK_PATTERN,
@@ -103,7 +103,7 @@ export const CreateScheduleModal = observer(function CreateScheduleModal({ open,
               <Input
                 id="schedule-name"
                 {...register("name", { required: "Required" })}
-                placeholder="e.g. VN Banking Schedule"
+                placeholder="e.g. Head Office Schedule"
               />
               {errors.name && <p className="text-caption-sm-regular text-danger-primary">{errors.name.message}</p>}
             </div>
@@ -112,7 +112,7 @@ export const CreateScheduleModal = observer(function CreateScheduleModal({ open,
                 <label htmlFor="schedule-timezone" className="text-body-xs-medium text-secondary">
                   Timezone
                 </label>
-                <Input id="schedule-timezone" {...register("timezone")} placeholder="Asia/Ho_Chi_Minh" />
+                <Input id="schedule-timezone" {...register("timezone")} placeholder="UTC" />
               </div>
               <div className="space-y-1">
                 <label htmlFor="schedule-country" className="text-body-xs-medium text-secondary">

@@ -19,7 +19,7 @@ export type THoIssue = {
   sub_issues_count: number;
   project_lead: string | null;
   assignees: THoIssueAssignee[];
-  is_bank_wide_project: boolean;
+  is_global_project: boolean;
   priority: string;
   state_name: string | null;
   state_color: string | null;

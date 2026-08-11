@@ -45,7 +45,7 @@ MOCK_USERS = {
     "10000001": {
         "password_hash": sha256_hex("password123"),
         "companyId": "C300000001",
-        "companyName": "ShinhanBank Vietnam",
+        "companyName": "Example Corp",
         "companyCode": "VN",
         "departmentId": "D500000001",
         "departmentNo": "SH001",
@@ -57,14 +57,14 @@ MOCK_USERS = {
         "employeeName": "Nguyen Van A",
         "employeePositionName": "Senior Developer",
         "employeeClass": "정직원",
-        "companyEmail": "user001@swork.shinhan.com",
+        "companyEmail": "user001@swork.example.com",
         "email": "nguyenvana@example.com",
         "cellPhone": "0901-111-111",
     },
     "10000002": {
         "password_hash": sha256_hex("password123"),
         "companyId": "C300000001",
-        "companyName": "ShinhanBank Vietnam",
+        "companyName": "Example Corp",
         "companyCode": "VN",
         "departmentId": "D500000002",
         "departmentNo": "SH002",
@@ -76,14 +76,14 @@ MOCK_USERS = {
         "employeeName": "Tran Thi B",
         "employeePositionName": "QA Engineer",
         "employeeClass": "정직원",
-        "companyEmail": "user002@swork.shinhan.com",
+        "companyEmail": "user002@swork.example.com",
         "email": "tranthib@example.com",
         "cellPhone": "0902-222-222",
     },
     "10000003": {
         "password_hash": sha256_hex("password123"),
         "companyId": "C300000001",
-        "companyName": "ShinhanBank Vietnam",
+        "companyName": "Example Corp",
         "companyCode": "VN",
         "departmentId": "D500000003",
         "departmentNo": "SH003",
@@ -95,14 +95,14 @@ MOCK_USERS = {
         "employeeName": "Le Van C",
         "employeePositionName": "Project Manager",
         "employeeClass": "정직원",
-        "companyEmail": "user003@swork.shinhan.com",
+        "companyEmail": "user003@swork.example.com",
         "email": "levanc@example.com",
         "cellPhone": "0903-333-333",
     },
     "10000004": {
         "password_hash": sha256_hex("admin@2024"),
         "companyId": "C300000001",
-        "companyName": "ShinhanBank Vietnam",
+        "companyName": "Example Corp",
         "companyCode": "VN",
         "departmentId": "D500000001",
         "departmentNo": "SH001",
@@ -114,14 +114,14 @@ MOCK_USERS = {
         "employeeName": "Pham Admin",
         "employeePositionName": "Tech Lead",
         "employeeClass": "임원",
-        "companyEmail": "admin01@swork.shinhan.com",
+        "companyEmail": "admin01@swork.example.com",
         "email": "phamadmin@example.com",
         "cellPhone": "0904-444-444",
     },
     "10000005": {
         "password_hash": sha256_hex("admin@2024"),
         "companyId": "C300000001",
-        "companyName": "ShinhanBank Vietnam",
+        "companyName": "Example Corp",
         "companyCode": "VN",
         "departmentId": "D500000004",
         "departmentNo": "SH004",
@@ -133,7 +133,7 @@ MOCK_USERS = {
         "employeeName": "Hoang Security",
         "employeePositionName": "Security Analyst",
         "employeeClass": "정직원",
-        "companyEmail": "admin02@swork.shinhan.com",
+        "companyEmail": "admin02@swork.example.com",
         "email": "hoangsecurity@example.com",
         "cellPhone": "0905-555-555",
     },
@@ -251,9 +251,9 @@ if __name__ == "__main__":
     for emp_no, u in MOCK_USERS.items():
         print(f"    {emp_no} - {u['employeeName']} ({u['departmentName']})")
     print(f"\n  Passwords: 10000001-03=password123, 10000004-05=admin@2024")
-    print(f"\n  Plane email format: sh{{employeeNo}}@swing.shinhan.com")
+    print(f"\n  Plane email format: sh{{employeeNo}}@swing.local")
     print(f"  Required Plane users:")
     for emp_no in MOCK_USERS:
-        print(f"    sh{emp_no}@swing.shinhan.com")
+        print(f"    sh{emp_no}@swing.local")
     print("=" * 60)
     app.run(host="0.0.0.0", port=9001, debug=True)

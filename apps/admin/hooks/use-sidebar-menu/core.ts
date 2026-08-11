@@ -6,7 +6,6 @@
 
 import {
   Activity,
-  BookOpen,
   Briefcase,
   CalendarDays,
   Image,
@@ -37,7 +36,6 @@ export type TCoreSidebarMenuKey =
   | "image"
   | "monitoring"
   | "task-categories"
-  | "help-center"
   | "job-positions"
   | "calendar"
   | "usage-monitor"
@@ -54,7 +52,6 @@ export const PERMISSION_KEYS: TPermissionKey[] = [
   "staff",
   "monitoring",
   "task-categories",
-  "help-center",
   "job-positions",
   "calendar",
   "usage-monitor",
@@ -70,7 +67,6 @@ export const PERMISSION_LABELS: Record<TPermissionKey, string> = {
   staff: "Staff",
   monitoring: "Monitoring",
   "task-categories": "Task Categories",
-  "help-center": "Help Center",
   "job-positions": "Job Positions",
   calendar: "Business Calendar",
   "usage-monitor": "Usage Monitor",
@@ -154,13 +150,6 @@ export const coreSidebarMenuLinks: Record<TCoreSidebarMenuKey, TSidebarMenuItem>
     description: "Manage main and sub task categories for work items.",
     href: `/task-categories/`,
     permission: "task-categories",
-  },
-  "help-center": {
-    Icon: BookOpen,
-    name: "Help Center",
-    description: "Author the shared multilingual help guide for all workspaces.",
-    href: `/help-center/`,
-    permission: "help-center",
   },
   "job-positions": {
     Icon: Briefcase,

@@ -17,7 +17,6 @@ export type TPermissionKey =
   | "staff"
   | "monitoring"
   | "task-categories"
-  | "help-center"
   | "job-positions"
   | "calendar"
   | "usage-monitor"

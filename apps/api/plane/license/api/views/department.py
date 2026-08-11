@@ -325,9 +325,9 @@ class InstanceDepartmentAutoJoinEndpoint(BaseAPIView):
             return Response({"error": "Department not found"}, status=status.HTTP_404_NOT_FOUND)
 
         mode = request.data.get("mode")
-        if mode not in ("all_projects", "bank_wide_projects"):
+        if mode not in ("all_projects", "global_projects"):
             return Response(
-                {"error": "mode must be 'all_projects' or 'bank_wide_projects'"},
+                {"error": "mode must be 'all_projects' or 'global_projects'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -354,8 +354,8 @@ class InstanceDepartmentAutoJoinEndpoint(BaseAPIView):
 
         for workspace in workspaces:
             projects = Project.objects.filter(workspace=workspace, deleted_at__isnull=True)
-            if mode == "bank_wide_projects":
-                projects = projects.filter(is_bank_wide=True)
+            if mode == "global_projects":
+                projects = projects.filter(is_global=True)
             projects = list(projects)
 
             for manager in managers:
@@ -442,9 +442,9 @@ class RejoinAllEndpoint(BaseAPIView):
         from plane.db.models import Project, ProjectMember, ProjectUserProperty
 
         mode = request.data.get("mode")
-        if mode not in ("all_projects", "bank_wide_projects"):
+        if mode not in ("all_projects", "global_projects"):
             return Response(
-                {"error": "mode must be 'all_projects' or 'bank_wide_projects'"},
+                {"error": "mode must be 'all_projects' or 'global_projects'"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -464,8 +464,8 @@ class RejoinAllEndpoint(BaseAPIView):
             departments_processed += 1
             workspace = department.linked_workspace
             projects = Project.objects.filter(workspace=workspace, deleted_at__isnull=True)
-            if mode == "bank_wide_projects":
-                projects = projects.filter(is_bank_wide=True)
+            if mode == "global_projects":
+                projects = projects.filter(is_global=True)
             projects = list(projects)
 
             for manager in managers:

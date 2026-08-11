@@ -75,8 +75,8 @@ def workspace_only_admin(db, instance):
 
 @pytest.mark.unit
 class TestMenuRegistry:
-    def test_permission_keys_are_the_twelve_canonical_menus(self):
-        assert len(PERMISSION_KEYS) == 12
+    def test_permission_keys_are_the_canonical_menus(self):
+        assert len(PERMISSION_KEYS) == 11
         assert "administrators" in PERMISSION_KEYS
         assert "settings" in PERMISSION_KEYS
         assert "authentication" not in PERMISSION_KEYS  # folded into settings
@@ -97,7 +97,6 @@ class TestMenuRegistry:
             ("/api/instances/email-credentials-check/", "settings"),
             ("/api/instances/swing-sso/test/", "settings"),
             ("/api/instances/task-categories/main/", "task-categories"),
-            ("/api/instances/help/articles/", "help-center"),
             ("/api/instances/job-positions/grades/", "job-positions"),
             ("/api/instances/calendar/schedules/", "calendar"),
             ("/api/instances/monitoring/email-logs/", "monitoring"),

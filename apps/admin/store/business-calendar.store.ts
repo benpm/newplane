@@ -116,7 +116,7 @@ export class BusinessCalendarStore implements IBusinessCalendarStore {
       });
     } catch {
       runInAction(() => {
-        this.error = "Không thể tải lịch làm việc";
+        this.error = "Failed to load work schedules";
       });
     } finally {
       runInAction(() => {

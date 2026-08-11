@@ -18,7 +18,7 @@ export const HO_DEFAULT_DISPLAY_PROPERTIES: THoDisplayProperties = {
   sub_issue_count: true,
   project_lead: true,
   assignee: true,
-  bank_wide_project: true,
+  global_project: true,
   priority: true,
   state: true,
   progress_tracking: true,

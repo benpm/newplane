@@ -16,11 +16,11 @@ export type TProjectOrderByOptions =
 export type TProjectDisplayFilters = {
   my_projects?: boolean;
   archived_projects?: boolean;
-  is_bank_wide?: boolean;
+  is_global?: boolean;
   order_by?: TProjectOrderByOptions;
 };
 
-export type TProjectAppliedDisplayFilterKeys = "my_projects" | "archived_projects" | "is_bank_wide";
+export type TProjectAppliedDisplayFilterKeys = "my_projects" | "archived_projects" | "is_global";
 
 export type TProjectFilters = {
   access?: string[] | null;

@@ -2,18 +2,20 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
-"""BusinessCalendarService — working-day computation for Vietnam Banking calendar."""
+"""BusinessCalendarService — working-day computation for the business calendar."""
 
 from __future__ import annotations
 
+import os
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 from uuid import UUID
 
 from plane.utils.business_calendar.resolver import get_or_build_year_data, resolve_schedule
 
-# Default Vietnam timezone constant — always convert to this before .date()
-VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
+# Timezone every datetime is normalised to before .date(). Servers run UTC;
+# operators whose working day is not UTC set BUSINESS_CALENDAR_TIMEZONE.
+CALENDAR_TZ = ZoneInfo(os.environ.get("BUSINESS_CALENDAR_TIMEZONE", "UTC"))
 
 
 class BusinessCalendarService:
@@ -40,7 +42,7 @@ class BusinessCalendarService:
         schedule_id: UUID | None = None,
     ) -> bool:
         """Return True if *d* is a working day for the given schedule."""
-        d = cls._to_vn_date(d)
+        d = cls._to_calendar_date(d)
         schedule = resolve_schedule(schedule_id)
         year_data = get_or_build_year_data(schedule, d.year)
 
@@ -61,7 +63,7 @@ class BusinessCalendarService:
         schedule_id: UUID | None = None,
     ) -> date:
         """Return the next working day strictly after *d* (skips weekends + holidays)."""
-        d = cls._to_vn_date(d)
+        d = cls._to_calendar_date(d)
         candidate = d + timedelta(days=1)
         while not cls.is_working_day(candidate, schedule_id):
             candidate += timedelta(days=1)
@@ -79,7 +81,7 @@ class BusinessCalendarService:
         Negative *n* walks backwards.
         Returns *d* itself when n=0 (even if d is not a working day).
         """
-        d = cls._to_vn_date(d)
+        d = cls._to_calendar_date(d)
         if n == 0:
             return d
         step = timedelta(days=1 if n > 0 else -1)
@@ -103,8 +105,8 @@ class BusinessCalendarService:
         Returns 0 when start >= end.
         Negative when end < start (end counted exclusively).
         """
-        start = cls._to_vn_date(start)
-        end = cls._to_vn_date(end)
+        start = cls._to_calendar_date(start)
+        end = cls._to_calendar_date(end)
         if start == end:
             return 0
         if start > end:
@@ -122,16 +124,16 @@ class BusinessCalendarService:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _to_vn_date(d: date | datetime) -> date:
+    def _to_calendar_date(d: date | datetime) -> date:
         """
-        Normalise input to a ``date`` in Vietnam timezone.
-        - datetime with tzinfo → converted to VN_TZ then .date()
-        - naive datetime       → assumed UTC, localised to VN_TZ then .date()
+        Normalise input to a ``date`` in the calendar timezone.
+        - datetime with tzinfo → converted to CALENDAR_TZ then .date()
+        - naive datetime       → assumed UTC, localised to CALENDAR_TZ then .date()
         - date                 → returned as-is (no tz conversion needed)
         """
         if isinstance(d, datetime):
             if d.tzinfo is None:
                 # Treat naive datetime as UTC
                 d = d.replace(tzinfo=ZoneInfo("UTC"))
-            return d.astimezone(VN_TZ).date()
+            return d.astimezone(CALENDAR_TZ).date()
         return d

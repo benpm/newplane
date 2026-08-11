@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { observer } from "mobx-react";
 import { useParams, useRouter } from "next/navigation";
-import { HelpCircle, LifeBuoy, MessagesSquare, Sparkles, User } from "lucide-react";
+import { HelpCircle, MessagesSquare, Sparkles, User } from "lucide-react";
 import { useTranslation } from "@plane/i18n";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 // ui
@@ -73,14 +73,6 @@ export const HelpMenuRoot = observer(function HelpMenuRoot() {
         maxHeight="lg"
         closeOnSelect
       >
-        {/* Help Center replaces the former (dead) self-hosted /docs link — it IS the
-            self-hosted guide. Routes to the instance-global reader. */}
-        <CustomMenu.MenuItem onClick={() => router.push("/help")}>
-          <div className="flex items-center gap-x-2 rounded-sm text-11">
-            <LifeBuoy className="h-3.5 w-3.5 text-secondary" />
-            <span className="text-11">{t("help_center.menu_label")}</span>
-          </div>
-        </CustomMenu.MenuItem>
         {isChatSupportEnabled && (
           <CustomMenu.MenuItem>
             <button

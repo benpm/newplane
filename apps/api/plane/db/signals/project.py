@@ -35,7 +35,7 @@ DEFAULT_PROJECT_VIEW_DISPLAY_PROPERTIES = {
     "issue_type": False,
     # CE extended properties — 5 of 7 (no department_name, project_name, project_lead)
     "project_lead": False,
-    "bank_wide_project": True,
+    "global_project": True,
     "progress_tracking": True,
     "completed_date": True,
     "reference_link": True,

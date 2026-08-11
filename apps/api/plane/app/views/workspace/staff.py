@@ -16,6 +16,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 # Module imports
 from plane.app.permissions import WorkSpaceAdminPermission, WorkspaceEntityPermission
+from plane.utils.staff_email import staff_email
 from plane.app.serializers.staff import StaffProfileSerializer, StaffProfileCreateSerializer, MyStaffProfileSerializer
 from plane.app.views.base import BaseAPIView
 from plane.bgtasks.webhook_task import model_activity
@@ -638,7 +639,7 @@ class StaffBulkActionEndpoint(BaseAPIView):
 
 def _create_staff(workspace, department, data, created_by):
     """Helper: create User + WorkspaceMember + StaffProfile + ProjectMember."""
-    email = f"sh{data['staff_id']}@swing.shinhan.com"
+    email = staff_email(data["staff_id"])
 
     # Create or get user
     user, user_created = User.objects.get_or_create(

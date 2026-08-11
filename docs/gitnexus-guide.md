@@ -1,128 +1,128 @@
-# GitNexus — Hướng dẫn cho Developer Plane
+# GitNexus — Developer Guide for Plane
 
-> Code intelligence dựa trên đồ thị (call graph) cho codebase 500k LOC. Tài liệu này dành cho dev mới khi onboarding.
+> Graph-based (call graph) code intelligence for a 500k LOC codebase. This document is for new developers onboarding.
 
 ---
 
 ## TL;DR
 
 ```bash
-# Setup 1 lần (cần Docker chạy sẵn)
-./scripts/gitnexus.sh pull              # tải image (~1.2GB)
-./scripts/gitnexus.sh analyze           # index lần đầu (~2-3 phút)
+# One-time setup (Docker must already be running)
+./scripts/gitnexus.sh pull              # pull the image (~1.2GB)
+./scripts/gitnexus.sh analyze           # first index (~2-3 minutes)
 ./scripts/gitnexus.sh status            # verify "up-to-date"
 
-# Sau đó: tự động re-index khi commit / pull / branch switch
+# After that: automatic re-index on commit / pull / branch switch
 ```
 
-MCP server (`./scripts/gitnexus.sh mcp`) đã được nối với Claude Code qua `.mcp.json` — không cần config thủ công.
+The MCP server (`./scripts/gitnexus.sh mcp`) is already wired into Claude Code via `.mcp.json` — no manual config needed.
 
 ---
 
-## 1. GitNexus là gì? Vì sao dùng?
+## 1. What is GitNexus, and why use it?
 
-GitNexus là **knowledge graph** của toàn bộ codebase: nó đọc code → trích xuất symbols (function/class/method), call relationships, execution flows → lưu vào local DB → cho phép truy vấn ngữ nghĩa.
+GitNexus is a **knowledge graph** of the whole codebase: it reads the code → extracts symbols (function/class/method), call relationships, and execution flows → stores them in a local DB → and lets you query them semantically.
 
-### Vì sao Plane cần?
+### Why does Plane need it?
 
-| Vấn đề ở 500k LOC          | Cách cũ                          | Cách GitNexus                         |
-| -------------------------- | -------------------------------- | ------------------------------------- |
-| Tìm callers của 1 function | `grep -r` → noise + miss dynamic | `gitnexus_impact` chính xác           |
-| Hiểu execution flow        | Đọc 10+ file                     | `gitnexus_query` → flow trả ranked    |
-| Refactor an toàn           | Find/replace → vỡ runtime        | `gitnexus_rename` aware call graph    |
-| Verify scope trước commit  | `git diff` thuần                 | `gitnexus_detect_changes` map symbols |
+| Problem at 500k LOC              | Old way                          | GitNexus way                          |
+| -------------------------------- | -------------------------------- | ------------------------------------- |
+| Find the callers of a function   | `grep -r` → noise + misses dynamic | `gitnexus_impact`, precisely          |
+| Understand an execution flow     | Read 10+ files                   | `gitnexus_query` → ranked flows       |
+| Refactor safely                  | Find/replace → breaks at runtime | `gitnexus_rename`, call-graph aware   |
+| Verify scope before committing   | Plain `git diff`                 | `gitnexus_detect_changes` maps symbols |
 
-Quy tắc dự án (xem `.claude/rules/gitnexus-mcp-usage.md`):
+Project rules (see `.claude/rules/gitnexus-mcp-usage.md`):
 
-- **MUST** chạy `gitnexus_impact` trước khi sửa function/class.
-- **MUST** chạy `gitnexus_detect_changes` trước commit để verify blast radius.
-
----
-
-## 2. Yêu cầu
-
-| Tool           | Version     | Ghi chú                                       |
-| -------------- | ----------- | --------------------------------------------- |
-| Docker Desktop | ≥ 24        | Phải chạy daemon trước khi chạy lệnh GitNexus |
-| Disk space     | ~1.4 GB     | Image ~1.2GB + index ~150MB                   |
-| RAM khi index  | ~2 GB peak  | Run idle = ~200MB                             |
-| Architecture   | amd64/arm64 | Image multi-arch (Apple Silicon native OK)    |
-
-**Tại sao Docker mà không phải `npx gitnexus`?**
-
-- Project pin version `1.6.4-rc.63`. Trong khi `npm latest = 1.6.3` → khác bản team chuẩn hóa.
-- Docker tránh native build issue cross-platform (tree-sitter, onnxruntime-node, ladybugdb).
-- Docker tránh fail SSH-fetch dependency (`tree-sitter-dart` qua `git+ssh://`).
-- Image tag pinned ⇒ index schema khớp giữa các máy team.
+- **MUST** run `gitnexus_impact` before modifying a function/class.
+- **MUST** run `gitnexus_detect_changes` before committing, to verify the blast radius.
 
 ---
 
-## 3. Setup lần đầu
+## 2. Requirements
 
-### Bước 1 — Chắc chắn Docker đã chạy
+| Tool             | Version     | Notes                                                    |
+| ---------------- | ----------- | -------------------------------------------------------- |
+| Docker Desktop   | ≥ 24        | The daemon must be running before any GitNexus command   |
+| Disk space       | ~1.4 GB     | Image ~1.2GB + index ~150MB                              |
+| RAM while indexing | ~2 GB peak | Idle ≈ 200MB                                             |
+| Architecture     | amd64/arm64 | Multi-arch image (native on Apple Silicon)               |
+
+**Why Docker rather than `npx gitnexus`?**
+
+- The project pins version `1.6.4-rc.63`, while `npm latest = 1.6.3` → a different build from the one the team standardised on.
+- Docker avoids cross-platform native build issues (tree-sitter, onnxruntime-node, ladybugdb).
+- Docker avoids the SSH-fetch dependency failure (`tree-sitter-dart` over `git+ssh://`).
+- A pinned image tag means the index schema matches across the team's machines.
+
+---
+
+## 3. First-time setup
+
+### Step 1 — Make sure Docker is running
 
 ```bash
-docker info > /dev/null && echo "Docker OK" || echo "Start Docker Desktop trước"
+docker info > /dev/null && echo "Docker OK" || echo "Start Docker Desktop first"
 ```
 
-### Bước 2 — Pull image
+### Step 2 — Pull the image
 
 ```bash
 ./scripts/gitnexus.sh pull
 ```
 
-Mặc định: `akonlabs/gitnexus:1.6.4-rc.63` (~1.2GB). Override bằng env: `GITNEXUS_IMAGE=...`.
+Default: `akonlabs/gitnexus:1.6.4-rc.63` (~1.2GB). Override with the env var `GITNEXUS_IMAGE=...`.
 
-> ⚠️ **Pre-release notice:** Team đang pin **Release Candidate** (`rc.63`), không phải stable. Lý do: stable `1.6.3` không index được Django migrations và thiếu capability detection (FTS, vectorSearch). Khi `1.6.4` stable release → migrate. Theo dõi tại https://hub.docker.com/r/akonlabs/gitnexus/tags.
+> ⚠️ **Pre-release notice:** the team pins a **Release Candidate** (`rc.63`), not a stable build. Reason: stable `1.6.3` cannot index Django migrations and lacks capability detection (FTS, vectorSearch). Migrate when `1.6.4` goes stable. Track it at https://hub.docker.com/r/akonlabs/gitnexus/tags.
 
-### Bước 3 — Index lần đầu
+### Step 3 — First index
 
 ```bash
 ./scripts/gitnexus.sh analyze
 ```
 
-Mất ~2-3 phút trên codebase Plane (~5500 files). Sẽ tạo:
+Takes ~2-3 minutes on the Plane codebase (~5500 files). It creates:
 
 - `.gitnexus/lbug` — graph DB (~150MB, gitignored)
 - `.gitnexus/meta.json` — metadata (commit SHA, stats)
 
-> Wrapper script luôn pass `--skip-agents-md` ⇒ không bao giờ ghi vào `CLAUDE.md` hay `AGENTS.md`. Quy tắc cho Claude nằm tách riêng ở `.claude/rules/gitnexus-mcp-usage.md` (static, không churn theo stats).
+> The wrapper script always passes `--skip-agents-md`, so it never writes to `CLAUDE.md` or `AGENTS.md`. The rules for Claude live separately in `.claude/rules/gitnexus-mcp-usage.md` (static, doesn't churn with stats).
 
-### Bước 4 — Verify
+### Step 4 — Verify
 
 ```bash
 ./scripts/gitnexus.sh status
-# Mong đợi: "Status: ✅ up-to-date"
+# Expected: "Status: ✅ up-to-date"
 
 ./scripts/gitnexus.sh list
-# Mong đợi: "plane" hiện trong danh sách
+# Expected: "plane" appears in the list
 
-# Sanity check: đúng version đang chạy
+# Sanity check: the right version is running
 docker images akonlabs/gitnexus
-# Mong đợi: cột TAG = 1.6.4-rc.63 (hoặc tag pin hiện tại của team)
+# Expected: TAG column = 1.6.4-rc.63 (or whatever tag the team currently pins)
 ```
 
-### Bước 5 — Restart Claude Code session
+### Step 5 — Restart the Claude Code session
 
-MCP server đọc index khi khởi động. Restart để Claude thấy graph:
+The MCP server reads the index at startup. Restart so Claude sees the graph:
 
 - VS Code: reload window
-- Terminal: thoát & mở lại CLI
+- Terminal: quit and reopen the CLI
 
-Test: hỏi Claude `"What does the issue_serializer function do?"` — nếu Claude dùng `gitnexus_context` tool ⇒ OK.
+Test: ask Claude `"What does the issue_serializer function do?"` — if Claude uses the `gitnexus_context` tool, you're good.
 
-Hoặc verify từ shell:
+Or verify from the shell:
 
 ```bash
 claude mcp list
-# Mong đợi: "gitnexus: ./scripts/gitnexus.sh mcp - ✓ Connected"
+# Expected: "gitnexus: ./scripts/gitnexus.sh mcp - ✓ Connected"
 ```
 
 ---
 
-## 4. Cơ chế hoạt động
+## 4. How it works
 
-### 4.1 Bức tranh tổng thể
+### 4.1 The big picture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -132,16 +132,16 @@ claude mcp list
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  Husky hooks:                                               │
-│    .husky/post-commit    → reindex-bg (sau commit)          │
-│    .husky/post-merge     → reindex-bg (sau pull)            │
-│    .husky/post-checkout  → reindex-bg (sau branch switch)   │
+│    .husky/post-commit    → reindex-bg (after commit)        │
+│    .husky/post-merge     → reindex-bg (after pull)          │
+│    .husky/post-checkout  → reindex-bg (after branch switch) │
 └────────────────────────┬────────────────────────────────────┘
                          │ background, non-blocking
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  scripts/gitnexus.sh reindex-bg                             │
 │    docker run akonlabs/gitnexus:1.6.4-rc.63 analyze         │
-│      → cập nhật .gitnexus/lbug + meta.json                  │
+│      → updates .gitnexus/lbug + meta.json                   │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
@@ -152,38 +152,38 @@ claude mcp list
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 4.2 Khi nào re-index tự động?
+### 4.2 When does it re-index automatically?
 
-| Sự kiện                  | Hook                   | Điều kiện skip                                             |
-| ------------------------ | ---------------------- | ---------------------------------------------------------- |
-| `git commit` (success)   | `.husky/post-commit`   | Throttle: bỏ qua nếu vừa re-index < 60s trước              |
-| `git pull` / `git merge` | `.husky/post-merge`    | Skip nếu không có file `.ts/.tsx/.py/.go/.rs/...` thay đổi |
-| `git checkout <branch>`  | `.husky/post-checkout` | Skip nếu là file checkout (không phải branch switch)       |
+| Event                    | Hook                   | Skip condition                                                   |
+| ------------------------ | ---------------------- | ---------------------------------------------------------------- |
+| `git commit` (success)   | `.husky/post-commit`   | Throttled: skipped if it re-indexed < 60s ago                    |
+| `git pull` / `git merge` | `.husky/post-merge`    | Skipped if no `.ts/.tsx/.py/.go/.rs/...` files changed            |
+| `git checkout <branch>`  | `.husky/post-checkout` | Skipped for file checkouts (only branch switches count)          |
 
-Lý do dùng **post-commit** mà không pre-commit: pre-commit chậm → block dev. Post-commit chạy sau khi commit OK → background detached, không cản workflow.
+Why **post-commit** rather than pre-commit: pre-commit is slow and would block the developer. Post-commit runs after the commit succeeds, detached in the background, so it never gets in the way.
 
-Lý do **không** có `pre-push` re-index: push không thay đổi local code → graph đã được build từ commit. Re-index trước push là dư thừa.
+Why there is **no** `pre-push` re-index: pushing doesn't change local code, so the graph is already built from the commit. Re-indexing before a push is redundant.
 
-### 4.3 Index lưu ở đâu?
+### 4.3 Where is the index stored?
 
 ```
 plane.so/
 ├── .gitnexus/                  ← gitignored, local-only
 │   ├── lbug                    ← LadybugDB (call graph)
 │   ├── meta.json               ← stats, last commit, capabilities
-│   └── .gitignore              ← chứa "*" → toàn bộ folder bỏ qua
-└── ~/.gitnexus/registry.json   ← danh sách repos đã index trên máy bạn
+│   └── .gitignore              ← contains "*" → the whole folder is ignored
+└── ~/.gitnexus/registry.json   ← list of repos indexed on your machine
 ```
 
-**Quan trọng:**
+**Important:**
 
-- Index không bao giờ commit lên git.
-- Mỗi dev có index riêng (build từ source local).
-- Image Docker mount volume `gitnexus-data` cho cache shared (LadybugDB engine).
+- The index is never committed to git.
+- Every developer has their own index (built from their local source).
+- The Docker image mounts the `gitnexus-data` volume for shared cache (LadybugDB engine).
 
 ### 4.4 MCP integration
 
-`.mcp.json` ở root project:
+`.mcp.json` at the project root:
 
 ```json
 {
@@ -196,90 +196,90 @@ plane.so/
 }
 ```
 
-Khi Claude Code khởi động, nó:
+When Claude Code starts, it:
 
-1. Đọc `.mcp.json`
-2. Spawn `./scripts/gitnexus.sh mcp` → start Docker container chạy MCP server qua stdio
-3. Container đọc `.gitnexus/lbug` từ host volume
-4. Trả tools: `impact`, `context`, `query`, `cypher`, `detect_changes`, `rename`...
+1. Reads `.mcp.json`
+2. Spawns `./scripts/gitnexus.sh mcp` → starts a Docker container running the MCP server over stdio
+3. The container reads `.gitnexus/lbug` from the host volume
+4. Exposes the tools: `impact`, `context`, `query`, `cypher`, `detect_changes`, `rename`...
 
-Container tồn tại trong suốt session Claude. Đóng Claude → container exit.
+The container lives for the duration of the Claude session. Close Claude and the container exits.
 
 ---
 
-## 5. Workflow hàng ngày
+## 5. Daily workflow
 
-### Trước khi sửa 1 function/class
+### Before modifying a function/class
 
 ```
-Hỏi Claude: "What's the impact of changing X?"
-→ Claude gọi gitnexus_impact → trả về callers, processes, risk level
-→ Bạn xem trước rồi mới sửa
+Ask Claude: "What's the impact of changing X?"
+→ Claude calls gitnexus_impact → returns callers, processes, risk level
+→ You review that first, then make the change
 ```
 
-### Trước khi commit
+### Before committing
 
 ```bash
-# Verify scope thay đổi
-# (Claude có thể tự gọi gitnexus_detect_changes khi review diff)
+# Verify the scope of the change
+# (Claude can call gitnexus_detect_changes itself when reviewing the diff)
 git add ...
 git commit -m "feat(...): ..."
-# post-commit hook → tự động re-index trong background
+# post-commit hook → re-indexes automatically in the background
 ```
 
-### Khi index báo stale
+### When the index reports stale
 
 ```bash
-./scripts/gitnexus.sh analyze    # rebuild đồng bộ (block ~3 phút)
-# Hoặc đợi auto re-index sau commit/pull tiếp theo
+./scripts/gitnexus.sh analyze    # synchronous rebuild (blocks ~3 minutes)
+# Or just wait for the next commit/pull to auto re-index
 ```
 
-### Khi pull code mới từ team
+### When pulling new code from the team
 
 ```bash
 git pull
-# post-merge hook tự re-index nếu có code change → không cần làm gì
+# the post-merge hook re-indexes if code changed → nothing to do
 ```
 
-### Khi team bump version GitNexus (ví dụ rc.63 → rc.70)
+### When the team bumps the GitNexus version (e.g. rc.63 → rc.70)
 
-Trigger: `scripts/gitnexus.sh` đổi tag image trong PR mới merge.
+Trigger: `scripts/gitnexus.sh` changes the image tag in a newly merged PR.
 
 ```bash
-git pull                              # nhận tag mới trong scripts/gitnexus.sh
-./scripts/gitnexus.sh pull            # tải image mới
-./scripts/gitnexus.sh analyze         # rebuild index (schema có thể đổi giữa các RC)
-# Restart Claude Code session để MCP container dùng image mới
+git pull                              # pick up the new tag in scripts/gitnexus.sh
+./scripts/gitnexus.sh pull            # pull the new image
+./scripts/gitnexus.sh analyze         # rebuild the index (the schema can change between RCs)
+# Restart the Claude Code session so the MCP container uses the new image
 ```
 
-> Vì sao phải re-analyze? RC mới có thể đổi DB schema (LadybugDB) hoặc capability flags → graph cũ có thể incompatible. Rebuild đảm bảo đồng bộ.
+> Why re-analyze? A new RC can change the DB schema (LadybugDB) or the capability flags, so an old graph may be incompatible. Rebuilding keeps them in sync.
 
 ---
 
-## 6. Cheat sheet lệnh
+## 6. Command cheat sheet
 
-| Mục đích                      | Lệnh                                                               |
-| ----------------------------- | ------------------------------------------------------------------ |
-| Pull/update Docker image      | `./scripts/gitnexus.sh pull`                                       |
-| Index đồng bộ (block)         | `./scripts/gitnexus.sh analyze`                                    |
-| Index nền (non-block)         | `./scripts/gitnexus.sh reindex-bg`                                 |
-| Status hiện tại               | `./scripts/gitnexus.sh status`                                     |
-| Liệt kê tất cả repos đã index | `./scripts/gitnexus.sh list`                                       |
-| Khởi động MCP server          | `./scripts/gitnexus.sh mcp` (Claude tự gọi)                        |
-| Xem log re-index nền          | `tail -f /tmp/gitnexus-reindex-plane.so.log`                       |
-| Xóa index để rebuild sạch     | `rm -rf .gitnexus/ && ./scripts/gitnexus.sh analyze`               |
-| Override image tag            | `GITNEXUS_IMAGE=akonlabs/gitnexus:X.Y.Z ./scripts/gitnexus.sh ...` |
+| Purpose                        | Command                                                            |
+| ------------------------------ | ------------------------------------------------------------------ |
+| Pull/update the Docker image   | `./scripts/gitnexus.sh pull`                                       |
+| Index synchronously (blocking) | `./scripts/gitnexus.sh analyze`                                    |
+| Index in the background        | `./scripts/gitnexus.sh reindex-bg`                                 |
+| Current status                 | `./scripts/gitnexus.sh status`                                     |
+| List all indexed repos         | `./scripts/gitnexus.sh list`                                       |
+| Start the MCP server           | `./scripts/gitnexus.sh mcp` (Claude calls this itself)             |
+| Tail the background index log  | `tail -f /tmp/gitnexus-reindex-plane.so.log`                       |
+| Wipe the index for a clean rebuild | `rm -rf .gitnexus/ && ./scripts/gitnexus.sh analyze`            |
+| Override the image tag         | `GITNEXUS_IMAGE=akonlabs/gitnexus:X.Y.Z ./scripts/gitnexus.sh ...` |
 
-### Lệnh thường dùng từ Claude (qua MCP — không gõ tay)
+### Commands Claude uses (via MCP — you don't type these)
 
-| Tool MCP                  | Use case                              |
+| MCP tool                  | Use case                              |
 | ------------------------- | ------------------------------------- |
 | `gitnexus_impact`         | "What breaks if I change X?"          |
 | `gitnexus_context`        | "Show callers/callees of X"           |
 | `gitnexus_query`          | "Find execution flows for concept Y"  |
 | `gitnexus_detect_changes` | "Map my git diff to affected symbols" |
 | `gitnexus_rename`         | "Rename X across call graph"          |
-| `gitnexus_cypher`         | Truy vấn graph bằng Cypher (advanced) |
+| `gitnexus_cypher`         | Query the graph with Cypher (advanced) |
 
 ---
 
@@ -287,38 +287,38 @@ git pull                              # nhận tag mới trong scripts/gitnexus.
 
 ### `Cannot connect to the Docker daemon`
 
-→ Docker Desktop chưa chạy. Mở Docker Desktop, đợi xanh icon, retry.
+→ Docker Desktop isn't running. Open it, wait for the icon to go green, retry.
 
 ### `Status: ⚠️ stale`
 
-→ Code thay đổi sau lần index cuối. Chạy `./scripts/gitnexus.sh analyze` hoặc trigger commit/pull để hook chạy.
+→ Code changed since the last index. Run `./scripts/gitnexus.sh analyze`, or trigger a commit/pull so the hook runs.
 
-### Re-index nền lock file `lbug`
+### Background re-index locks the `lbug` file
 
 ```
 Error: database is locked
 ```
 
-→ Có process re-index khác đang chạy. Check:
+→ Another re-index process is running. Check:
 
 ```bash
 ps aux | grep gitnexus | grep -v grep
 ```
 
-Đợi xong hoặc kill process cũ, rồi retry.
+Wait for it to finish or kill the stale process, then retry.
 
-### Claude không thấy GitNexus tools
+### Claude doesn't see the GitNexus tools
 
-1. Verify `.mcp.json` tồn tại ở root project.
-2. Restart Claude Code session.
-3. `/mcp` trong Claude → check `gitnexus` server status.
-4. Nếu vẫn lỗi: `./scripts/gitnexus.sh mcp` chạy thủ công xem có lỗi stdio không.
+1. Verify `.mcp.json` exists at the project root.
+2. Restart the Claude Code session.
+3. Run `/mcp` in Claude → check the `gitnexus` server status.
+4. Still broken: run `./scripts/gitnexus.sh mcp` by hand and look for stdio errors.
 
-### Image kéo về quá chậm
+### The image pulls too slowly
 
 ```bash
-# Set Docker registry mirror (China/Vietnam):
-# Docker Desktop → Settings → Docker Engine → thêm "registry-mirrors"
+# Set a Docker registry mirror:
+# Docker Desktop → Settings → Docker Engine → add "registry-mirrors"
 ```
 
 ### Docker Hub rate limit (`toomanyrequests`)
@@ -327,28 +327,28 @@ ps aux | grep gitnexus | grep -v grep
 Error response from daemon: toomanyrequests: You have reached your pull rate limit
 ```
 
-→ Anonymous Docker Hub pull bị giới hạn 100/6h per IP. Login để nâng lên 200/6h:
+→ Anonymous Docker Hub pulls are capped at 100/6h per IP. Log in to raise it to 200/6h:
 
 ```bash
 docker login
-# Sau đó retry: ./scripts/gitnexus.sh pull
+# Then retry: ./scripts/gitnexus.sh pull
 ```
 
-### Index quá lớn (>500MB)
+### The index is too large (>500MB)
 
 ```bash
-./scripts/gitnexus.sh analyze --max-file-size 256   # bỏ qua file >256KB
-# Hoặc thêm vào .gitnexusignore:
+./scripts/gitnexus.sh analyze --max-file-size 256   # skip files >256KB
+# Or add entries to .gitnexusignore:
 echo "apps/space/dist/" >> .gitnexusignore
 echo "*.min.js" >> .gitnexusignore
 ```
 
-### Hooks không chạy
+### The hooks don't run
 
 ```bash
-# Verify husky installed
+# Verify husky is installed
 ls -la .husky/_/
-# Re-init nếu thiếu:
+# Re-init if missing:
 pnpm prepare
 ```
 
@@ -356,54 +356,54 @@ pnpm prepare
 
 ## 8. FAQ
 
-### Có cần re-index khi chỉ sửa CSS/Markdown?
+### Do I need to re-index when I only changed CSS/Markdown?
 
-Không. `post-merge` hook chỉ trigger khi có file `.ts/.tsx/.js/.jsx/.mjs/.cjs/.py/.go/.rs/.java/.kt/.swift` thay đổi. CSS/MD/config bị skip.
+No. The `post-merge` hook only triggers when `.ts/.tsx/.js/.jsx/.mjs/.cjs/.py/.go/.rs/.java/.kt/.swift` files change. CSS/MD/config are skipped.
 
-### Re-index mỗi commit có chậm không?
+### Is re-indexing on every commit slow?
 
-Không block. Hook chạy `reindex-bg` → detached background. Throttle 60s tránh spam khi commit nhanh liên tiếp.
+It doesn't block. The hook runs `reindex-bg` detached in the background, and a 60s throttle prevents spam during rapid successive commits.
 
-### Index có bao gồm code nhạy cảm không?
+### Does the index include sensitive code?
 
-Có thể (full source được parse). **Không bao giờ commit `.gitnexus/` lên git** — đã có `.gitnexus/.gitignore` chứa `*`. Nếu cần exclude paths cụ thể, dùng `.gitnexusignore`.
+It can — the full source is parsed. **Never commit `.gitnexus/` to git**; `.gitnexus/.gitignore` already contains `*`. To exclude specific paths, use `.gitnexusignore`.
 
-### Có cần index trên CI không?
+### Do I need to index on CI?
 
-Không. CI không dùng MCP. Chỉ dev local cần GitNexus để Claude hỗ trợ.
+No. CI doesn't use MCP. Only local development needs GitNexus for Claude to help.
 
-### Khi nào graph có thể MISS một relationship?
+### When can the graph MISS a relationship?
 
-- Django signals, Celery tasks → async edges thường không bắt được.
-- React HOC sâu, MobX reactions, dynamic imports → indirect deps thiếu.
-- Lookup theo string (registry pattern) → không thấy.
-  → Quy tắc: với critical paths (auth, billing, permissions), **luôn cross-check** bằng `Read` + `grep`.
+- Django signals, Celery tasks → async edges usually aren't captured.
+- Deeply nested React HOCs, MobX reactions, dynamic imports → indirect deps are missed.
+- String-based lookups (registry pattern) → invisible to the graph.
+  → Rule: on critical paths (auth, billing, permissions), **always cross-check** with `Read` + `grep`.
 
-### Tôi có thể disable GitNexus tạm thời không?
+### Can I disable GitNexus temporarily?
 
 ```bash
-# Skip hooks 1 lần:
+# Skip the hooks once:
 git commit --no-verify
 
-# Disable hoàn toàn: xóa hoặc rename .mcp.json
-# Hoặc: rm -rf .gitnexus/ → tools sẽ báo "no index"
+# Disable entirely: delete or rename .mcp.json
+# Or: rm -rf .gitnexus/ → the tools will report "no index"
 ```
 
-### Đồng nghiệp không cài GitNexus có ảnh hưởng tôi không?
+### Does it affect me if a colleague hasn't installed GitNexus?
 
-Không. Index local-only, mỗi máy có riêng. Hooks tự skip nếu `.gitnexus/` không tồn tại.
+No. The index is local-only and per-machine. The hooks skip themselves if `.gitnexus/` doesn't exist.
 
 ---
 
-## 9. Performance & Tuning
+## 9. Performance & tuning
 
-### Throttle re-index
+### Re-index throttle
 
-`scripts/gitnexus.sh reindex-bg` skip nếu file `.gitnexus/meta.json` được sửa < 60s trước. Tránh chạy chồng khi commit/checkout liên tiếp.
+`scripts/gitnexus.sh reindex-bg` skips itself if `.gitnexus/meta.json` was modified < 60s ago. This prevents overlapping runs during successive commits/checkouts.
 
-### Loại trừ thêm paths
+### Excluding more paths
 
-Tạo file `.gitnexusignore` ở root (file optional, không có sẵn trong repo). Cú pháp giống `.gitignore`:
+Create a `.gitnexusignore` file at the root (optional; not shipped in the repo). Same syntax as `.gitignore`:
 
 ```
 apps/space/out/
@@ -412,36 +412,36 @@ apps/web/.next/
 *.bundle.js
 ```
 
-Sau đó chạy `./scripts/gitnexus.sh analyze` để rebuild với exclusions mới.
+Then run `./scripts/gitnexus.sh analyze` to rebuild with the new exclusions.
 
-### Tăng tốc analyze trên máy yếu
+### Speeding up analyze on a slower machine
 
 ```bash
 ./scripts/gitnexus.sh analyze --max-file-size 256
-GITNEXUS_NO_GITIGNORE=1 ./scripts/gitnexus.sh analyze   # bỏ qua .gitignore parsing
+GITNEXUS_NO_GITIGNORE=1 ./scripts/gitnexus.sh analyze   # skip .gitignore parsing
 ```
 
 ---
 
-## 10. Phụ lục: Files liên quan
+## 10. Appendix: related files
 
-| File                                  | Vai trò                                    |
+| File                                  | Role                                       |
 | ------------------------------------- | ------------------------------------------ |
-| `scripts/gitnexus.sh`                 | Wrapper Docker, các lệnh con               |
-| `.husky/post-commit`                  | Auto re-index sau commit                   |
-| `.husky/post-merge`                   | Auto re-index sau pull                     |
-| `.husky/post-checkout`                | Auto re-index sau branch switch            |
-| `.mcp.json`                           | Đăng ký MCP server với Claude Code         |
+| `scripts/gitnexus.sh`                 | Docker wrapper and its subcommands         |
+| `.husky/post-commit`                  | Auto re-index after commit                 |
+| `.husky/post-merge`                   | Auto re-index after pull                   |
+| `.husky/post-checkout`                | Auto re-index after branch switch          |
+| `.mcp.json`                           | Registers the MCP server with Claude Code  |
 | `.gitnexus/`                          | Local index (gitignored)                   |
-| `.gitnexusignore`                     | Loại trừ paths khỏi index                  |
-| `.claude/rules/gitnexus-mcp-usage.md` | Quy tắc MCP usage cho Claude (auto-loaded) |
+| `.gitnexusignore`                     | Excludes paths from the index              |
+| `.claude/rules/gitnexus-mcp-usage.md` | MCP usage rules for Claude (auto-loaded)   |
 
 ---
 
-## 11. Liên hệ & Tài liệu
+## 11. Contact & documentation
 
 - Skill files: `.claude/skills/gitnexus/*/SKILL.md`
 - Upstream: https://github.com/abhigyanpatwari/GitNexus
-- Báo bug team: ping Lead trong PR comment
+- Reporting bugs: ping the Lead in a PR comment
 
-> **Quy tắc vàng:** Trước khi sửa function/class lớn → hỏi Claude `"impact of X"` → đọc kết quả → sửa. Không skip bước này, đặc biệt với code chạm `core/` hoặc `apps/api/plane/db/`.
+> **Golden rule:** before modifying a large function/class → ask Claude `"impact of X"` → read the result → then change it. Don't skip this, especially for code touching `core/` or `apps/api/plane/db/`.

@@ -17,12 +17,6 @@ from .draft import (
 )
 from .estimate import Estimate, EstimatePoint
 from .exporter import ExporterHistory
-from .help_center import (
-    HelpArticle,
-    HelpArticleTranslation,
-    HelpCategory,
-    HelpCategoryTranslation,
-)
 from .importer import Importer
 from .intake import Intake, IntakeIssue
 from .integration import (

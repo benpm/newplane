@@ -10,7 +10,7 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import type { TLanguage } from "@plane/i18n";
-import { useTranslation } from "@plane/i18n";
+import { SUPPORTED_LANGUAGES, useTranslation } from "@plane/i18n";
 // helpers
 import { applyCustomTheme, clearCustomTheme } from "@plane/utils";
 // hooks
@@ -109,6 +109,10 @@ function StoreWrapper(props: TStoreWrapper) {
 
   useEffect(() => {
     if (!userProfile?.language) return;
+    // Profile.language is an unconstrained CharField, so rows predating the
+    // English-only switch can still hold a retired locale. Ignore anything the
+    // app no longer ships rather than letting the store log a failed lookup.
+    if (!SUPPORTED_LANGUAGES.some((language) => language.value === userProfile.language)) return;
     changeLanguage(userProfile?.language as TLanguage);
   }, [userProfile?.language, changeLanguage]);
 

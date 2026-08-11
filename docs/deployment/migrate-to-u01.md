@@ -7,7 +7,7 @@
 
 - **Named volumes ride along with `data-root`.** `pgdata`, `uploads` (MinIO), `redisdata`, `rabbitmq_data`, `proxy_config`, `proxy_data`, `logs_*` all live under `/var/lib/docker/volumes/` → move with the `data-root` rsync. No per-volume work.
 - **Only ONE host-path bind mount references the moved tree:** `proxy.volumes` in `docker-compose.yaml`:
-  - `/opt/shb-deploy/plane-app/proxy/Caddyfile:/etc/caddy/Caddyfile:ro` — symlink resolves transparently; update the path in Step 3.
+  - `/opt/plane-deploy/plane-app/proxy/Caddyfile:/etc/caddy/Caddyfile:ro` — symlink resolves transparently; update the path in Step 3.
 - **`/opt/certs:/etc/caddy/certs:ro` is NOT moving** — stays on `/`. No edit.
 - **Caddyfile contains zero host paths** — only container DNS (`api:8000`, `plane-minio:9000`). Reverse-proxy routing is unaffected.
 - **`pgadmin` binds host port `5678`** (no Caddy route). SELinux may block — see Step 0.
@@ -23,18 +23,18 @@
 | `/u01`  | vg01-u01  | 100 G | 746 M | 100 G | **1%** ← target |
 | `/boot` | sda2      | 960 M | 356 M | 605 M | 38%             |
 
-Pain on `/`: `/opt/shb-deploy/plane-app` (images tar ~ multi-GB, dist tarballs, archive) + `/var/lib/docker` (overlayfs layers, container volumes — bind-mount data, postgres, minio).
+Pain on `/`: `/opt/plane-deploy/plane-app` (images tar ~ multi-GB, dist tarballs, archive) + `/var/lib/docker` (overlayfs layers, container volumes — bind-mount data, postgres, minio).
 
 ## AS-IS
 
 ```
 /  (vg00-root, 40G, 73% used)
-├── /opt/shb-deploy/plane-app/
+├── /opt/plane-deploy/plane-app/
 │   ├── dist/                  # 6 image tarballs v1.2.0
 │   ├── plane-images.tar       # bundled images
 │   ├── archive/               # old releases
 │   ├── docker-compose.yaml
-│   ├── docker-compose.shb.yml
+│   ├── docker-compose.release.yml
 │   ├── plane.env
 │   ├── proxy/Caddyfile
 │   └── scripts/
@@ -46,7 +46,7 @@ Pain on `/`: `/opt/shb-deploy/plane-app` (images tar ~ multi-GB, dist tarballs, 
 /u01  (vg01-u01, 100G, 1% used)  ← empty, target
 ```
 
-Containers (per `docker-compose.shb.yml` + Caddyfile): `web`, `space`, `admin`, `live`, `api` (Django/DRF on :8000), `worker`, `beat`, `plane-minio`, `plane-db` (Postgres), `plane-redis`, `plane-mq` (RabbitMQ), `proxy` (Caddy). Caddy terminates TLS at `uat-jms.shinhan.com.vn` using `/etc/caddy/certs/STAR.shinhan.com.vn.*`.
+Containers (per `docker-compose.release.yml` + Caddyfile): `web`, `space`, `admin`, `live`, `api` (Django/DRF on :8000), `worker`, `beat`, `plane-minio`, `plane-db` (Postgres), `plane-redis`, `plane-mq` (RabbitMQ), `proxy` (Caddy). Caddy terminates TLS at `plane.example.com` using `/etc/caddy/certs/fullchain.pem / privkey.pem`.
 
 Risks if left as-is:
 
@@ -73,7 +73,7 @@ Stage 1 layout
     ├── proxy_config/  proxy_data/
     └── logs_*/
 
-/opt/shb-deploy/plane-app    ← stays on /, no changes
+/opt/plane-deploy/plane-app    ← stays on /, no changes
 /opt/certs/                  ← stays on /
 ```
 
@@ -90,7 +90,7 @@ Move only `/var/lib/docker/volumes` to `/u01`. Docker stays installed at `/var/l
 ```bash
 # audit + verify Docker runtime
 du -sh /var/lib/docker/{overlay2,volumes,containers,image} 2>/dev/null | sort -h
-du -sh /opt/shb-deploy/plane-app/{dist,archive,plane-images.tar} 2>/dev/null
+du -sh /opt/plane-deploy/plane-app/{dist,archive,plane-images.tar} 2>/dev/null
 docker system df
 docker info | grep -E 'Server Version|Docker Root Dir|Storage Driver'
 docker volume ls
@@ -101,7 +101,7 @@ rpm -q policycoreutils-python-utils || dnf install -y policycoreutils-python-uti
 
 # snapshot config + Postgres logical backup
 mkdir -p /u01/backup/$(date +%F)
-cp -a /opt/shb-deploy/plane-app/{plane.env,docker-compose.yaml,docker-compose.shb.yml,proxy} \
+cp -a /opt/plane-deploy/plane-app/{plane.env,docker-compose.yaml,docker-compose.release.yml,proxy} \
       /u01/backup/$(date +%F)/
 docker exec plane-db pg_dumpall -U plane > /u01/backup/$(date +%F)/pg_dumpall.sql \
   || docker exec plane-db pg_dump -U plane plane > /u01/backup/$(date +%F)/plane.sql
@@ -110,8 +110,8 @@ docker exec plane-db pg_dumpall -U plane > /u01/backup/$(date +%F)/pg_dumpall.sq
 ### 1.1 Stop the stack + daemon
 
 ```bash
-cd /opt/shb-deploy/plane-app
-docker compose -f docker-compose.yaml -f docker-compose.shb.yml down   # NOT down -v
+cd /opt/plane-deploy/plane-app
+docker compose -f docker-compose.yaml -f docker-compose.release.yml down   # NOT down -v
 systemctl stop docker docker.socket
 ```
 
@@ -146,8 +146,8 @@ systemctl start docker
 docker info | grep 'Docker Root Dir'         # expect /var/lib/docker (unchanged)
 docker volume ls | grep -E 'pgdata|uploads|rabbitmq'
 
-cd /opt/shb-deploy/plane-app
-docker compose -f docker-compose.yaml -f docker-compose.shb.yml up -d
+cd /opt/plane-deploy/plane-app
+docker compose -f docker-compose.yaml -f docker-compose.release.yml up -d
 docker compose ps
 docker compose logs --tail=100 api web proxy plane-db plane-minio
 ```
@@ -155,11 +155,11 @@ docker compose logs --tail=100 api web proxy plane-db plane-minio
 ### 1.5 Smoke test
 
 ```bash
-curl -kI https://uat-jms.shinhan.com.vn/
-curl -kI https://uat-jms.shinhan.com.vn/api/v1/
-curl -kI https://uat-jms.shinhan.com.vn/live/
-curl -kI https://uat-jms.shinhan.com.vn/space
-curl -kI https://uat-jms.shinhan.com.vn/god-mode
+curl -kI https://plane.example.com/
+curl -kI https://plane.example.com/api/v1/
+curl -kI https://plane.example.com/live/
+curl -kI https://plane.example.com/space
+curl -kI https://plane.example.com/god-mode
 
 ss -lntp | grep -E ':80|:443|:5678'
 du -sb /var/lib/docker/volumes.old /u01/docker-volumes   # byte counts match
@@ -181,15 +181,15 @@ df -h / /u01
 ### 1.7 Rollback (within window)
 
 ```bash
-cd /opt/shb-deploy/plane-app
-docker compose -f docker-compose.yaml -f docker-compose.shb.yml down
+cd /opt/plane-deploy/plane-app
+docker compose -f docker-compose.yaml -f docker-compose.release.yml down
 systemctl stop docker docker.socket
 umount /var/lib/docker/volumes
 sed -i '\|/u01/docker-volumes|d' /etc/fstab
 rmdir /var/lib/docker/volumes
 mv /var/lib/docker/volumes.old /var/lib/docker/volumes
 systemctl start docker
-docker compose -f docker-compose.yaml -f docker-compose.shb.yml up -d
+docker compose -f docker-compose.yaml -f docker-compose.release.yml up -d
 ```
 
 ### Estimated downtime — Stage 1
@@ -200,19 +200,19 @@ App stop → rsync (mostly Postgres + MinIO; ~5–15 min depending on size) → 
 
 ## Stage 2 — Full Data-Root + App-Dir Move (DEFERRED)
 
-Trigger criteria: after one release cycle, if `du -sh /var/lib/docker/overlay2 /opt/shb-deploy/plane-app/dist` shows `/` climbing back above 80%.
+Trigger criteria: after one release cycle, if `du -sh /var/lib/docker/overlay2 /opt/plane-deploy/plane-app/dist` shows `/` climbing back above 80%.
 
 ### 2.0 Pre-flight additions over Stage 1
 
 ```bash
 semanage fcontext -a -e /var/lib/docker /u01/docker
-semanage fcontext -a -e /var/lib/docker /u01/shb-deploy/plane-app   # harmless
+semanage fcontext -a -e /var/lib/docker /u01/plane-deploy/plane-app   # harmless
 ```
 
 ### 2.1 Undo Stage 1 first (or skip if Stage 1 not done)
 
 ```bash
-docker compose -f docker-compose.yaml -f docker-compose.shb.yml down
+docker compose -f docker-compose.yaml -f docker-compose.release.yml down
 systemctl stop docker docker.socket
 umount /var/lib/docker/volumes 2>/dev/null
 sed -i '\|/u01/docker-volumes|d' /etc/fstab
@@ -247,23 +247,23 @@ docker images | grep artifacts.plane.so
 docker volume ls | grep -E 'pgdata|uploads|rabbitmq'
 ```
 
-### 2.3 Move app dir `/opt/shb-deploy/plane-app` → `/u01/shb-deploy/plane-app`
+### 2.3 Move app dir `/opt/plane-deploy/plane-app` → `/u01/plane-deploy/plane-app`
 
 ```bash
-mkdir -p /u01/shb-deploy
-rsync -aHAX /opt/shb-deploy/plane-app/ /u01/shb-deploy/plane-app/
-mv /opt/shb-deploy/plane-app /opt/shb-deploy/plane-app.old
-ln -s /u01/shb-deploy/plane-app /opt/shb-deploy/plane-app
-restorecon -RF /u01/shb-deploy
+mkdir -p /u01/plane-deploy
+rsync -aHAX /opt/plane-deploy/plane-app/ /u01/plane-deploy/plane-app/
+mv /opt/plane-deploy/plane-app /opt/plane-deploy/plane-app.old
+ln -s /u01/plane-deploy/plane-app /opt/plane-deploy/plane-app
+restorecon -RF /u01/plane-deploy
 ```
 
-**Update the ONE bind mount** in `/u01/shb-deploy/plane-app/docker-compose.yaml` (proxy service):
+**Update the ONE bind mount** in `/u01/plane-deploy/plane-app/docker-compose.yaml` (proxy service):
 
 ```yaml
 # before
-- /opt/shb-deploy/plane-app/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+- /opt/plane-deploy/plane-app/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
 # after
-- /u01/shb-deploy/plane-app/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+- /u01/plane-deploy/plane-app/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
 ```
 
 `/opt/certs:/etc/caddy/certs:ro` stays unchanged.
@@ -271,15 +271,15 @@ restorecon -RF /u01/shb-deploy
 ### 2.4 Bring stack up + smoke
 
 ```bash
-cd /u01/shb-deploy/plane-app
-docker compose -f docker-compose.yaml -f docker-compose.shb.yml up -d
+cd /u01/plane-deploy/plane-app
+docker compose -f docker-compose.yaml -f docker-compose.release.yml up -d
 # (same smoke test block as 1.5)
 ```
 
 ### 2.5 Cleanup after soak
 
 ```bash
-rm -rf /var/lib/docker.old /opt/shb-deploy/plane-app.old
+rm -rf /var/lib/docker.old /opt/plane-deploy/plane-app.old
 docker system prune -af          # volumes excluded by default — do NOT add --volumes
 ```
 
@@ -289,11 +289,11 @@ docker system prune -af          # volumes excluded by default — do NOT add --
 systemctl stop docker
 mv /etc/docker/daemon.json /etc/docker/daemon.json.failed
 mv /var/lib/docker.old /var/lib/docker
-rm /opt/shb-deploy/plane-app
-mv /opt/shb-deploy/plane-app.old /opt/shb-deploy/plane-app
+rm /opt/plane-deploy/plane-app
+mv /opt/plane-deploy/plane-app.old /opt/plane-deploy/plane-app
 # revert the proxy Caddyfile bind-mount edit in docker-compose.yaml back to /opt/...
 systemctl start docker
-cd /opt/shb-deploy/plane-app && docker compose -f docker-compose.yaml -f docker-compose.shb.yml up -d
+cd /opt/plane-deploy/plane-app && docker compose -f docker-compose.yaml -f docker-compose.release.yml up -d
 ```
 
 ### Estimated downtime — Stage 2
@@ -317,6 +317,6 @@ Bind-mount is the safer first step. Move to `data-root` only when image-layer gr
 ## Open Questions
 
 - Is `/u01` on the same physical disk as `/`? If yes, no I/O isolation win — still solves the space problem.
-- Any cron/backup script hard-coding `/opt/shb-deploy/plane-app`? Grep host crontabs + `/etc/systemd/system/*.service` before removing the symlink: `grep -rl /opt/shb-deploy /etc/cron* /etc/systemd /var/spool/cron 2>/dev/null`.
+- Any cron/backup script hard-coding `/opt/plane-deploy/plane-app`? Grep host crontabs + `/etc/systemd/system/*.service` before removing the symlink: `grep -rl /opt/plane-deploy /etc/cron* /etc/systemd /var/spool/cron 2>/dev/null`.
 - LVM extend NOT viable: RHEL 9 default filesystem is **XFS**, which **cannot shrink** — so freeing space from `/home` is not an option. The only extend path is free PEs in `vg00` (`vgs vg00`), and `/u01` lives in `vg01`, so the migration is the right call regardless.
 - Is the runtime Docker CE or Podman-in-docker-compat? The `/var/lib/docker/rootfs/overlayfs/...` paths seen in `df -h` are non-standard — confirm with `docker info | grep -E 'Server Version|Storage Driver'` before Step 2. If Podman, `daemon.json` does not apply; use `~/.config/containers/storage.conf` or `/etc/containers/storage.conf` instead.

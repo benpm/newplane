@@ -8,11 +8,7 @@ import type { TLanguage, ILanguageOption } from "../types";
 
 export const FALLBACK_LANGUAGE: TLanguage = "en";
 
-export const SUPPORTED_LANGUAGES: ILanguageOption[] = [
-  { label: "English", value: "en" },
-  { label: "Tiếng Việt", value: "vi" },
-  { label: "한국어", value: "ko" },
-];
+export const SUPPORTED_LANGUAGES: ILanguageOption[] = [{ label: "English", value: "en" }];
 
 /**
  * Enum for translation file names

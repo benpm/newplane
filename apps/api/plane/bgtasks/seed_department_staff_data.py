@@ -1,8 +1,8 @@
-# Seed data definitions for Shinhan Bank VN department & staff structure.
+# Seed data definitions for a demo department & staff structure.
 # Used by seed_department_staff management command.
-# Source: SHBVN Org Chart (86 nodes, L0=Bank/Workspace excluded → 85 departments)
+# Shape: 86-node org chart (L0=Organisation/Workspace excluded → 85 departments)
 
-# ── Department tree (Shinhan Bank VN org structure) ───────────────────
+# ── Department tree (demo org structure) ──────────────────────────────
 # Hierarchy: L0=Workspace (not stored), L1=Business Group, L2=Division,
 #            L3=Department, L4=Team, L5=Sub-Team, L6=Sub-Sub-Team
 # Fields: code, short_name, dept_code (4-digit unique), name, level, parent_code
@@ -20,7 +20,7 @@ DEPARTMENTS = [
     {"code": "HO-RTG", "short_name": "RTG", "dept_code": "0009", "name": "Retail Group", "level": 2, "parent_code": "HO"},
     {"code": "HO-CRG", "short_name": "CRG", "dept_code": "0010", "name": "Corporate Group", "level": 2, "parent_code": "HO"},
     {"code": "HO-CDG", "short_name": "CDG", "dept_code": "0011", "name": "Credit Group", "level": 2, "parent_code": "HO"},
-    {"code": "HO-FBG", "short_name": "FBG", "dept_code": "0012", "name": "Future Bank Group", "level": 2, "parent_code": "HO"},
+    {"code": "HO-FBG", "short_name": "FBG", "dept_code": "0012", "name": "Future Banking Group", "level": 2, "parent_code": "HO"},
     {"code": "HO-RMD", "short_name": "RMD", "dept_code": "0013", "name": "Risk Management Division", "level": 2, "parent_code": "HO"},
     {"code": "HO-LCD", "short_name": "LCD", "dept_code": "0014", "name": "Legal and Compliance Division", "level": 2, "parent_code": "HO"},
     # Level 2: under BOC
@@ -48,7 +48,7 @@ DEPARTMENTS = [
     {"code": "CDG-CAD", "short_name": "CAD", "dept_code": "0030", "name": "Credit Analysis Division", "level": 3, "parent_code": "HO-CDG"},
     {"code": "CDG-CPD", "short_name": "CPD", "dept_code": "0031", "name": "Credit Planning Dept", "level": 3, "parent_code": "HO-CDG"},
     {"code": "CDG-CCD", "short_name": "CCD", "dept_code": "0032", "name": "Credit Collection Dept", "level": 3, "parent_code": "HO-CDG"},
-    # Level 3: under Future Bank Group
+    # Level 3: under Future Banking Group
     {"code": "FBG-ICT", "short_name": "ICT", "dept_code": "0033", "name": "ICT Division", "level": 3, "parent_code": "HO-FBG"},
     {"code": "FBG-DBU", "short_name": "DBU", "dept_code": "0034", "name": "Digital Business Unit", "level": 3, "parent_code": "HO-FBG"},
     {"code": "FBG-PMD", "short_name": "PMD", "dept_code": "0035", "name": "Payment Division", "level": 3, "parent_code": "HO-FBG"},
@@ -66,7 +66,7 @@ DEPARTMENTS = [
     {"code": "TRD-SIT", "short_name": "SIT", "dept_code": "0041", "name": "Securities Investment Team", "level": 4, "parent_code": "BPG-TRD"},
     # under Business Support Division
     {"code": "BSD-HRD", "short_name": "HRD", "dept_code": "0042", "name": "Human Resource Dept", "level": 4, "parent_code": "BPG-BSD"},
-    {"code": "BSD-SAC", "short_name": "SAC", "dept_code": "0043", "name": "Shinhan Academy", "level": 4, "parent_code": "BPG-BSD"},
+    {"code": "BSD-SAC", "short_name": "SAC", "dept_code": "0043", "name": "Corporate Academy", "level": 4, "parent_code": "BPG-BSD"},
     {"code": "BSD-GAD", "short_name": "GAD", "dept_code": "0044", "name": "GA Dept", "level": 4, "parent_code": "BPG-BSD"},
     {"code": "BSD-CSD", "short_name": "CSD", "dept_code": "0045", "name": "Customer Service Dept", "level": 4, "parent_code": "BPG-BSD"},
     {"code": "BSD-CCT", "short_name": "CCT", "dept_code": "0046", "name": "Contact Center", "level": 4, "parent_code": "BPG-BSD"},
@@ -116,9 +116,9 @@ DEPARTMENTS = [
     {"code": "HRD-HRO", "short_name": "HRO", "dept_code": "0074", "name": "HR Outsourcing", "level": 5, "parent_code": "BSD-HRD"},
     {"code": "HRD-HEP", "short_name": "HEP", "dept_code": "0075", "name": "HR Exempted Post", "level": 5, "parent_code": "BSD-HRD"},
     {"code": "HRD-EXP", "short_name": "EXP", "dept_code": "0076", "name": "Expat Temporary Dept", "level": 5, "parent_code": "BSD-HRD"},
-    # under Shinhan Academy
-    {"code": "SAC-NSA", "short_name": "NSA", "dept_code": "0077", "name": "Northern Shinhan Academy", "level": 5, "parent_code": "BSD-SAC"},
-    {"code": "SAC-SCT", "short_name": "SCT", "dept_code": "0078", "name": "Shinhan Culture Team", "level": 5, "parent_code": "BSD-SAC"},
+    # under Corporate Academy
+    {"code": "SAC-NSA", "short_name": "NSA", "dept_code": "0077", "name": "Northern Academy", "level": 5, "parent_code": "BSD-SAC"},
+    {"code": "SAC-SCT", "short_name": "SCT", "dept_code": "0078", "name": "Culture Team", "level": 5, "parent_code": "BSD-SAC"},
     # under Smart Credit Marketing Center
     {"code": "SMC-SMO", "short_name": "SMO", "dept_code": "0079", "name": "Smart Credit Marketing Outsourcing", "level": 5, "parent_code": "SCD-SMC"},
     # under Lending Operations Center
@@ -134,7 +134,7 @@ DEPARTMENTS = [
     {"code": "ICP-NIP", "short_name": "NIP", "dept_code": "0085", "name": "Northern ICT Planning", "level": 5, "parent_code": "ICT-ICP"},
 
     # ══════ Level 6: Sub-Sub-Team ══════
-    {"code": "SCT-NSC", "short_name": "NSC", "dept_code": "0086", "name": "Northern Shinhan Culture", "level": 6, "parent_code": "SAC-SCT"},
+    {"code": "SCT-NSC", "short_name": "NSC", "dept_code": "0086", "name": "Northern Culture", "level": 6, "parent_code": "SAC-SCT"},
 ]
 
 
@@ -145,7 +145,7 @@ STAFF_DATA = [
     ("10000001", "Nguyen", "An", "HO", "General Director", "Director", True, "0901000001", "2015-03-01"),
     ("10000002", "Tran", "Binh", "NBG", "Head of Northern Business Group", "Director", True, "0901000002", "2014-06-15"),
     # ── L2 heads (Divisions under Head Office) ──
-    ("10000003", "Le", "Hung", "HO-FBG", "Head of Future Bank Group", "Director", True, "0901000003", "2016-01-10"),
+    ("10000003", "Le", "Hung", "HO-FBG", "Head of Future Banking Group", "Director", True, "0901000003", "2016-01-10"),
     ("10000004", "Pham", "Lan", "HO-BPG", "Head of Business Planning Group", "Director", True, "0901000004", "2017-02-20"),
     ("10000010", "Vu", "Thao", "HO-CDG", "Head of Credit Group", "Manager", True, "0901000010", "2016-05-01"),
     ("10000011", "Do", "Minh", "HO-RTG", "Head of Retail Group", "Manager", True, "0901000011", "2016-08-15"),

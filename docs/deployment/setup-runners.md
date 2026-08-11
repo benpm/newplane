@@ -10,7 +10,7 @@ Both dev and prod runners must be:
 - **Utilities:** `curl`, `zip`, `unzip` available in PATH
 - **Network:** Access to internal GitLab (optional if building offline)
 
-## Dev Runner Registration (shb-dev)
+## Dev Runner Registration (plane-dev)
 
 This runner executes on the **development server** where images are built and tested.
 
@@ -36,7 +36,7 @@ sudo gitlab-runner register \
   --executor shell \
   --shell-script bash \
   --description "Plane SHB Dev Runner" \
-  --tag-list "shb-dev,shell,deploy" \
+  --tag-list "plane-dev,shell,deploy" \
   --protected true \
   --run-untagged false
 
@@ -52,15 +52,15 @@ sudo gitlab-runner list
 sudo usermod -aG docker gitlab-runner
 
 # Create deploy directory (owned by runner)
-sudo mkdir -p /opt/shb-deploy/plane-app
-sudo chown gitlab-runner:gitlab-runner /opt/shb-deploy/plane-app
-sudo chmod 0755 /opt/shb-deploy/plane-app
+sudo mkdir -p /opt/plane-deploy/plane-app
+sudo chown gitlab-runner:gitlab-runner /opt/plane-deploy/plane-app
+sudo chmod 0755 /opt/plane-deploy/plane-app
 
 # Test Docker access
 sudo -u gitlab-runner docker ps
 ```
 
-## Prod Runner Registration (shb-prod)
+## Prod Runner Registration (plane-prod)
 
 This runner executes on the **production server** with restricted permissions.
 
@@ -81,7 +81,7 @@ sudo gitlab-runner register \
   --executor shell \
   --shell-script bash \
   --description "Plane SHB Prod Runner" \
-  --tag-list "shb-prod,shell,deploy-only" \
+  --tag-list "plane-prod,shell,deploy-only" \
   --protected true \
   --run-untagged false
 ```
@@ -91,8 +91,8 @@ sudo gitlab-runner register \
 ```bash
 # Same setup as dev runner
 sudo usermod -aG docker gitlab-runner
-sudo mkdir -p /opt/shb-deploy/plane-app
-sudo chown gitlab-runner:gitlab-runner /opt/shb-deploy/plane-app
+sudo mkdir -p /opt/plane-deploy/plane-app
+sudo chown gitlab-runner:gitlab-runner /opt/plane-deploy/plane-app
 
 # Test
 sudo -u gitlab-runner docker ps
@@ -182,7 +182,7 @@ Update GITLAB_PUBLISH_TOKEN CI/CD variable
 
 ```bash
 # Test dev deploy with new token
-# Trigger: deploy:dev:release with RELEASE_TAG=dev/shb_v1.2.0-build.999
+# Trigger: deploy:dev:release with RELEASE_TAG=dev/v1.2.0-build.999
 
 # Logs should show successful download and deployment
 ```

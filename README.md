@@ -21,7 +21,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notab
   - [Project Roadmap](./docs/project-roadmap.md)
   - [GitNexus Setup Guide](./docs/gitnexus-guide.md) — code intelligence for Claude Code
 - **Repository:** https://github.com/benpm/newplane
-- **Upstreams:** [`shbvn/plane`](https://github.com/shbvn/plane) » [`makeplane/plane`](https://github.com/makeplane/plane)
+- **Upstream:** [`makeplane/plane`](https://github.com/makeplane/plane)
 
 ## Features
 

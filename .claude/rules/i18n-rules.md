@@ -60,6 +60,6 @@ export default {
 
 **Rules:**
 
-- Add keys to ALL 3 language files: en, ko, vi (use English as placeholder)
+- Add keys to `en/translations.ts` — English is the only locale the app ships
 - Use ICU MessageFormat for pluralization
 - Never create JSON translation files

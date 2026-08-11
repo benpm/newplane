@@ -196,7 +196,7 @@ export interface IIssueDisplayProperties {
   department_name?: boolean;
   project_name?: boolean;
   project_lead?: boolean;
-  bank_wide_project?: boolean;
+  global_project?: boolean;
   main_task_category?: boolean;
   sub_task_category?: boolean;
   progress_tracking?: boolean;

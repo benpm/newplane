@@ -39,7 +39,7 @@ export type TProjectSettingsTabs =
   | "automations"
   | "features_time_tracking"
   | "workflows"
-  | "bank_wide"
+  | "global"
   | "field-permissions";
 export type TProjectSettingsItem = {
   key: TProjectSettingsTabs;

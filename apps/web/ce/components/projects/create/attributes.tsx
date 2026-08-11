@@ -100,7 +100,7 @@ const ProjectAttributes = observer(function ProjectAttributes(props: Props) {
       />
       {isAdmin && (
         <Controller
-          name="is_bank_wide"
+          name="is_global"
           control={control}
           render={({ field: { value, onChange } }) => {
             const handleClick = () => onChange(!value);
@@ -119,7 +119,7 @@ const ProjectAttributes = observer(function ProjectAttributes(props: Props) {
                 onKeyDown={handleKeyDown}
               >
                 <span className="flex-grow truncate leading-5 text-left text-body-xs-medium">
-                  {t("bank_wide_project.label")}
+                  {t("global_project.label")}
                 </span>
                 <ToggleSwitch value={value ?? false} onChange={handleClick} size="sm" />
               </div>

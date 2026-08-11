@@ -20,7 +20,7 @@ from plane.app.views import (
     ProjectMemberPreferenceEndpoint,
     ProjectWorkLogViewSet,
     ProjectWorklogExportView,
-    WorkspaceBankWideProjectsEndpoint,
+    WorkspaceGlobalProjectsEndpoint,
     ProjectGithubSyncEndpoint,
     ProjectGithubSyncNowEndpoint,
     ProjectFieldPermissionViewSet,
@@ -158,9 +158,9 @@ urlpatterns = [
         name="project-github-sync-now",
     ),
     path(
-        "workspaces/<str:slug>/bank-wide-projects/",
-        WorkspaceBankWideProjectsEndpoint.as_view(),
-        name="workspace-bank-wide-projects",
+        "workspaces/<str:slug>/global-projects/",
+        WorkspaceGlobalProjectsEndpoint.as_view(),
+        name="workspace-global-projects",
     ),
     path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/field-permissions/",

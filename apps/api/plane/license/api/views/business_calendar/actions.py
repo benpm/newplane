@@ -16,10 +16,11 @@ from plane.license.api.views.base import BaseAPIView
 from plane.utils.business_calendar.service import BusinessCalendarService
 from plane.utils.exception_logger import log_exception
 
-# Lunar-calendar holidays that naive year-shift will get wrong
+# Copy-year shifts each holiday by a whole year, which is wrong for any
+# holiday that tracks a lunar (or otherwise non-Gregorian) calendar.
 _LUNAR_HOLIDAY_WARNINGS = [
-    "Tết Nguyên Đán and Giỗ Tổ Hùng Vương follow the lunar calendar — "
-    "please verify their dates after copy-year."
+    "Holidays that follow a lunar calendar do not fall on the same "
+    "Gregorian date each year — please verify their dates after copy-year."
 ]
 
 

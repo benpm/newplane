@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-export type TLanguage = "en" | "ko" | "vi";
+export type TLanguage = "en";
 
 export interface ILanguageOption {
   label: string;

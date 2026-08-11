@@ -220,6 +220,14 @@ swing_sso_config_variables = [
         "category": "SWING_SSO",
         "is_encrypted": False,
     },
+    {
+        # Domain for the synthetic per-staff login address. See
+        # plane.utils.staff_email — changing this does not rename existing users.
+        "key": "SWING_SSO_EMAIL_DOMAIN",
+        "value": os.environ.get("SWING_SSO_EMAIL_DOMAIN", "swing.local"),
+        "category": "SWING_SSO",
+        "is_encrypted": False,
+    },
 ]
 
 smtp_config_variables = [

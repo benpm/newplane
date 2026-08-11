@@ -3,7 +3,7 @@
 #
 # Stages: lint → test → build → deploy → release
 # CI/CD targets only 3 dynamic services: web, admin, api
-# (space, live, proxy deployed once manually via build-shb-images.sh + deploy-shb.sh)
+# (space, live, proxy deployed once manually via build-release-images.sh + deploy-release.sh)
 # =============================================================================
 
 stages:
@@ -19,11 +19,11 @@ variables:
   # Docker image tag — short commit SHA (e.g. "a1b2c3d")
   IMAGE_TAG: $CI_COMMIT_SHORT_SHA
   # Deploy directory — must match on ALL servers (dev, prod, external VPS)
-  PLANE_DIR: "/opt/shb-deploy/plane-app"
+  PLANE_DIR: "/opt/plane-deploy/plane-app"
   # Full git history required for turbo --affected to detect changed packages
   GIT_DEPTH: 0
   # Package registry name for release packages
-  PACKAGE_NAME: "plane-shb-release"
+  PACKAGE_NAME: "plane-release"
 
 # ─── Cache Templates ──────────────────────────────────────────────────────────
 
@@ -183,22 +183,22 @@ backend:test:
 
 # ── Web ───────────────────────────────────────────────────────────────────────
 
-# Also produces .shb-version and version.env (dotenv) for the release stage
+# Also produces .release-version and version.env (dotenv) for the release stage
 build:web:
   extends: .build_base
   script:
     # Extract version from package.json — used as Docker tag + tar.gz filename
     - VERSION=$(grep -m1 version package.json | cut -d'"' -f4)
-    - SHB_VERSION=shb_v${VERSION}
-    - docker build --platform linux/amd64 -t makeplane/plane-frontend:${SHB_VERSION} -f apps/web/Dockerfile.web .
+    - RELEASE_VERSION=v${VERSION}
+    - docker build --platform linux/amd64 -t makeplane/plane-frontend:${RELEASE_VERSION} -f apps/web/Dockerfile.web .
     - mkdir -p dist
-    - docker save makeplane/plane-frontend:${SHB_VERSION} | gzip > dist/plane-frontend-${SHB_VERSION}.tar.gz
-    - echo $SHB_VERSION > dist/.shb-version
-    - echo SHB_VERSION=$SHB_VERSION > dist/version.env
+    - docker save makeplane/plane-frontend:${RELEASE_VERSION} | gzip > dist/plane-frontend-${RELEASE_VERSION}.tar.gz
+    - echo $RELEASE_VERSION > dist/.release-version
+    - echo RELEASE_VERSION=$RELEASE_VERSION > dist/version.env
   artifacts:
     paths:
       - dist/plane-frontend-*.tar.gz
-      - dist/.shb-version
+      - dist/.release-version
     reports:
       dotenv: dist/version.env
     expire_in: 1 day
@@ -211,10 +211,10 @@ build:admin:
   extends: .build_base
   script:
     - VERSION=$(grep -m1 version package.json | cut -d'"' -f4)
-    - SHB_VERSION=shb_v${VERSION}
-    - docker build --platform linux/amd64 -t makeplane/plane-admin:${SHB_VERSION} -f apps/admin/Dockerfile.admin .
+    - RELEASE_VERSION=v${VERSION}
+    - docker build --platform linux/amd64 -t makeplane/plane-admin:${RELEASE_VERSION} -f apps/admin/Dockerfile.admin .
     - mkdir -p dist
-    - docker save makeplane/plane-admin:${SHB_VERSION} | gzip > dist/plane-admin-${SHB_VERSION}.tar.gz
+    - docker save makeplane/plane-admin:${RELEASE_VERSION} | gzip > dist/plane-admin-${RELEASE_VERSION}.tar.gz
   artifacts:
     paths:
       - dist/plane-admin-*.tar.gz
@@ -228,11 +228,11 @@ build:api:
   extends: .build_base
   script:
     - VERSION=$(grep -m1 version package.json | cut -d'"' -f4)
-    - SHB_VERSION=shb_v${VERSION}
+    - RELEASE_VERSION=v${VERSION}
     # Build context is ./apps/api (not repo root) per Dockerfile.api requirements
-    - docker build --platform linux/amd64 -t makeplane/plane-backend:${SHB_VERSION} -f apps/api/Dockerfile.api ./apps/api
+    - docker build --platform linux/amd64 -t makeplane/plane-backend:${RELEASE_VERSION} -f apps/api/Dockerfile.api ./apps/api
     - mkdir -p dist
-    - docker save makeplane/plane-backend:${SHB_VERSION} | gzip > dist/plane-backend-${SHB_VERSION}.tar.gz
+    - docker save makeplane/plane-backend:${RELEASE_VERSION} | gzip > dist/plane-backend-${RELEASE_VERSION}.tar.gz
   artifacts:
     paths:
       - dist/plane-backend-*.tar.gz
@@ -261,10 +261,10 @@ deploy:external-test:
     - ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts
   script:
     - sshpass -p "$VPS_PASSWORD" ssh $VPS_USER@$VPS_HOST "rm -rf /tmp/plane-deploy && mkdir -p /tmp/plane-deploy"
-    - sshpass -p "$VPS_PASSWORD" scp dist/*.tar.gz dist/.shb-version $VPS_USER@$VPS_HOST:/tmp/plane-deploy/
+    - sshpass -p "$VPS_PASSWORD" scp dist/*.tar.gz dist/.release-version $VPS_USER@$VPS_HOST:/tmp/plane-deploy/
     - sshpass -p "$VPS_PASSWORD" scp scripts/ci-deploy.sh $VPS_USER@$VPS_HOST:/tmp/ci-deploy.sh
-    - SHB_VERSION=$(cat dist/.shb-version)
-    - sshpass -p "$VPS_PASSWORD" ssh $VPS_USER@$VPS_HOST "PLANE_DIR=/home/$VPS_USER/plane-app SHB_VERSION=$SHB_VERSION bash /tmp/ci-deploy.sh"
+    - RELEASE_VERSION=$(cat dist/.release-version)
+    - sshpass -p "$VPS_PASSWORD" ssh $VPS_USER@$VPS_HOST "PLANE_DIR=/home/$VPS_USER/plane-app RELEASE_VERSION=$RELEASE_VERSION bash /tmp/ci-deploy.sh"
     - sshpass -p "$VPS_PASSWORD" ssh $VPS_USER@$VPS_HOST "rm -f /tmp/ci-deploy.sh"
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
@@ -276,7 +276,7 @@ deploy:external-test:
 # STAGE 5: RELEASE
 # Creates a tag + release on gitlab.com after a successful preview build.
 # Internal/production deploys are performed manually using:
-#   scripts/build-shb-images.sh   — build linux/amd64 tarballs locally
+#   scripts/build-release-images.sh   — build linux/amd64 tarballs locally
 #   scripts/upload-release.sh     — push package + tag to internal GitLab
 # =============================================================================
 
@@ -285,27 +285,27 @@ release:production:
   image: alpine:latest
   needs:
     - job: build:web
-      artifacts: true # provides $SHB_VERSION from dotenv
+      artifacts: true # provides $RELEASE_VERSION from dotenv
   variables:
     GIT_STRATEGY: none
   before_script:
     - apk add --no-cache curl
   script:
-    - echo "Creating tag + release for ${SHB_VERSION} ..."
+    - echo "Creating tag + release for ${RELEASE_VERSION} ..."
     - |
       curl --fail -s \
         --request POST \
         --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-        --data "tag_name=${SHB_VERSION}&ref=${CI_COMMIT_SHA}&message=Release ${SHB_VERSION}" \
+        --data "tag_name=${RELEASE_VERSION}&ref=${CI_COMMIT_SHA}&message=Release ${RELEASE_VERSION}" \
         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/tags"
     - |
       curl --fail -s \
         --request POST \
         --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
         --header "Content-Type: application/json" \
-        --data "{\"name\":\"${SHB_VERSION}\",\"tag_name\":\"${SHB_VERSION}\",\"description\":\"Release ${SHB_VERSION} — commit ${CI_COMMIT_SHORT_SHA}\"}" \
+        --data "{\"name\":\"${RELEASE_VERSION}\",\"tag_name\":\"${RELEASE_VERSION}\",\"description\":\"Release ${RELEASE_VERSION} — commit ${CI_COMMIT_SHORT_SHA}\"}" \
         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases"
-    - echo "  ✓ Released ${SHB_VERSION}"
+    - echo "  ✓ Released ${RELEASE_VERSION}"
   rules:
     - if: $CI_COMMIT_BRANCH == "preview"
       when: on_success

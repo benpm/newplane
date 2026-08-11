@@ -5,7 +5,7 @@
 **newplane** is an open-source project management platform forked from `makeplane/plane`. It provides workspace-level collaboration, issue tracking, sprint management, and customizable workflows with real-time collaboration capabilities.
 
 **Origin:** Fork of `github.com/makeplane/plane`
-**Repository:** `github.com/shbvn/plane.git`
+**Repository:** `github.com/benpm/newplane.git`
 **Tech Stack:** React 18 + Router v7 + MobX | Django 4.2 + DRF + PostgreSQL + Celery
 **Primary Deployment:** Docker-based (Caddy reverse proxy + multi-app architecture)
 **Current Date:** 2026-04-02
@@ -77,7 +77,7 @@
 - Task category management
 - Monitoring dashboard (system health, metrics)
 - Staff management
-- Bank-wide project visibility (cross-team)
+- Global project visibility (cross-team)
 
 ## Product Development Requirements (PDR)
 

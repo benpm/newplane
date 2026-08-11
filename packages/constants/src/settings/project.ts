@@ -114,12 +114,12 @@ export const PROJECT_SETTINGS: Record<TProjectSettingsTabs, TProjectSettingsItem
     access: [EUserProjectRoles.ADMIN],
     highlight: (pathname: string, baseUrl: string) => pathname === `${baseUrl}/features/time-tracking/`,
   },
-  bank_wide: {
-    key: "bank_wide",
-    i18n_label: "bank_wide_project.settings.title",
-    href: `/bank-wide`,
+  global: {
+    key: "global",
+    i18n_label: "global_project.settings.title",
+    href: `/global`,
     access: [EUserProjectRoles.ADMIN],
-    highlight: (pathname: string, baseUrl: string) => pathname === `${baseUrl}/bank-wide/`,
+    highlight: (pathname: string, baseUrl: string) => pathname === `${baseUrl}/global/`,
   },
   "field-permissions": {
     key: "field-permissions",
@@ -136,7 +136,7 @@ export const GROUPED_PROJECT_SETTINGS: Record<PROJECT_SETTINGS_CATEGORY, TProjec
   [PROJECT_SETTINGS_CATEGORY.GENERAL]: [
     PROJECT_SETTINGS["general"],
     PROJECT_SETTINGS["members"],
-    PROJECT_SETTINGS["bank_wide"],
+    PROJECT_SETTINGS["global"],
   ],
   [PROJECT_SETTINGS_CATEGORY.FEATURES]: [
     PROJECT_SETTINGS["features_cycles"],

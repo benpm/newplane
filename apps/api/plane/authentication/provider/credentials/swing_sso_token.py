@@ -18,6 +18,7 @@ from plane.authentication.adapter.error import (
 )
 from plane.db.models import User
 from plane.license.utils.instance_value import get_configuration_value
+from plane.utils.staff_email import staff_email
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +156,7 @@ class SwingSSOTokenProvider(CredentialAdapter):
             )
 
         # Step 2: Lookup user in Plane DB
-        email = f"sh{self.employee_no}@swing.shinhan.com"
+        email = staff_email(self.employee_no)
         user = User.objects.filter(email=email).first()
 
         if not user:

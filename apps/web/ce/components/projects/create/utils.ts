@@ -23,5 +23,5 @@ export const getProjectFormValues = (): Partial<TProject> => ({
   project_lead: null,
   module_view: false,
   issue_views_view: false,
-  is_bank_wide: false,
+  is_global: false,
 });

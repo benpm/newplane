@@ -40,7 +40,7 @@ paths:
 
 - [ ] ALL visible text uses `t()` from `@plane/i18n`
 - [ ] Includes: buttons, titles, placeholders, toasts, empty states, errors
-- [ ] Translation keys in ALL 3 files (en, ko, vi)
+- [ ] Translation keys added to `packages/i18n/src/locales/en/translations.ts` (English is the only locale)
 
 ### 2. Color Tokens — Correct Naming
 

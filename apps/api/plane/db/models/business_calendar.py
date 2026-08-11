@@ -35,9 +35,9 @@ class WorkSchedule(BaseModel):
         default=list,
         help_text="Mon–Sun work flags. True = working day.",
     )
-    timezone = models.CharField(max_length=64, default="Asia/Ho_Chi_Minh")
+    timezone = models.CharField(max_length=64, default="UTC")
     is_default = models.BooleanField(default=False)
-    country_code = models.CharField(max_length=2, default="VN")
+    country_code = models.CharField(max_length=2, blank=True, default="")
 
     class Meta:
         db_table = "work_schedules"

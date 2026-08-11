@@ -87,7 +87,7 @@ export interface ILinkWorkspaceResult {
   staff_count?: number;
 }
 
-export type TAutoJoinMode = "all_projects" | "bank_wide_projects";
+export type TAutoJoinMode = "all_projects" | "global_projects";
 
 export interface IAutoJoinResult {
   newly_added: number;

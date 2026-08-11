@@ -217,8 +217,8 @@ _ALLOWED_ORDER_BY = {
     "-name",
     "project__project_lead__display_name",
     "-project__project_lead__display_name",
-    "project__is_bank_wide",
-    "-project__is_bank_wide",
+    "project__is_global",
+    "-project__is_global",
     "sub_issues_count",
     "-sub_issues_count",
     "reference_link_count",
@@ -352,9 +352,9 @@ class HoIssueListView(BaseAPIView):
         if module:
             qs = qs.filter(issue_module__module__name__in=module.split(","))
 
-        bank_wide = request.query_params.get("bank_wide")
-        if bank_wide:
-            qs = qs.filter(project__is_bank_wide=bank_wide.lower() == "true")
+        is_global = request.query_params.get("is_global")
+        if is_global:
+            qs = qs.filter(project__is_global=is_global.lower() == "true")
 
         progress = request.query_params.get("progress")
         if progress:

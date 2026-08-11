@@ -159,7 +159,6 @@ urlpatterns = [
     # Task category management
     path("", include("plane.license.api.urls.task_category")),
     # Help Center authoring (instance-global, God Mode)
-    path("", include("plane.license.api.urls.help_center")),
     # Job position management
     path("", include("plane.license.api.urls.job_position")),
     # Business calendar management (WorkSchedule / Holiday / DayOverride)

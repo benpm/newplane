@@ -13,8 +13,8 @@ export const extendedRoutes: RouteConfigEntry[] = [
       // Nest inside (projects)/layout.tsx so it gets the workspace sidebar shell —
       // same pattern as the "ho" route in core.ts
       layout("./(all)/[workspaceSlug]/(projects)/layout.tsx", [
-        layout("./(all)/[workspaceSlug]/(projects)/bank-wide-projects/layout.tsx", [
-          route(":workspaceSlug/bank-wide-projects", "./(all)/[workspaceSlug]/(projects)/bank-wide-projects/page.tsx"),
+        layout("./(all)/[workspaceSlug]/(projects)/global-projects/layout.tsx", [
+          route(":workspaceSlug/global-projects", "./(all)/[workspaceSlug]/(projects)/global-projects/page.tsx"),
         ]),
         layout("./(all)/[workspaceSlug]/(projects)/time-tracking/layout.tsx", [
           route(":workspaceSlug/time-tracking", "./(all)/[workspaceSlug]/(projects)/time-tracking/page.tsx"),
@@ -44,8 +44,8 @@ export const extendedRoutes: RouteConfigEntry[] = [
               "./(all)/[workspaceSlug]/(settings)/settings/projects/[projectId]/features/time-tracking/page.tsx"
             ),
             route(
-              ":workspaceSlug/settings/projects/:projectId/bank-wide",
-              "./(all)/[workspaceSlug]/(settings)/settings/projects/[projectId]/bank-wide/page.tsx"
+              ":workspaceSlug/settings/projects/:projectId/global",
+              "./(all)/[workspaceSlug]/(settings)/settings/projects/[projectId]/global/page.tsx"
             ),
             route(
               ":workspaceSlug/settings/projects/:projectId/field-permissions",
@@ -54,13 +54,6 @@ export const extendedRoutes: RouteConfigEntry[] = [
           ]),
         ]),
       ]),
-    ]),
-    // Help Center — STANDALONE top-level /help (instance-global, no workspace).
-    // Sibling of [workspaceSlug] under the (all) auth layout, mirroring
-    // settings/profile: auth-gated but workspace-agnostic.
-    layout("./(all)/help/layout.tsx", [
-      route("help", "./(all)/help/page.tsx"),
-      route("help/a/:articleSlug", "./(all)/help/article.tsx"),
     ]),
   ]),
 ];

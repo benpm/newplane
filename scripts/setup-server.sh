@@ -11,20 +11,20 @@
 #      └── archive/    ← old dist backups
 #
 #   2. Proxy config dir (Caddy reverse proxy):
-#      /opt/shb-deploy/plane-app/proxy/
+#      /opt/plane-deploy/plane-app/proxy/
 #      └── Caddyfile
 #      /opt/certs/     ← TLS certificates (copy manually for internal servers)
 #
 # Usage: bash setup-server.sh [--domain <domain>] [--vps]
-#   --domain   Caddy domain name (default: uat-jms.shinhan.com.vn)
+#   --domain   Caddy domain name (default: plane.example.com)
 #   --vps      External VPS mode: HTTP-only Caddyfile (no TLS cert required)
 
 set -euo pipefail
 
 PLANE_DIR="/root/Documents/plane-offline-pack/plane-app"
-PROXY_DIR="/opt/shb-deploy/plane-app/proxy"
+PROXY_DIR="/opt/plane-deploy/plane-app/proxy"
 CERTS_DIR="/opt/certs"
-DOMAIN="uat-jms.shinhan.com.vn"
+DOMAIN="plane.example.com"
 VPS_MODE=false
 
 # ── Parse args ────────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ else
   mkdir -p "${CERTS_DIR}"
   cat > "${CADDYFILE}" << CADDY_EOF
 ${DOMAIN} {
-    tls ${CERTS_DIR}/STAR.shinhan.com.vn.chain.crt ${CERTS_DIR}/STAR.shinhan.com.vn.key
+    tls ${CERTS_DIR}/fullchain.pem ${CERTS_DIR}/privkey.pem
 
     redir /live /live/
     redir /space /space/
@@ -107,8 +107,8 @@ ${DOMAIN} {
 }
 CADDY_EOF
   echo "  ⚠ Copy TLS certs to ${CERTS_DIR}/ before starting proxy:"
-  echo "    ${CERTS_DIR}/STAR.shinhan.com.vn.chain.crt"
-  echo "    ${CERTS_DIR}/STAR.shinhan.com.vn.key"
+  echo "    ${CERTS_DIR}/fullchain.pem"
+  echo "    ${CERTS_DIR}/privkey.pem"
 fi
 
 echo "  ✓ ${CADDYFILE}"
@@ -150,5 +150,5 @@ echo "  2. Copy TLS certs to ${CERTS_DIR}/"
 fi
 echo "  3. Transfer deploy package (from build machine):"
 echo "     scp -r deploy/* user@server:${PLANE_DIR}/"
-echo "  4. cd ${PLANE_DIR} && ./scripts/deploy-shb.sh"
+echo "  4. cd ${PLANE_DIR} && ./scripts/deploy-release.sh"
 echo ""

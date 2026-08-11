@@ -8,20 +8,16 @@ from __future__ import annotations
 
 import functools
 import logging
-from zoneinfo import ZoneInfo
 
 from django.utils import timezone
 
-from plane.utils.business_calendar import BusinessCalendarService
+from plane.utils.business_calendar import CALENDAR_TZ, BusinessCalendarService
 
 logger = logging.getLogger(__name__)
 
-# Vietnam timezone — server runs UTC, must convert before calling .date()
-VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
-
 
 def working_day_required(schedule_resolver=None):
-    """Decorator factory that skips a Celery task on non-working days (VN calendar).
+    """Decorator factory that skips a Celery task on non-working days.
 
     Args:
         schedule_resolver: optional callable(task_args, task_kwargs) → schedule_id.
@@ -41,7 +37,7 @@ def working_day_required(schedule_resolver=None):
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
-            today = timezone.now().astimezone(VN_TZ).date()
+            today = timezone.now().astimezone(CALENDAR_TZ).date()
             sid = schedule_resolver(*args, **kwargs) if schedule_resolver else None
             try:
                 is_working = BusinessCalendarService.is_working_day(today, sid)

@@ -188,11 +188,11 @@ Track all deployments (automatic and manual):
 
 ```bash
 # View deployment history
-cat /opt/shb-deploy/plane-app/deploy-audit.log
+cat /opt/plane-deploy/plane-app/deploy-audit.log
 
 # Format: timestamp | release_tag | uid:username | sha256 | exit_code
-2026-05-04T14:22:15Z | prod/shb_v1.2.0 | 0:gitlab-runner | 5f9c4ab08... | 0
-2026-05-03T10:15:30Z | prod/shb_v1.1.9 | 0:gitlab-runner | 3e8f2c1d9... | 0
+2026-05-04T14:22:15Z | prod/v1.2.0 | 0:gitlab-runner | 5f9c4ab08... | 0
+2026-05-03T10:15:30Z | prod/v1.1.9 | 0:gitlab-runner | 3e8f2c1d9... | 0
 ```
 
 **Interpret:**
@@ -425,11 +425,11 @@ docker-compose ps | grep -E "(Up|Exited)" | awk '{print "  " $1 ": " $6}'
 
 # 4. Deployment audit
 echo "Last deployment:"
-tail -1 /opt/shb-deploy/plane-app/deploy-audit.log
+tail -1 /opt/plane-deploy/plane-app/deploy-audit.log
 
 # 5. Disk space
 echo "Disk space:"
-df -h /opt/shb-deploy/plane-app | awk 'NR>1 {printf "  %s used, %s available\n", $3, $4}'
+df -h /opt/plane-deploy/plane-app | awk 'NR>1 {printf "  %s used, %s available\n", $3, $4}'
 
 echo
 echo "=== End Health Check ==="
@@ -453,7 +453,7 @@ Container status:
   postgres: Up
 
 Last deployment:
-2026-05-04T14:22:15Z | prod/shb_v1.2.0 | 0:gitlab-runner | 5f9c4ab08... | 0
+2026-05-04T14:22:15Z | prod/v1.2.0 | 0:gitlab-runner | 5f9c4ab08... | 0
 
 Disk space:
   23G used, 127G available

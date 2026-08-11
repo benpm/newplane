@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-Swing SSO is the Single Sign-On authentication system used by Shinhan Group. It provides two authentication flows:
+Swing SSO is the Single Sign-On authentication system used by the identity provider. It provides two authentication flows:
 
 | Flow               | Protocol        | Use Case                                                                       |
 | ------------------ | --------------- | ------------------------------------------------------------------------------ |
@@ -24,8 +24,8 @@ You need the following credentials from the Swing admin team:
 | -------------- | -------------------------------- | -------------------------------------- |
 | `clientId`     | System-issued authentication key | `5E160XXXXQ41D7Y`                      |
 | `clientSecret` | System secret key                | `4722d002-xxxx-xxxx-xxxx-3616ad7e140e` |
-| `companyCode`  | Company code in Shinhan Group    | `VN`                                   |
-| Base URL       | API gateway domain               | `https://apigw.shinhan.com:8443`       |
+| `companyCode`  | Company code in the identity provider    | `VN`                                   |
+| Base URL       | API gateway domain               | `https://apigw.sso.example.com:8443`       |
 
 ---
 
@@ -81,7 +81,7 @@ HTTP status is always `200`. Check `common.resultCode` and `data.authResult` in 
 {
   "data": {
     "companyCode": "VN",
-    "companyName": "ShinhanBank Vietnam",
+    "companyName": "Example Corp",
     "companyId": "C300000001",
     "departmentId": "D500000001",
     "departmentNo": "SH001",
@@ -93,7 +93,7 @@ HTTP status is always `200`. Check `common.resultCode` and `data.authResult` in 
     "employeeName": "Nguyen Van A",
     "employeePositionName": "Senior Developer",
     "employeeClass": "Regular",
-    "companyEmail": "user001@swork.shinhan.com",
+    "companyEmail": "user001@swork.example.com",
     "email": "nguyenvana@example.com",
     "cellPhone": "0901-111-111",
     "authResult": "SUCCESS",
@@ -150,7 +150,7 @@ const crypto = require("crypto");
  * @returns {Promise<object>} - { success, data, error }
  */
 async function authenticateSwingSSO(employeeNo, password) {
-  const SWING_URL = process.env.SWING_SSO_URL; // e.g. https://apigw.shinhan.com:8443/cau/v1/idpw-authorize
+  const SWING_URL = process.env.SWING_SSO_URL; // e.g. https://apigw.sso.example.com:8443/cau/v1/idpw-authorize
   const CLIENT_ID = process.env.SWING_SSO_CLIENT_ID;
   const CLIENT_SECRET = process.env.SWING_SSO_CLIENT_SECRET;
   const COMPANY_CODE = process.env.SWING_SSO_COMPANY_CODE || "VN";
@@ -594,16 +594,16 @@ public class SwingSSOTokenValidator {
 After successful Swing SSO authentication, map the `employeeNo` to your local user using a **company-specific prefix**:
 
 ```
-Email pattern: {prefix}{employeeNo}@swing.shinhan.com
+Email pattern: {prefix}{employeeNo}@swing.local
 ```
 
 ### 6.1 Company Prefix Table
 
 | Company                    | Prefix | Company Code | Email Example                  |
 | -------------------------- | ------ | ------------ | ------------------------------ |
-| Shinhan Bank Vietnam       | `sh`   | `VN`         | `sh10000001@swing.shinhan.com` |
-| Shinhan Securities Vietnam | `gs`   | _(TBD)_      | `gs10000001@swing.shinhan.com` |
-| Shinhan Life Vietnam       | `nl`   | _(TBD)_      | `nl10000001@swing.shinhan.com` |
+| Example Bank       | `sh`   | `VN`         | `sh10000001@swing.local` |
+| Example Securities | `gs`   | _(TBD)_      | `gs10000001@swing.local` |
+| Example Life       | `nl`   | _(TBD)_      | `nl10000001@swing.local` |
 
 > **Note:** The prefix list may expand as more subsidiaries onboard. Store the mapping in a configurable table/dictionary, not hardcoded if-else.
 
@@ -616,11 +616,11 @@ On the login form, when a user enters a Staff ID (8 digits), the system should l
 ```
 ┌─────────────────────────────────────┐
 │  Staff ID:  [10000001        ]      │
-│  Company:   [▼ Shinhan Bank VN    ] │
+│  Company:   [▼ Example Org    ] │
 │             ┌───────────────────┐   │
-│             │ Shinhan Bank VN   │   │
-│             │ Shinhan Securities│   │
-│             │ Shinhan Life VN   │   │
+│             │ Example Org   │   │
+│             │ Example Org Securities│   │
+│             │ Example Org Life VN   │   │
 │             └───────────────────┘   │
 │  Password:  [••••••••         👁]   │
 │                                     │
@@ -631,10 +631,10 @@ On the login form, when a user enters a Staff ID (8 digits), the system should l
 **Implementation considerations:**
 
 1. **Fetch company list from config** — Do not hardcode. Retrieve from backend config or environment so new subsidiaries can be added without code changes.
-2. **Default company** — Pre-select the most common subsidiary (e.g. Shinhan Bank VN) or remember the user's last selection via localStorage.
+2. **Default company** — Pre-select the most common subsidiary (e.g. Example Org) or remember the user's last selection via localStorage.
 3. **Company → prefix mapping** — After user selects a company and authenticates successfully, use the corresponding prefix to build the local email for user lookup:
    ```
-   localEmail = `${companyPrefix}${employeeNo}@swing.shinhan.com`
+   localEmail = `${companyPrefix}${employeeNo}@swing.local`
    ```
 4. **Company → companyCode mapping** — Each subsidiary may use a different `companyCode` in the Swing API request. Map the selected company to its `companyCode` value.
 
@@ -643,15 +643,15 @@ On the login form, when a user enters a Staff ID (8 digits), the system should l
 ```typescript
 // Node.js / TypeScript
 interface SubsidiaryConfig {
-  name: string; // Display name: "Shinhan Bank Vietnam"
+  name: string; // Display name: "Example Bank"
   prefix: string; // Email prefix: "sh"
   companyCode: string; // Swing API companyCode: "VN"
 }
 
 const SUBSIDIARIES: SubsidiaryConfig[] = [
-  { name: "Shinhan Bank Vietnam", prefix: "sh", companyCode: "VN" },
-  { name: "Shinhan Securities Vietnam", prefix: "gs", companyCode: "GS" },
-  { name: "Shinhan Life Vietnam", prefix: "nl", companyCode: "NL" },
+  { name: "Example Bank", prefix: "sh", companyCode: "VN" },
+  { name: "Example Securities", prefix: "gs", companyCode: "GS" },
+  { name: "Example Life", prefix: "nl", companyCode: "NL" },
 ];
 ```
 
@@ -660,9 +660,9 @@ const SUBSIDIARIES: SubsidiaryConfig[] = [
 public record SubsidiaryConfig(String name, String prefix, String companyCode) {}
 
 List<SubsidiaryConfig> subsidiaries = List.of(
-    new SubsidiaryConfig("Shinhan Bank Vietnam",       "sh", "VN"),
-    new SubsidiaryConfig("Shinhan Securities Vietnam", "gs", "GS"),
-    new SubsidiaryConfig("Shinhan Life Vietnam",       "nl", "NL")
+    new SubsidiaryConfig("Example Bank",       "sh", "VN"),
+    new SubsidiaryConfig("Example Securities", "gs", "GS"),
+    new SubsidiaryConfig("Example Life",       "nl", "NL")
 );
 ```
 
@@ -674,9 +674,9 @@ The selected company affects **two things** in the password-based flow:
 2. **User lookup** — After Swing returns `SUCCESS`, build local email with the correct prefix
 
 ```
-User selects "Shinhan Securities Vietnam" + enters employeeNo "10000001"
+User selects "Example Securities" + enters employeeNo "10000001"
   → API request: common.companyCode = "GS"
-  → User lookup: gs10000001@swing.shinhan.com
+  → User lookup: gs10000001@swing.local
 ```
 
 Users MUST be pre-created in your system with the correct prefixed email format.
@@ -687,7 +687,7 @@ Users MUST be pre-created in your system with the correct prefixed email format.
 
 ```env
 # Password-based flow
-SWING_SSO_URL=https://apigw.shinhan.com:8443/cau/v1/idpw-authorize
+SWING_SSO_URL=https://apigw.sso.example.com:8443/cau/v1/idpw-authorize
 SWING_SSO_CLIENT_ID=<your_client_id>
 SWING_SSO_CLIENT_SECRET=<your_client_secret>
 SWING_SSO_COMPANY_CODE=VN

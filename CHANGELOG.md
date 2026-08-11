@@ -1,5 +1,59 @@
 # Changelog
 
+## 8/12/2026 — de-brand the fork
+
+Finished the de-branding the 8/5 pass deliberately stopped short of. Nothing
+that was a feature was removed; things that were only an identity were.
+
+### Removed
+
+- **The Help Centre.** Its entire corpus was 58 Vietnamese-only articles under
+  Vietnamese slugs, with a test that actively asserted "Shinhan Workspace"
+  appeared in article text. Models, API, God Mode authoring UI, the reader, the
+  screenshot tooling and the fixtures are all gone. Migration `0183` drops the
+  four tables and the orphaned inline-image assets; `license/0008` strips the
+  now-invalid `help-center` key from stored admin menu grants.
+- **The `vi` and `ko` locale packs.** The app is English-only; the language
+  picker went with them, and `TLanguage` is now just `"en"`. Profiles still
+  holding a retired locale fall back to English instead of erroring.
+
+### Renamed
+
+- **Bank-wide Projects → Global Projects**, end to end: `is_bank_wide` →
+  `is_global` (migration `0184`), the `bank_wide_project` display-property key →
+  `global_project` (data migration `0185`, so saved views keep their columns),
+  routes `/bank-wide-projects` → `/global-projects` and
+  `/settings/projects/:id/bank-wide` → `/global`, plus every symbol, label and
+  i18n key. The spreadsheet column's icon referenced a `BankIcon` that never
+  existed; it is now `Globe`.
+- **The `shb-*` release pipeline** → `release`/`plane-*`: `docker-compose.shb.yml`,
+  `build-shb-images.sh`, `deploy-shb.sh`, the `shb_v*` image tags,
+  `/opt/shb-deploy`, `plane-shb-release`, the `shb-dev`/`shb-prod` runner tags
+  and the `start-shbvn` action. **This changes a live deploy path** — the server
+  directory and GitLab runner tags must be renamed in the same window.
+
+### Neutralised
+
+- **The Swing SSO email domain.** `sh{id}@swing.shinhan.com` was hardcoded at six
+  sites and is the identity key for every SSO account. It now comes from a
+  `SWING_SSO_EMAIL_DOMAIN` instance setting (default `swing.local`) via
+  `plane.utils.staff_email`. Existing accounts are not renamed; an operator who
+  needs continuity sets the old domain back.
+- **The business calendar.** Kept as a feature, stripped of its region: the
+  seeded Vietnamese holidays and swap-day overrides are gone (migration `0186`
+  for existing instances, `0167` rewritten so fresh installs never create them),
+  and `Asia/Ho_Chi_Minh`/`VN` defaults became `UTC`/empty. `VN_TZ` is now
+  `CALENDAR_TZ`, configurable via `BUSINESS_CALENDAR_TIMEZONE`.
+- **Seed data, deployment docs, and scripts.** Shinhan-named departments, the
+  hardcoded seed password, `uat-jms.shinhan.com.vn` and its cert paths, the
+  `dc=shinhan` LDAP block, and the `shbvn/plane` upstream reference.
+- **Every remaining Vietnamese-language file**, including
+  `docs/shbvn-deployment/` (63 files, deleted) and the git-workflow and GitNexus
+  guides (translated to English).
+
+Past `CHANGELOG` entries and `docs/journals/*` are left as written — they record
+what actually happened.
+
 ## 8/5/2026 — fixes
 
 Found while running this branch on a dev deployment and driving its test suite

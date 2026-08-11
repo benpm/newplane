@@ -16,8 +16,8 @@ import { ScheduleDetail } from "@/components/calendar";
 import { useBusinessCalendar } from "@/hooks/store";
 
 const VN_DEFAULT_SCHEDULE: IWorkScheduleCreate = {
-  name: "VN Banking",
-  timezone: "Asia/Ho_Chi_Minh",
+  name: "Default Schedule",
+  timezone: "UTC",
   country_code: "VN",
   week_pattern: [true, true, true, true, true, false, false],
   is_default: true,
@@ -63,7 +63,7 @@ const CalendarPage = observer(function CalendarPage() {
             <div className="space-y-1">
               <p className="text-body-sm-semibold text-secondary">No business calendar yet</p>
               <p className="text-caption-sm-regular text-tertiary">
-                Initialize the default "VN Banking" schedule to start managing working days and holidays.
+                Initialize the default schedule to start managing working days and holidays.
               </p>
             </div>
             <Button variant="primary" size="sm" onClick={() => void handleInit()} disabled={initing} loading={initing}>

@@ -7,12 +7,12 @@
 #
 # Produces:
 #   deploy/
-#   ├── docker-compose.shb.yml   ← SHB image override (dynamic services only)
+#   ├── docker-compose.release.yml   ← SHB image override (dynamic services only)
 #   ├── scripts/
-#   │   └── deploy-shb.sh
+#   │   └── deploy-release.sh
 #   └── dist/
-#       ├── .shb-version
-#       └── plane-{frontend,admin,backend}-shb_v*.tar.gz
+#       ├── .release-version
+#       └── plane-{frontend,admin,backend}-v*.tar.gz
 #
 # NOTE: The base docker-compose.yaml is NOT included — it must already exist on the server.
 
@@ -25,10 +25,10 @@ cd "${ROOT_DIR}"
 DEPLOY_DIR="deploy"
 
 # ── Preflight checks ──────────────────────────────────────────────────────────
-[ -f "dist/.shb-version" ]        || { echo "ERROR: dist/.shb-version not found. Run build-shb-images.sh first."; exit 1; }
-[ -f "docker-compose.shb.yml" ]   || { echo "ERROR: docker-compose.shb.yml not found. Run build-shb-images.sh first."; exit 1; }
+[ -f "dist/.release-version" ]        || { echo "ERROR: dist/.release-version not found. Run build-release-images.sh first."; exit 1; }
+[ -f "docker-compose.release.yml" ]   || { echo "ERROR: docker-compose.release.yml not found. Run build-release-images.sh first."; exit 1; }
 
-TAG=$(tr -d '[:space:]' < dist/.shb-version)
+TAG=$(tr -d '[:space:]' < dist/.release-version)
 
 # Check all 3 dynamic tar.gz exist and are non-empty
 MISSING=0
@@ -48,7 +48,7 @@ done
 if [ "${MISSING}" -eq 1 ]; then
   echo ""
   echo "ERROR: Some images are missing or invalid."
-  echo "       Re-run build-shb-images.sh (or rebuild individual images) then retry."
+  echo "       Re-run build-release-images.sh (or rebuild individual images) then retry."
   exit 1
 fi
 
@@ -60,10 +60,10 @@ rm -rf "${DEPLOY_DIR}"
 mkdir -p "${DEPLOY_DIR}/scripts"
 mkdir -p "${DEPLOY_DIR}/dist"
 
-cp docker-compose.shb.yml      "${DEPLOY_DIR}/docker-compose.shb.yml"
-cp scripts/deploy-shb.sh       "${DEPLOY_DIR}/scripts/deploy-shb.sh"
-chmod +x                       "${DEPLOY_DIR}/scripts/deploy-shb.sh"
-cp dist/.shb-version           "${DEPLOY_DIR}/dist/.shb-version"
+cp docker-compose.release.yml      "${DEPLOY_DIR}/docker-compose.release.yml"
+cp scripts/deploy-release.sh       "${DEPLOY_DIR}/scripts/deploy-release.sh"
+chmod +x                       "${DEPLOY_DIR}/scripts/deploy-release.sh"
+cp dist/.release-version           "${DEPLOY_DIR}/dist/.release-version"
 
 for NAME in plane-frontend plane-admin plane-backend; do
   cp "dist/${NAME}-${TAG}.tar.gz" "${DEPLOY_DIR}/dist/"
@@ -84,6 +84,6 @@ echo "  scp -r ${DEPLOY_DIR}/* user@server:/path/to/plane-selfhost/plane-app/"
 echo ""
 echo "Then on server:"
 echo "  cd /path/to/plane-selfhost/plane-app"
-echo "  chmod +x ./scripts/deploy-shb.sh"
-echo "  ./scripts/deploy-shb.sh"
+echo "  chmod +x ./scripts/deploy-release.sh"
+echo "  ./scripts/deploy-release.sh"
 echo ""

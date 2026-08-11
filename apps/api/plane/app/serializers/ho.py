@@ -18,7 +18,7 @@ class HoIssueSerializer(serializers.Serializer):
     sub_issues_count = serializers.IntegerField()
     project_lead = serializers.SerializerMethodField()
     assignees = serializers.SerializerMethodField()
-    is_bank_wide_project = serializers.SerializerMethodField()
+    is_global_project = serializers.SerializerMethodField()
     priority = serializers.CharField()
     state_name = serializers.SerializerMethodField()
     state_color = serializers.SerializerMethodField()
@@ -62,8 +62,8 @@ class HoIssueSerializer(serializers.Serializer):
             for a in obj.assignees.all()
         ]
 
-    def get_is_bank_wide_project(self, obj):
-        return obj.project.is_bank_wide if obj.project_id else False
+    def get_is_global_project(self, obj):
+        return obj.project.is_global if obj.project_id else False
 
     def get_state_name(self, obj):
         return obj.state.name if obj.state_id else None

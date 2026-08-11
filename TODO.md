@@ -62,8 +62,9 @@ WHERE n_live_tup > 0 ORDER BY n_live_tup DESC;
 - [ ] Raise backend coverage. **Currently 52%** (~16,000 / 30,922 statements).
       90% means covering ~12,000 more — several thousand tests, not a single
       sitting. Prefer coverage of in-use paths over the global percentage.
-- [ ] Remove the remaining Shinhan branding: the Vietnamese help-centre fixtures
-      (~40 files, note the `lam-quen-shinhan-workspace` slug is cross-referenced)
-      and the seed-data org names in `seed_department_staff_data.py`
+- [x] Remove the remaining Shinhan branding — done wholesale: the Help Centre
+      feature was removed (its whole corpus was Vietnamese-only), the `vi`/`ko`
+      locales dropped, Bank-wide Projects renamed to Global Projects, the SSO
+      email domain made configurable, and the seed/calendar/ops/docs de-branded
 - [ ] Audit the UI for dark-theme correctness — no hardcoded colours, semantic
       tokens only, no `dark:` variants (see `.claude/rules/color-tokens.md`)

@@ -24,11 +24,11 @@ Fastest path for continuous integration. Runs automatically after merge to `deve
    - lint → test → build → deploy:dev
    ↓
 3. Build stage produces 3 docker images:
-   - plane-frontend-shb_vX.Y.Z.tar.gz
-   - plane-admin-shb_vX.Y.Z.tar.gz
-   - plane-backend-shb_vX.Y.Z.tar.gz
+   - plane-frontend-vX.Y.Z.tar.gz
+   - plane-admin-vX.Y.Z.tar.gz
+   - plane-backend-vX.Y.Z.tar.gz
    ↓
-4. deploy:dev job (runs on shb-dev runner):
+4. deploy:dev job (runs on plane-dev runner):
    - Copies artifacts to /tmp/plane-deploy/
    - Runs scripts/ci-deploy.sh locally
    - Loads images, runs migrations, docker-compose up
@@ -40,7 +40,7 @@ Fastest path for continuous integration. Runs automatically after merge to `deve
 ### Trigger Requirements
 
 - Branch: `develop`
-- Runner: `shb-dev` (shell executor, on dev server)
+- Runner: `plane-dev` (shell executor, on dev server)
 - No manual action needed
 - Artifacts expire after 1 day
 
@@ -51,13 +51,13 @@ Fastest path for continuous integration. Runs automatically after merge to `deve
 ssh dev-server
 
 # Watch deployment progress
-tail -f /opt/shb-deploy/plane-app/deploy-audit.log
+tail -f /opt/plane-deploy/plane-app/deploy-audit.log
 
 # Check service health
-docker-compose -f /opt/shb-deploy/plane-app/docker-compose.yaml ps
+docker-compose -f /opt/plane-deploy/plane-app/docker-compose.yaml ps
 
 # View container logs
-docker-compose -f /opt/shb-deploy/plane-app/docker-compose.yaml logs -f api web
+docker-compose -f /opt/plane-deploy/plane-app/docker-compose.yaml logs -f api web
 
 # Health check
 curl http://localhost:8000/health
@@ -85,15 +85,15 @@ Triggered when you create a tag matching the release pattern.
 
 ```bash
 # No explicit tag needed — automatic on merge to preview
-# But you can also trigger manually with: dev/shb_v1.2.0-build.123
+# But you can also trigger manually with: dev/v1.2.0-build.123
 ```
 
 **For Prod Release (Maintainer+ only):**
 
 ```bash
 # Create protected tag (must be Maintainer or Owner)
-git tag prod/shb_v1.2.0
-git push origin prod/shb_v1.2.0
+git tag prod/v1.2.0
+git push origin prod/v1.2.0
 
 # Pipeline auto-triggers:
 # build:web:shell → build:admin:shell → build:api:shell
@@ -105,7 +105,7 @@ git push origin prod/shb_v1.2.0
 
 1. Images rebuilt from exact commit
 2. `publish-gitlab-release-package.sh` creates zip:
-   - `plane-shb-release-shb_vX.Y.Z.zip` (contains 3 tarballs + docker-compose.shb.yml + scripts)
+   - `plane-release-vX.Y.Z.zip` (contains 3 tarballs + docker-compose.release.yml + scripts)
    - MANIFEST with version, architecture, image list
 3. SHA256 checksum computed
 4. Package uploaded to GitLab Generic Package Registry
@@ -114,14 +114,14 @@ git push origin prod/shb_v1.2.0
 Example Release on GitLab:
 
 ```
-Release: prod/shb_v1.2.0
+Release: prod/v1.2.0
 Description:
-  Release prod/shb_v1.2.0 — commit abc123def456
+  Release prod/v1.2.0 — commit abc123def456
   SHA256: 5f9c4ab08cac7457e9111a30e4664882556e518d66660e7b52b5c604d89f28f4
 
 Artifacts:
-  plane-shb-release-shb_v1.2.0.zip (700 MB)
-  plane-shb-release-shb_v1.2.0.SHA256SUMS
+  plane-release-v1.2.0.zip (700 MB)
+  plane-release-v1.2.0.SHA256SUMS
 ```
 
 #### Phase 2: Manual Deploy Trigger
@@ -129,7 +129,7 @@ Artifacts:
 **For Dev Release:**
 
 1. Go to GitLab UI: CI/CD → Pipelines
-2. Find release pipeline (tag: `dev/shb_v1.2.0-build.123`)
+2. Find release pipeline (tag: `dev/v1.2.0-build.123`)
 3. Scroll to `deploy:dev:release` job (currently manual)
 4. Click "▶ Play" button
 5. System deploys to dev server
@@ -137,7 +137,7 @@ Artifacts:
 **For Prod Release:**
 
 1. Go to GitLab UI: CI/CD → Pipelines
-2. Find release pipeline (tag: `prod/shb_v1.2.0`)
+2. Find release pipeline (tag: `prod/v1.2.0`)
 3. Scroll to `deploy:prod:release` job (currently manual)
 4. Click "▶ Play" button
 5. System deploys to prod server (requires Maintainer status)
@@ -157,7 +157,7 @@ Both `deploy:dev:release` and `deploy:prod:release` run the same script:
 [3/8] Verify checksum matches release metadata
 [4/8] Extract zip → validate MANIFEST
 [5/8] Load Docker images from tar.gz files
-[6/8] Run deploy-shb.sh (migrations, compose up)
+[6/8] Run deploy-release.sh (migrations, compose up)
 [7/8] Archive previous release (for rollback)
 [8/8] Log audit entry (timestamp, user, SHA256, status)
 ```
@@ -170,11 +170,11 @@ Both `deploy:dev:release` and `deploy:prod:release` run the same script:
 
 # Option 2: SSH to server and watch locally
 ssh prod-server
-tail -f /opt/shb-deploy/plane-app/deploy-audit.log
+tail -f /opt/plane-deploy/plane-app/deploy-audit.log
 
 # Option 3: Check deployment status
-docker-compose -f /opt/shb-deploy/plane-app/docker-compose.yaml ps
-curl https://jms.shinhan.com.vn/health
+docker-compose -f /opt/plane-deploy/plane-app/docker-compose.yaml ps
+curl https://plane.example.com/health
 ```
 
 ### When to Use
@@ -245,7 +245,7 @@ curl https://jms.shinhan.com.vn/health
 4. **Audit Trail:**
    ```bash
    # View deployment record
-   tail /opt/shb-deploy/plane-app/deploy-audit.log
+   tail /opt/plane-deploy/plane-app/deploy-audit.log
    ```
 
 ## Troubleshooting
@@ -288,11 +288,11 @@ docker-compose logs api
 
 ```bash
 # Verify archive directory exists and is writable
-ls -ld /opt/shb-deploy/plane-app/archive
+ls -ld /opt/plane-deploy/plane-app/archive
 
 # Fix permissions if needed
-sudo chown gitlab-runner:gitlab-runner /opt/shb-deploy/plane-app/archive
-sudo chmod 0755 /opt/shb-deploy/plane-app/archive
+sudo chown gitlab-runner:gitlab-runner /opt/plane-deploy/plane-app/archive
+sudo chmod 0755 /opt/plane-deploy/plane-app/archive
 
 # Check ARCHIVE_KEEP setting in /etc/plane-release-deploy.env
 sudo grep ARCHIVE_KEEP /etc/plane-release-deploy.env

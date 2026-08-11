@@ -24,8 +24,6 @@ import type { IMonitoringStore } from "./monitoring.store";
 import { MonitoringStore } from "./monitoring.store";
 import type { IInstanceTaskCategoryStore } from "./instance-task-category.store";
 import { InstanceTaskCategoryStore } from "./instance-task-category.store";
-import type { IInstanceHelpCenterStore } from "./instance-help-center.store";
-import { InstanceHelpCenterStore } from "./instance-help-center.store";
 import type { IInstanceJobPositionStore } from "./instance-job-position.store";
 import { InstanceJobPositionStore } from "./instance-job-position.store";
 import type { IBusinessCalendarStore } from "./business-calendar.store";
@@ -47,7 +45,6 @@ export class RootStore {
   instanceStaff: IInstanceStaffStore;
   monitoring: IMonitoringStore;
   instanceTaskCategory: IInstanceTaskCategoryStore;
-  instanceHelpCenter: IInstanceHelpCenterStore;
   instanceJobPosition: IInstanceJobPositionStore;
   businessCalendar: IBusinessCalendarStore;
   usageMonitor: IUsageMonitorStore;
@@ -63,7 +60,6 @@ export class RootStore {
     this.instanceStaff = new InstanceStaffStore(this);
     this.monitoring = new MonitoringStore(this);
     this.instanceTaskCategory = new InstanceTaskCategoryStore();
-    this.instanceHelpCenter = new InstanceHelpCenterStore();
     this.instanceJobPosition = new InstanceJobPositionStore();
     this.businessCalendar = new BusinessCalendarStore();
     this.usageMonitor = new UsageMonitorStore(this);
@@ -89,7 +85,6 @@ export class RootStore {
     this.instanceStaff = new InstanceStaffStore(this);
     this.monitoring = new MonitoringStore(this);
     this.instanceTaskCategory = new InstanceTaskCategoryStore();
-    this.instanceHelpCenter = new InstanceHelpCenterStore();
     this.instanceJobPosition = new InstanceJobPositionStore();
     this.businessCalendar = new BusinessCalendarStore();
     this.usageMonitor = new UsageMonitorStore(this);

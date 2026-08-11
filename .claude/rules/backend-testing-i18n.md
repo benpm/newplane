@@ -46,15 +46,13 @@ python run_tests.py   # or pytest
 
 ```
 packages/i18n/src/locales/
-├── en/translations.ts
-├── ko/translations.ts
-└── vi/translations.ts
+└── en/translations.ts
 ```
 
 Translation files are **TypeScript modules** (NOT JSON). When adding new user-facing strings:
 
-1. Add key to all 3 language files — en, ko, vi
-2. Keep nesting structure consistent across languages
+1. Add the key to `en/translations.ts` — English is the only locale the app ships
+2. Keep the nesting structure consistent
 3. Use `useTranslation()` hook in frontend components
 
 ### Pluralization (ICU MessageFormat):

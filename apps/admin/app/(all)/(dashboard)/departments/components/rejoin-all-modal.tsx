@@ -89,9 +89,9 @@ export const RejoinAllModal = function RejoinAllModal({ open, onClose }: Props) 
                   desc: "Every project in each linked workspace",
                 },
                 {
-                  value: "bank_wide_projects" as TAutoJoinMode,
-                  label: "Bank-wide Projects",
-                  desc: "Only projects marked as bank-wide",
+                  value: "global_projects" as TAutoJoinMode,
+                  label: "Global Projects",
+                  desc: "Only projects marked as global",
                 },
               ].map((opt) => (
                 <label

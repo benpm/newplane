@@ -29,8 +29,9 @@ REMINDER_BODY = (
 def worklog_daily_reminder():
     """Send daily reminder to users who haven't logged time today.
 
-    Skipped automatically on weekends and VN public holidays via the
-    @working_day_required() decorator (Asia/Ho_Chi_Minh timezone, fail-open).
+    Skipped automatically on non-working days via the @working_day_required()
+    decorator, which resolves against the configured business calendar
+    (BUSINESS_CALENDAR_TIMEZONE, fail-open).
     """
     try:
         _send_reminders()

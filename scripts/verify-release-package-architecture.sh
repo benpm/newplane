@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Verify all Docker image tarballs in a directory are linux/amd64.
-# Called by build-shb-images.sh and publish-gitlab-release-package.sh.
+# Called by build-release-images.sh and publish-gitlab-release-package.sh.
 # Fails the pipeline if any image is not linux/amd64.
 #
 # Usage: ./scripts/verify-release-package-architecture.sh [dist-dir]

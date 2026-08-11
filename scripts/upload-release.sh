@@ -9,8 +9,8 @@
 #   - upload-release.env filled in (see upload-release.env.example)
 #
 # Usage:
-#   bash scripts/upload-release.sh dev/shb_v1.2.0-build.5
-#   bash scripts/upload-release.sh prod/shb_v1.2.0
+#   bash scripts/upload-release.sh dev/v1.2.0-build.5
+#   bash scripts/upload-release.sh prod/v1.2.0
 #
 # The script reads config from upload-release.env (in repo root), then delegates
 # to publish-gitlab-release-package.sh with all required env vars set.
@@ -27,8 +27,8 @@ ENV_FILE="${ROOT_DIR}/upload-release.env"
 # ── Validate args ─────────────────────────────────────────────────────────────
 [ -n "${RELEASE_TAG}" ] || {
   echo "Usage: bash scripts/upload-release.sh <RELEASE_TAG>"
-  echo "  e.g. bash scripts/upload-release.sh dev/shb_v1.2.0-build.5"
-  echo "       bash scripts/upload-release.sh prod/shb_v1.2.0"
+  echo "  e.g. bash scripts/upload-release.sh dev/v1.2.0-build.5"
+  echo "       bash scripts/upload-release.sh prod/v1.2.0"
   exit 1
 }
 
@@ -39,7 +39,7 @@ ENV_FILE="${ROOT_DIR}/upload-release.env"
 
 if [[ "${RELEASE_TAG}" == dev/* ]]; then
   [[ "${RELEASE_TAG}" =~ ^dev/.+-build\.[0-9]+$ ]] || {
-    echo "ERROR: dev release tags must include build suffix, e.g. dev/shb_v1.2.0-build.5"
+    echo "ERROR: dev release tags must include build suffix, e.g. dev/v1.2.0-build.5"
     echo "       Got: '${RELEASE_TAG}'"
     exit 1
   }
@@ -54,23 +54,23 @@ fi
 # shellcheck disable=SC1090
 source "${ENV_FILE}"
 
-# ── Derive SHB_VERSION from dist/.shb-version ────────────────────────────────
+# ── Derive RELEASE_VERSION from dist/.release-version ────────────────────────────────
 DIST_DIR="${DIST_DIR:-dist}"
-[ -f "${DIST_DIR}/.shb-version" ] || {
-  echo "ERROR: ${DIST_DIR}/.shb-version not found."
+[ -f "${DIST_DIR}/.release-version" ] || {
+  echo "ERROR: ${DIST_DIR}/.release-version not found."
   echo "       Set DIST_DIR in upload-release.env to the transferred dist/ folder."
   exit 1
 }
-SHB_VERSION=$(tr -d '[:space:]' < "${DIST_DIR}/.shb-version")
+RELEASE_VERSION=$(tr -d '[:space:]' < "${DIST_DIR}/.release-version")
 
 echo "========================================="
 echo " Upload Release: ${RELEASE_TAG}"
-echo " Version       : ${SHB_VERSION}"
+echo " Version       : ${RELEASE_VERSION}"
 echo " Dist dir      : ${DIST_DIR}"
 echo "========================================="
 
 # ── Delegate to publish script ────────────────────────────────────────────────
 export GITLAB_URL CI_PROJECT_ID GITLAB_PUBLISH_TOKEN
-export SHB_VERSION RELEASE_TAG DIST_DIR
+export RELEASE_VERSION RELEASE_TAG DIST_DIR
 
 bash "${SCRIPT_DIR}/publish-gitlab-release-package.sh"

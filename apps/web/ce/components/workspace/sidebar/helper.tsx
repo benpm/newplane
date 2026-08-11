@@ -46,7 +46,7 @@ export const getSidebarNavigationItemIcon = (key: string, className: string = ""
       return <MultipleStickyIcon className={cn("size-4 flex-shrink-0", className)} />;
     case "ho":
       return <Building2 className={cn("size-4 flex-shrink-0", className)} />;
-    case "bank-wide-projects":
+    case "global-projects":
       return <Globe className={cn("size-4 flex-shrink-0", className)} />;
     case "time-tracking":
       return <Timer className={cn("size-4 flex-shrink-0", className)} />;

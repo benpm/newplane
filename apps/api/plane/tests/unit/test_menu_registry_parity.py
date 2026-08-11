@@ -90,7 +90,7 @@ class TestRegistryInvariants:
         assert set(EXACT_MENU_MAP.values()) <= set(PERMISSION_KEYS)
 
     def test_canonical_key_set(self):
-        assert len(PERMISSION_KEYS) == 12
+        assert len(PERMISSION_KEYS) == 11
         assert "administrators" in PERMISSION_KEYS
         assert "settings" in PERMISSION_KEYS
         # authentication shares the configurations endpoint — never standalone

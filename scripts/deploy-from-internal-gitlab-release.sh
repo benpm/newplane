@@ -163,12 +163,12 @@ done
 
 # ── Stage release files and deploy ────────────────────────────────────────────
 echo "[6/8] Deploying ..."
-cp "${PKG_DIR}/docker-compose.shb.yml" "${PLANE_DIR}/docker-compose.shb.yml"
+cp "${PKG_DIR}/docker-compose.release.yml" "${PLANE_DIR}/docker-compose.release.yml"
 cp -r "${PKG_DIR}/dist/." "${PLANE_DIR}/dist/"
-chmod +x "${PKG_DIR}/scripts/deploy-shb.sh"
+chmod +x "${PKG_DIR}/scripts/deploy-release.sh"
 
-# deploy-shb.sh handles: stop conflicts, run migrations, compose up
-bash "${PKG_DIR}/scripts/deploy-shb.sh" \
+# deploy-release.sh handles: stop conflicts, run migrations, compose up
+bash "${PKG_DIR}/scripts/deploy-release.sh" \
   "${PLANE_DIR}/dist" \
   "${PLANE_DIR}/plane.env" \
   "${PLANE_DIR}/docker-compose.yaml"

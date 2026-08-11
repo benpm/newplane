@@ -37,7 +37,6 @@ export default [
     route("image", "./(all)/(dashboard)/image/page.tsx"),
     route("monitoring", "./(all)/(dashboard)/monitoring/page.tsx"),
     route("task-categories", "./(all)/(dashboard)/task-categories/page.tsx"),
-    route("help-center", "./(all)/(dashboard)/help-center/page.tsx"),
     route("job-positions", "./(all)/(dashboard)/job-positions/page.tsx"),
     route("calendar", "./(all)/(dashboard)/calendar/page.tsx"),
     route("usage-monitor", "./(all)/(dashboard)/usage-monitor/page.tsx"),

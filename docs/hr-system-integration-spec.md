@@ -48,8 +48,8 @@ curl -X POST "https://plane.example.com/api/v1/staff/sync/" \
 
 ### 3.1 Email Convention
 
-Plane auto-generates user emails: `sh{staff_id}@swing.shinhan.com`
-Example: `staff_id=10000001` → `sh10000001@swing.shinhan.com`
+Plane auto-generates user emails: `sh{staff_id}@swing.local`
+Example: `staff_id=10000001` → `sh10000001@swing.local`
 
 ### 3.2 Staff ID Convention
 
@@ -126,7 +126,7 @@ Create a new staff profile. Fails if `staff_id` already exists.
   "staff_id": "10000001",
   "user": {
     "id": "uuid-of-user",
-    "email": "sh10000001@swing.shinhan.com",
+    "email": "sh10000001@swing.local",
     "display_name": "John Doe"
   },
   "position": "Senior Developer",
@@ -175,7 +175,7 @@ Replace all writable fields of an existing staff profile.
   "staff_id": "10000001",
   "user": {
     "id": "uuid-of-user",
-    "email": "sh10000001@swing.shinhan.com",
+    "email": "sh10000001@swing.local",
     "display_name": "John Doe"
   },
   "position": "Senior Developer",
@@ -227,7 +227,7 @@ Or multiple fields:
   "staff_id": "10000001",
   "user": {
     "id": "uuid-of-user",
-    "email": "sh10000001@swing.shinhan.com",
+    "email": "sh10000001@swing.local",
     "display_name": "Jonathan Doe"
   },
   "position": "Lead Developer",
@@ -305,7 +305,7 @@ Retrieve a single staff profile by `staff_id`.
   "staff_id": "10000001",
   "user": {
     "id": "uuid-of-user",
-    "email": "sh10000001@swing.shinhan.com",
+    "email": "sh10000001@swing.local",
     "first_name": "John",
     "last_name": "Doe"
   },
@@ -357,7 +357,7 @@ Retrieve all staff profiles with pagination and filtering.
       "staff_id": "10000001",
       "user": {
         "id": "uuid-of-user",
-        "email": "sh10000001@swing.shinhan.com",
+        "email": "sh10000001@swing.local",
         "display_name": "John Doe"
       },
       "position": "Senior Developer",
@@ -396,7 +396,7 @@ Retrieve multiple staff profiles by their `staff_id` values.
       "staff_id": "10000001",
       "user": {
         "id": "uuid-of-user",
-        "email": "sh10000001@swing.shinhan.com",
+        "email": "sh10000001@swing.local",
         "display_name": "John Doe"
       },
       "position": "Senior Developer",
@@ -407,7 +407,7 @@ Retrieve multiple staff profiles by their `staff_id` values.
       "staff_id": "10000002",
       "user": {
         "id": "uuid-of-user",
-        "email": "sh10000002@swing.shinhan.com",
+        "email": "sh10000002@swing.local",
         "display_name": "Jane Smith"
       },
       "position": "Manager",
@@ -481,7 +481,7 @@ sequenceDiagram
     participant Plane as Plane API
 
     HR->>Plane: POST /api/v1/staff/<br/>{staff_id, first_name, last_name, ...}
-    Note over Plane: Creates User (email: sh{staff_id}@swing.shinhan.com)<br/>Creates StaffProfile<br/>Creates WorkspaceMember
+    Note over Plane: Creates User (email: sh{staff_id}@swing.local)<br/>Creates StaffProfile<br/>Creates WorkspaceMember
     Plane-->>HR: 201 Created<br/>{staff_id, user, position, employment_status}
 ```
 
@@ -636,7 +636,7 @@ All errors return JSON:
 
 ### Key Implementation Notes
 
-- **Email is immutable** after creation: derived as `sh{staff_id}@swing.shinhan.com`
+- **Email is immutable** after creation: derived as `sh{staff_id}@swing.local`
 - **User update sync**: on existing staff, sync `User.first_name`, `User.last_name`, `User.display_name` alongside `StaffProfile`
 - **Workspace from API key**: The workspace is determined by the API key credentials, not from the request URL
 - **No department data from HR**: Department assignment is managed internally by Plane. HR system only provides staff identity and profile data.

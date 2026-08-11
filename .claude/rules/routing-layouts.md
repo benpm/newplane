@@ -13,7 +13,7 @@ paths:
 
 ## CRITICAL: Route Nesting in `extended.ts`
 
-Khi thêm route CE mới cho các trang có layout sẵn, **BẮT BUỘC** bọc `route()` bên trong chính xác các lớp `layout()` tree y hệt như `core.ts`. Nếu thiếu, màn hình sẽ mất AppHeader hoặc Sidebar.
+When adding a new CE route for a page that already has a layout, you **MUST** nest `route()` inside exactly the same `layout()` tree as `core.ts`. Miss one and the screen loses its AppHeader or Sidebar.
 
 ```typescript
 import { index, layout, route } from "@react-router/dev/routes";

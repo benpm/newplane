@@ -20,18 +20,4 @@ export const locales = {
     editor: () => import("./en/editor"),
     "empty-state": () => import("./en/empty-state"),
   },
-  ko: {
-    core: () => import("./ko/core"),
-    translations: () => import("./ko/translations"),
-    accessibility: () => import("./ko/accessibility"),
-    editor: () => import("./ko/editor"),
-    "empty-state": () => import("./ko/empty-state"),
-  },
-  vi: {
-    core: () => import("./vi/core"),
-    translations: () => import("./vi/translations"),
-    accessibility: () => import("./vi/accessibility"),
-    editor: () => import("./vi/editor"),
-    "empty-state": () => import("./vi/empty-state"),
-  },
 };

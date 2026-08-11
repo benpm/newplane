@@ -19,6 +19,7 @@ from plane.app.serializers.staff import (
     StaffProfileSerializer,
 )
 from plane.db.models import Department, Profile, StaffProfile, User, WorkspaceMember
+from plane.utils.staff_email import staff_email
 from plane.license.api.views.base import BaseAPIView
 from plane.utils.exception_logger import log_exception
 from plane.utils.instance_admin import is_last_active_super_admin
@@ -562,7 +563,7 @@ def _update_staff(staff_profile, department, data):
 
 def _create_staff(department, data):
     """Create User + WorkspaceMember (if dept has linked_workspace) + StaffProfile."""
-    email = f"sh{data['staff_id']}@swing.shinhan.com"
+    email = staff_email(data["staff_id"])
 
     user, user_created = User.objects.get_or_create(
         email=email,
