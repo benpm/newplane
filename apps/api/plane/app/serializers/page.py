@@ -31,9 +31,13 @@ class PageSerializer(BaseSerializer):
         write_only=True,
         required=False,
     )
-    # Many to many
-    label_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
-    project_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
+    # Many to many. Both are ArrayAgg annotations added by the viewset queryset,
+    # so they are output-only: Page has no such concrete fields, and letting a
+    # client send them puts them into validated_data, where Page.objects.create()
+    # rejects them. Labels are written through the `labels` field above; a page's
+    # project association comes from the URL-scoped project_id in the view.
+    label_ids = serializers.ListField(child=serializers.UUIDField(), read_only=True)
+    project_ids = serializers.ListField(child=serializers.UUIDField(), read_only=True)
 
     class Meta:
         model = Page

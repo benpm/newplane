@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 from plane.db.models import User
 from plane.settings.redis import redis_instance
-from plane.license.models import Instance
+from plane.license.models import Instance, InstanceConfiguration
 
 
 @pytest.fixture
@@ -34,7 +34,23 @@ def setup_instance(db):
             "is_setup_done": True,
         },
     )
+
+    # The magic-code provider refuses to start without an SMTP host and with
+    # magic login switched off, so both have to exist before any of these flows
+    # can be exercised.
+    for key, value in (("EMAIL_HOST", "smtp.test.local"), ("ENABLE_MAGIC_LINK_LOGIN", "1")):
+        InstanceConfiguration.objects.update_or_create(key=key, defaults={"value": value})
+
     return instance
+
+
+# Magic codes live in Redis, so these flows cannot run without one. Tests are
+# hermetic by default (settings.test leaves REDIS_URL unset); supply a real
+# REDIS_URL to exercise them.
+requires_redis = pytest.mark.skipif(
+    redis_instance() is None,
+    reason="magic-code auth stores its codes in Redis; set REDIS_URL to run these",
+)
 
 
 @pytest.fixture
@@ -190,7 +206,7 @@ class TestSignInEndpoint:
     def test_next_path_redirection(self, django_client, setup_user, setup_instance):
         """Test sign-in with next_path parameter"""
         url = reverse("sign-in")
-        next_path = "workspaces"
+        next_path = "/workspaces"  # validate_next_path rejects paths without a leading slash
 
         # First make the request without following redirects
         response = django_client.post(
@@ -304,7 +320,7 @@ class TestMagicSignIn:
 
         # Use Django client to test the redirect flow without following redirects
         url = reverse("magic-sign-in")
-        next_path = "workspaces"
+        next_path = "/workspaces"  # validate_next_path rejects paths without a leading slash
         response = django_client.post(
             url,
             {"email": "user@plane.so", "code": token, "next_path": next_path},
@@ -412,7 +428,7 @@ class TestMagicSignUp:
 
         # Use Django client to test the redirect flow without following redirects
         url = reverse("magic-sign-up")
-        next_path = "onboarding"
+        next_path = "/onboarding"  # validate_next_path rejects paths without a leading slash
         response = django_client.post(url, {"email": email, "code": token, "next_path": next_path}, follow=False)
 
         # Check that the initial response is a redirect without error code

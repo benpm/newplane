@@ -265,14 +265,22 @@ class TestAuditFieldsSmoke:
         from plane.db.models import User, WorkSchedule, Holiday
 
         # Create two test users
+        # username is unique and has no default, so two users created without
+        # one would both land on "" and collide.
         user_a = User.objects.create(
-            email="smoke_audit_a@plane.so", first_name="Alice", last_name="Smoke"
+            email="smoke_audit_a@plane.so",
+            username="smoke_audit_a",
+            first_name="Alice",
+            last_name="Smoke",
         )
         user_a.set_password("password")
         user_a.save()
 
         user_b = User.objects.create(
-            email="smoke_audit_b@plane.so", first_name="Bob", last_name="Smoke"
+            email="smoke_audit_b@plane.so",
+            username="smoke_audit_b",
+            first_name="Bob",
+            last_name="Smoke",
         )
         user_b.set_password("password")
         user_b.save()

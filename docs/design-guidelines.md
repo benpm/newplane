@@ -599,7 +599,7 @@ import { ChevronDownIcon, PlusIcon } from "@plane/propel/icons";
 ### Language Support
 
 - **English (en)** — Default
-- **Korean (ko)** — Shinhan primary
+- **Korean (ko)**
 - **Vietnamese (vi)** — Regional support
 
 ### Translation Keys

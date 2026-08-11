@@ -10,7 +10,7 @@ from rest_framework.response import Response
 
 from plane.app.views.base import BaseAPIView
 from plane.db.models import Project, ProjectMember
-from plane.license.api.permissions import InstanceAdminPermission
+from plane.license.api.permissions import InstanceAdminMenuPermission
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class InstanceWorkspaceProjectBulkExportEndpoint(BaseAPIView):
                                project_leader, members, member_roles }] }
     """
 
-    permission_classes = [InstanceAdminPermission]
+    permission_classes = [InstanceAdminMenuPermission]
 
     def get(self, request):
         slugs_param = request.query_params.get("workspace_slugs", "").strip()

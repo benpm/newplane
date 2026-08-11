@@ -22,7 +22,8 @@ import pytest
 from rest_framework.test import APIClient
 from unittest.mock import patch
 
-from plane.db.models import Issue, Project, ProjectFieldPermission, State
+from plane.app.permissions import ROLE
+from plane.db.models import Issue, Project, ProjectFieldPermission, ProjectMember, State
 from plane.tests.factories import (
     ProjectFactory,
     ProjectMemberFactory,
@@ -63,7 +64,7 @@ def _make_client(user) -> APIClient:
 def workspace(db):
     owner = UserFactory()
     ws = WorkspaceFactory(owner=owner)
-    WorkspaceMemberFactory(workspace=ws, member=owner, role=20)
+    WorkspaceMemberFactory(workspace=ws, member=owner, role=ROLE.ADMIN.value)
     return ws
 
 
@@ -84,25 +85,36 @@ def default_state(project):
 @pytest.fixture
 def member_user(workspace, project):
     user = UserFactory()
-    WorkspaceMemberFactory(workspace=workspace, member=user, role=10)
-    ProjectMemberFactory(project=project, member=user, role=10)  # member (non-admin)
+    WorkspaceMemberFactory(workspace=workspace, member=user, role=ROLE.MEMBER.value)
+    ProjectMemberFactory(project=project, member=user, role=ROLE.MEMBER.value)  # member (non-admin)
     return user
 
 
 @pytest.fixture
 def admin_user(workspace, project):
     user = UserFactory()
-    WorkspaceMemberFactory(workspace=workspace, member=user, role=10)
-    ProjectMemberFactory(project=project, member=user, role=20)  # admin
+    WorkspaceMemberFactory(workspace=workspace, member=user, role=ROLE.MEMBER.value)
+    ProjectMemberFactory(project=project, member=user, role=ROLE.ADMIN.value)  # admin
     return user
 
 
 @pytest.fixture
 def workspace_admin_user(workspace, project):
-    """Workspace admin who also holds minimal project membership for @allow_permission."""
+    """Workspace admin holding only non-admin project membership.
+
+    Granting workspace admin already enrols the user in every project of the
+    workspace, so creating the membership again would violate the one-row-per
+    user-and-project constraint on the project user property. Demote the
+    existing row instead, so the test exercises the workspace-admin bypass
+    rather than project-level admin rights.
+    """
     user = UserFactory()
-    WorkspaceMemberFactory(workspace=workspace, member=user, role=20)
-    ProjectMemberFactory(project=project, member=user, role=10)
+    WorkspaceMemberFactory(workspace=workspace, member=user, role=ROLE.ADMIN.value)
+    ProjectMember.objects.update_or_create(
+        project=project,
+        member=user,
+        defaults={"role": ROLE.MEMBER.value, "workspace": workspace, "is_active": True},
+    )
     return user
 
 
@@ -146,16 +158,23 @@ def field_permission_all_open(project, workspace):
 
 
 def _create_issue(project, workspace, user, default_state, **field_overrides):
-    """Create a minimal Issue for testing."""
-    return Issue.issue_objects.create(
+    """Create a minimal Issue owned by ``user``.
+
+    BaseModel.save() re-derives created_by from the current request, and there is
+    no request here, so passing created_by= to create() is silently discarded and
+    the row lands with created_by=None. That matters because the issue endpoints
+    grant access to the creator, so the ownership has to be set through the
+    created_by_id escape hatch instead.
+    """
+    issue = Issue(
         project=project,
         workspace=workspace,
         name="Test Issue",
         state=default_state,
-        created_by=user,
-        updated_by=user,
         **field_overrides,
     )
+    issue.save(created_by_id=user.id)
+    return issue
 
 
 # ---------------------------------------------------------------------------
@@ -177,14 +196,14 @@ class TestDateFieldEnforcementAppLayer:
         assert getattr(issue, date_field) is None
 
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.patch(
                 _app_url(workspace.slug, project.id, issue.id),
                 {date_field: "2026-12-31"},
                 format="json",
             )
-        assert resp.status_code == 200, resp.json()
+        assert resp.status_code == 204, resp.content
 
     @pytest.mark.parametrize("date_field", ["target_date", "start_date"])
     def test_member_change_date_value_to_value_toggle_false_blocked(
@@ -194,7 +213,7 @@ class TestDateFieldEnforcementAppLayer:
         issue = _create_issue(project, workspace, member_user, default_state, **{date_field: "2026-01-01"})
 
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.patch(
                 _app_url(workspace.slug, project.id, issue.id),
@@ -211,7 +230,7 @@ class TestDateFieldEnforcementAppLayer:
         issue = _create_issue(project, workspace, member_user, default_state, **{date_field: "2026-01-01"})
 
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.patch(
                 _app_url(workspace.slug, project.id, issue.id),
@@ -228,14 +247,14 @@ class TestDateFieldEnforcementAppLayer:
         issue = _create_issue(project, workspace, member_user, default_state, **{date_field: "2026-01-01"})
 
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.patch(
                 _app_url(workspace.slug, project.id, issue.id),
                 {date_field: "2026-12-31"},
                 format="json",
             )
-        assert resp.status_code == 200, resp.json()
+        assert resp.status_code == 204, resp.content
 
     def test_workspace_admin_patch_locked_date_allowed(
         self, workspace_admin_user, workspace, project, default_state, field_permission_all_locked
@@ -245,14 +264,14 @@ class TestDateFieldEnforcementAppLayer:
             project, workspace, workspace_admin_user, default_state, target_date="2026-01-01"
         )
         client = _make_client(workspace_admin_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.patch(
                 _app_url(workspace.slug, project.id, issue.id),
                 {"target_date": "2026-12-31"},
                 format="json",
             )
-        assert resp.status_code == 200, resp.json()
+        assert resp.status_code == 204, resp.content
 
 
 # ---------------------------------------------------------------------------
@@ -269,7 +288,7 @@ class TestDeleteEnforcementAppLayer:
         """DELETE when allow_member_delete_work_item=False → 403."""
         issue = _create_issue(project, workspace, member_user, default_state)
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.delete(_app_url(workspace.slug, project.id, issue.id))
         assert resp.status_code == 403
@@ -280,7 +299,7 @@ class TestDeleteEnforcementAppLayer:
         """DELETE when allow_member_delete_work_item=True → 204."""
         issue = _create_issue(project, workspace, member_user, default_state)
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.delete(_app_url(workspace.slug, project.id, issue.id))
         assert resp.status_code == 204
@@ -304,7 +323,7 @@ class TestExternalApiEnforcement:
             project, workspace, member_user, default_state, target_date="2026-01-01"
         )
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.patch(
                 _ext_url(workspace.slug, project.id, issue.id),
@@ -319,7 +338,7 @@ class TestExternalApiEnforcement:
         """Member DELETE via external API when delete locked → 403."""
         issue = _create_issue(project, workspace, member_user, default_state)
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.delete(_ext_url(workspace.slug, project.id, issue.id))
         assert resp.status_code == 403
@@ -330,7 +349,7 @@ class TestExternalApiEnforcement:
         """Member DELETE via external API when delete allowed → 204."""
         issue = _create_issue(project, workspace, member_user, default_state)
         client = _make_client(member_user)
-        with patch("plane.bgtasks.issue_activity.issue_activity.delay"), \
+        with patch("plane.bgtasks.issue_activities_task.issue_activity.delay"), \
              patch("plane.bgtasks.webhook_task.model_activity.delay"):
             resp = client.delete(_ext_url(workspace.slug, project.id, issue.id))
         assert resp.status_code == 204

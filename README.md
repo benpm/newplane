@@ -1,14 +1,16 @@
-# Plane: Project Management Platform
+# `newplane`
 
-> Open-source project management platform by Shinhan Bank, forked from [makeplane/plane](https://github.com/makeplane/plane).
+> Open-source project management platform with all the features you need, forked from [makeplane/plane](https://github.com/makeplane/plane).
 
-**Status:** Production-ready with CE customizations (Workflows, Time Tracking, Org Chart)
-**Current Version:** 0.19
-**Last Updated:** 2026-04-02
+## New Features
+
+See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notable additions include:
+
+- Extensive synchronization with a git repo that can be associated with a specific project.
+- Page relationships
 
 ## Quick Links
 
-- **Live Demo:** https://app.plane.so (upstream)
 - **Documentation:** [docs/](./docs/)
   - [Project Overview & PDR](./docs/project-overview-pdr.md)
   - [Codebase Summary](./docs/codebase-summary.md)
@@ -18,8 +20,8 @@
   - [Deployment Guide](./docs/deployment-guide.md)
   - [Project Roadmap](./docs/project-roadmap.md)
   - [GitNexus Setup Guide](./docs/gitnexus-guide.md) — code intelligence for Claude Code
-- **Repository:** https://github.com/shbvn/plane
-- **Upstream:** https://github.com/makeplane/plane
+- **Repository:** https://github.com/benpm/newplane
+- **Upstreams:** [`shbvn/plane`](https://github.com/shbvn/plane) » [`makeplane/plane`](https://github.com/makeplane/plane)
 
 ## Features
 
@@ -29,9 +31,9 @@
 - **Sprint Planning:** Cycles (sprints) with burndown tracking
 - **Feature Planning:** Modules for organizing features/epics
 - **Wiki Pages:** Markdown-based project documentation
-- **Custom Workflows (CE):** Shinhan-specific workflow states and validation
+- **Custom Workflows (CE):** Fork-specific workflow states and validation
 - **Time Tracking (CE):** Estimate and log hours per issue
-- **Organization Chart (CE):** Shinhan org hierarchy visualization
+- **Organization Chart (CE):** Org hierarchy visualization
 - **Real-Time Collaboration:** WebSocket-based live editing (Y.js CRDT)
 - **Multi-Workspace:** User-level workspace management
 - **RBAC:** Workspace/Project-level role-based access control
@@ -78,8 +80,8 @@
 **1. Clone & Install**
 
 ```bash
-git clone https://github.com/shbvn/plane.git
-cd plane
+git clone https://github.com/benpm/newplane.git
+cd newplane
 pnpm install
 ```
 
@@ -100,12 +102,12 @@ pnpm dev:local      # backend + Caddy proxy (Docker) + all frontends (turbo, hot
 
 `pnpm dev:local` brings up the backend (Django + Postgres + Redis + RabbitMQ + MinIO) and a Caddy reverse proxy in Docker, then runs the frontends on the host with hot reload. Everything is served through **one origin — http://localhost**:
 
-| URL                          | App              | Host port    |
-| ---------------------------- | ---------------- | ------------ |
-| `http://localhost`           | Web app          | 3000         |
-| `http://localhost/god-mode/` | Admin (god mode) | 3001         |
-| `http://localhost/spaces/`   | Public spaces    | 3002         |
-| `http://localhost/live/`     | Live server      | 3003         |
+| URL                          | App              | Host port     |
+| ---------------------------- | ---------------- | ------------- |
+| `http://localhost`           | Web app          | 3000          |
+| `http://localhost/god-mode/` | Admin (god mode) | 3001          |
+| `http://localhost/spaces/`   | Public spaces    | 3002          |
+| `http://localhost/live/`     | Live server      | 3003          |
 | `http://localhost/api/…`     | Backend API      | 8000 (Docker) |
 
 > Reach **god-mode at `http://localhost/god-mode/`** through the proxy — not `localhost:3001` directly (the admin dev server has no `/api` proxy of its own).
@@ -114,6 +116,27 @@ pnpm dev:local      # backend + Caddy proxy (Docker) + all frontends (turbo, hot
 Open **http://localhost** and sign in. For instance admin (god-mode) first-time setup, open `http://localhost/god-mode/`.
 
 **Full Guide:** [Deployment Guide → Local Development](./docs/deployment-guide.md#local-development-setup)
+
+### Dev site — a second deployment beside production
+
+For testing a branch as a real deployment rather than a hot-reload dev server:
+
+```bash
+./scripts/dev-site.sh build && ./scripts/dev-site.sh up -d   # start / rebuild
+./scripts/dev-site-logs.sh                                   # live log feed
+./scripts/dev-site.sh down                                   # stop (data kept)
+```
+
+It runs as the `planedev` compose project, which gives it its own images,
+volumes, network, database, object store and crypto keys — nothing is shared
+with a production stack in the same checkout. The proxy publishes **8091**
+(production keeps 8090); environment files live outside the repo so no secrets
+enter version control.
+
+> Drive it through `scripts/dev-site.sh`, never a bare `docker compose`: an
+> unqualified compose command in this directory resolves to the production
+> stack. Note `docker-compose.dev.yml` is the separate local hot-reload overlay
+> used by `pnpm dev:local`; the dev site uses `docker-compose.devsite.yml`.
 
 **4. (Recommended) Setup Code Intelligence**
 
@@ -208,7 +231,7 @@ plane/
 
 ### CE Pattern (Customization Extension)
 
-All Shinhan-specific features live in `apps/web/ce/` and `apps/api/` — **never modify `core/`**. This ensures upstream code stays clean and merges are manageable.
+All fork-specific features live in `apps/web/ce/` and `apps/api/` — **never modify `core/`**. This ensures upstream code stays clean and merges are manageable.
 
 ```
 core/ (upstream) + ce/ (customizations) = RootStore (composition)
@@ -306,14 +329,26 @@ pnpm test
 # Backend
 cd apps/api && python run_tests.py
 
-# Combined
-pnpm test && cd apps/api && python run_tests.py
+# Backend, against the dev-site datastores (no local Python env needed)
+./scripts/dev-site-test.sh                 # everything
+./scripts/dev-site-test.sh -m unit         # one marker
+./scripts/dev-site-test.sh --cov=plane     # with coverage
 ```
+
+`dev-site-test.sh` builds a test image once from `requirements/test.txt` on top
+of the dev-site API image, because the runtime image ships no test dependencies.
+It also installs `git`, which the wiki-sync tests need to seed a local bare repo
+as a stand-in for a GitHub wiki — the task itself uses the GitHub API, so the
+runtime image rightly omits it.
+
+Current state: **1105 passing, 0 failed, 0 errors**; backend coverage ~52%.
 
 ### Coverage Requirements
 
 - Minimum 80% for merging PRs
 - Use `--cov` flag for coverage report
+- Prefer covering paths the deployment actually exercises over the global
+  percentage — see the prioritisation note in [TODO.md](./TODO.md)
 
 ### Guidelines
 
@@ -422,8 +457,8 @@ docker compose up -d
 
 ## Support & Contact
 
-- **Issues:** [GitHub Issues](https://github.com/shbvn/plane/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/shbvn/plane/discussions)
+- **Issues:** [GitHub Issues](https://github.com/benpm/newplane/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/benpm/newplane/discussions)
 - **Team:** Internal Slack channel
 - **Docs Lead:** @docs-manager
 
@@ -440,4 +475,4 @@ Plane is forked from [makeplane/plane](https://github.com/makeplane/plane) under
 
 ---
 
-**Last Updated:** 2026-04-02 | **Version:** 1.0
+**Last Updated:** 2026-08-11 | **Version:** 1.2.0

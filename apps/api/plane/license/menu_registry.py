@@ -48,6 +48,7 @@ PREFIX_MENU_MAP = [
     ("workspaces/", "workspace"),
     ("bulk-import-projects/", "workspace"),
     ("bulk-import-modules/", "workspace"),
+    ("bulk-export-projects/", "workspace"),
     ("users/", "users"),
     ("departments/", "departments"),
     ("staff/", "staff"),

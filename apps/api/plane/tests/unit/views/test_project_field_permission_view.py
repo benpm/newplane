@@ -18,6 +18,7 @@ from __future__ import annotations
 import pytest
 from rest_framework.test import APIClient
 
+from plane.app.permissions import ROLE
 from plane.db.models import Project, ProjectFieldPermission, ProjectMember, WorkspaceMember
 from plane.tests.factories import ProjectFactory, ProjectMemberFactory, UserFactory, WorkspaceFactory, WorkspaceMemberFactory
 
@@ -48,7 +49,7 @@ def _make_client(user) -> APIClient:
 def workspace(db):
     owner = UserFactory()
     ws = WorkspaceFactory(owner=owner)
-    WorkspaceMemberFactory(workspace=ws, member=owner, role=20)
+    WorkspaceMemberFactory(workspace=ws, member=owner, role=ROLE.ADMIN.value)
     return ws
 
 
@@ -61,8 +62,8 @@ def project(workspace):
 def admin_user(workspace, project):
     """A user that is a project-level admin."""
     user = UserFactory()
-    WorkspaceMemberFactory(workspace=workspace, member=user, role=10)  # member role at ws
-    ProjectMemberFactory(project=project, member=user, role=20)  # admin at project
+    WorkspaceMemberFactory(workspace=workspace, member=user, role=ROLE.MEMBER.value)  # member role at ws
+    ProjectMemberFactory(project=project, member=user, role=ROLE.ADMIN.value)  # admin at project
     return user
 
 
@@ -70,8 +71,8 @@ def admin_user(workspace, project):
 def member_user(workspace, project):
     """A user that is a project-level member (non-admin)."""
     user = UserFactory()
-    WorkspaceMemberFactory(workspace=workspace, member=user, role=10)
-    ProjectMemberFactory(project=project, member=user, role=10)  # member role
+    WorkspaceMemberFactory(workspace=workspace, member=user, role=ROLE.MEMBER.value)
+    ProjectMemberFactory(project=project, member=user, role=ROLE.MEMBER.value)  # member role
     return user
 
 
@@ -79,7 +80,7 @@ def member_user(workspace, project):
 def workspace_admin_user(workspace):
     """A workspace-level admin who is NOT a project member."""
     user = UserFactory()
-    WorkspaceMemberFactory(workspace=workspace, member=user, role=20)
+    WorkspaceMemberFactory(workspace=workspace, member=user, role=ROLE.ADMIN.value)
     return user
 
 
@@ -161,7 +162,7 @@ class TestProjectFieldPermissionPatch:
         # which means the user needs to be a project member to pass that guard.
         # Workspace admins get bypassed at the _is_project_or_workspace_admin check for write.
         # For read: need to be a project member. So add minimal project membership.
-        ProjectMemberFactory(project=project, member=workspace_admin_user, role=10)  # member role
+        ProjectMemberFactory(project=project, member=workspace_admin_user, role=ROLE.MEMBER.value)  # member role
         resp = client.patch(
             _url(workspace.slug, project.id),
             {"allow_member_delete_work_item": True},

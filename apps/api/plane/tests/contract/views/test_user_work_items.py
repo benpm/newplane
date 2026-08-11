@@ -170,9 +170,11 @@ class TestUserWorkItemsToday:
         assert data[0]["id"] == str(issue_assigned.id)
         assert data[0]["name"] == "My Issue"
 
-    def test_today_excludes_subtasks(self, session_client, create_user, projects_and_states):
-        """
-        Test that sub-tasks (parent != null) are excluded from today list.
+    def test_today_includes_assigned_subtasks(self, session_client, create_user, projects_and_states):
+        """Sub-tasks assigned to the user are returned alongside their parent.
+
+        _get_base_queryset deliberately keeps them so the frontend can render
+        them indented beneath the parent; they are not filtered out.
         """
         fixtures = projects_and_states
         ws1 = fixtures["ws1"]
@@ -203,9 +205,9 @@ class TestUserWorkItemsToday:
 
         assert response.status_code == 200
         data = response.json()
-        # Should only get parent, not sub-task
-        assert len(data) == 1
-        assert data[0]["id"] == str(parent_issue.id)
+        # Both are assigned to the user, so both come back
+        returned_ids = {item["id"] for item in data}
+        assert returned_ids == {str(parent_issue.id), str(sub_task.id)}
 
     def test_today_excludes_completed_state(self, session_client, create_user, projects_and_states):
         """

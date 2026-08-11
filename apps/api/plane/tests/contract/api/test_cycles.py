@@ -19,6 +19,9 @@ def project(db, workspace, create_user):
         identifier="TP",
         workspace=workspace,
         created_by=create_user,
+        # The cycle endpoints refuse to operate on a project with the module
+        # switched off, and Project defaults it to False.
+        cycle_view=True,
     )
     ProjectMember.objects.create(
         project=project,
@@ -76,7 +79,7 @@ class TestCycleListCreateAPIEndpoint:
 
         response = api_key_client.post(url, cycle_data, format="json")
 
-        assert response.status_code == status.HTTP_201_CREATED
+        assert response.status_code == status.HTTP_201_CREATED, response.content
 
         assert Cycle.objects.count() == 1
 
@@ -93,11 +96,11 @@ class TestCycleListCreateAPIEndpoint:
 
         # Test with empty data
         response = api_key_client.post(url, {}, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_400_BAD_REQUEST, response.content
 
         # Test with missing name
         response = api_key_client.post(url, {"description": "Test cycle"}, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_400_BAD_REQUEST, response.content
 
     @pytest.mark.django_db
     def test_create_cycle_invalid_date_combination(self, api_key_client, workspace, project):
@@ -111,7 +114,7 @@ class TestCycleListCreateAPIEndpoint:
         }
 
         response = api_key_client.post(url, invalid_data, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_400_BAD_REQUEST, response.content
         assert "Both start date and end date are either required or are to be null" in response.data["error"]
 
     @pytest.mark.django_db
@@ -128,7 +131,7 @@ class TestCycleListCreateAPIEndpoint:
 
         response = api_key_client.post(url, cycle_data, format="json")
 
-        assert response.status_code == status.HTTP_201_CREATED
+        assert response.status_code == status.HTTP_201_CREATED, response.content
         created_cycle = Cycle.objects.first()
         assert created_cycle.external_id == "ext-123"
         assert created_cycle.external_source == "github"
@@ -158,7 +161,7 @@ class TestCycleListCreateAPIEndpoint:
 
         response = api_key_client.post(url, cycle_data, format="json")
 
-        assert response.status_code == status.HTTP_409_CONFLICT
+        assert response.status_code == status.HTTP_409_CONFLICT, response.content
         assert "same external id" in response.data["error"]
 
     @pytest.mark.django_db
@@ -186,7 +189,7 @@ class TestCycleListCreateAPIEndpoint:
 
         response = api_key_client.get(url)
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK, response.content
         assert "results" in response.data
         assert len(response.data["results"]) == 3  # Including create_cycle fixture
 
@@ -238,25 +241,25 @@ class TestCycleListCreateAPIEndpoint:
 
         # Test current cycles
         response = api_key_client.get(url, {"cycle_view": "current"})
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK, response.content
         assert len(response.data) == 1
         assert response.data[0]["name"] == "Current Cycle"
 
         # Test upcoming cycles
         response = api_key_client.get(url, {"cycle_view": "upcoming"})
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK, response.content
         assert len(response.data["results"]) == 1
         assert response.data["results"][0]["name"] == "Upcoming Cycle"
 
         # Test completed cycles
         response = api_key_client.get(url, {"cycle_view": "completed"})
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK, response.content
         assert len(response.data["results"]) == 1
         assert response.data["results"][0]["name"] == "Completed Cycle"
 
         # Test draft cycles
         response = api_key_client.get(url, {"cycle_view": "draft"})
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK, response.content
         assert len(response.data["results"]) == 1
         assert response.data["results"][0]["name"] == "Draft Cycle"
 
@@ -276,7 +279,7 @@ class TestCycleDetailAPIEndpoint:
 
         response = api_key_client.get(url)
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK, response.content
         assert str(response.data["id"]) == str(create_cycle.id)
         assert response.data["name"] == create_cycle.name
         assert response.data["description"] == create_cycle.description
@@ -288,7 +291,7 @@ class TestCycleDetailAPIEndpoint:
         url = self.get_cycle_detail_url(workspace.slug, project.id, fake_id)
 
         response = api_key_client.get(url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_404_NOT_FOUND, response.content
 
     @pytest.mark.django_db
     def test_update_cycle_success(self, api_key_client, workspace, project, create_cycle):
@@ -302,7 +305,7 @@ class TestCycleDetailAPIEndpoint:
 
         response = api_key_client.patch(url, update_data, format="json")
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK, response.content
 
         create_cycle.refresh_from_db()
         assert create_cycle.name == update_data["name"]
@@ -344,7 +347,7 @@ class TestCycleDetailAPIEndpoint:
 
         response = api_key_client.patch(url, update_data, format="json")
 
-        assert response.status_code == status.HTTP_409_CONFLICT
+        assert response.status_code == status.HTTP_409_CONFLICT, response.content
         assert "same external id" in response.data["error"]
 
     @pytest.mark.django_db
@@ -354,7 +357,7 @@ class TestCycleDetailAPIEndpoint:
 
         response = api_key_client.delete(url)
 
-        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert response.status_code == status.HTTP_204_NO_CONTENT, response.content
         assert not Cycle.objects.filter(id=create_cycle.id).exists()
 
     @pytest.mark.django_db
@@ -364,7 +367,7 @@ class TestCycleDetailAPIEndpoint:
 
         response = api_key_client.get(url)
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK, response.content
 
         # Check that metrics are included in response
         cycle_data = response.data

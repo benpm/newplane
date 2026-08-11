@@ -29,8 +29,13 @@ DATE_FIELD_PERMISSION_MAP = {
 }
 
 
-def _is_admin(user_role_project: int | None, user_role_workspace: int | None) -> bool:
-    """Return True if the user is admin at project OR workspace level."""
+def bypasses_field_locks(user_role_project: int | None, user_role_workspace: int | None) -> bool:
+    """Return True if the user is admin at project OR workspace level.
+
+    Admins are exempt from every lock in this module, so callers that layer
+    further restrictions on locked fields must consult this too, or an admin
+    would clear the lock check here and then be stopped by the extra gate.
+    """
     return user_role_project == ROLE.ADMIN.value or user_role_workspace == ROLE.ADMIN.value
 
 
@@ -71,7 +76,7 @@ def check_work_item_field_permission(
         action: "update" or "delete".
     """
     # Admins bypass all field restrictions
-    if _is_admin(user_role_project, user_role_workspace):
+    if bypasses_field_locks(user_role_project, user_role_workspace):
         return None
 
     if action == "delete":

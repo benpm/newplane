@@ -275,7 +275,7 @@ Q4 2026 (Oct-Dec)
 | **Integrations**      | ⚠️ Partial  | JIRA, GitHub, Slack (basic)                |
 | **Custom States**     | ✅ Upstream | Workflow states per project                |
 
-### Shinhan Customizations (CE)
+### Fork Customizations (CE)
 
 | Feature                      | Status    | Completion                                  |
 | ---------------------------- | --------- | ------------------------------------------- |

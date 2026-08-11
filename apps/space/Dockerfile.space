@@ -4,7 +4,9 @@ WORKDIR /app
 
 ENV TURBO_TELEMETRY_DISABLED=1
 ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+# pnpm installs global binaries into $PNPM_HOME/bin and refuses `add -g` unless
+# that exact directory is on PATH.
+ENV PATH="$PNPM_HOME/bin:$PNPM_HOME:$PATH"
 ENV CI=1
 
 RUN corepack enable pnpm

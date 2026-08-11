@@ -1,4 +1,0 @@
-[Phase 02 — manualChunks]
-Initial assets count: 26
-Total raw:    6237091 B
-Total gzip:   1750247 B

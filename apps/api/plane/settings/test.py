@@ -4,6 +4,8 @@
 
 """Test Settings"""
 
+import os
+
 from .common import *  # noqa
 
 DEBUG = True
@@ -18,9 +20,12 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
-# Disable Redis for unit tests (not needed, Celery runs in-process)
-REDIS_URL = None
-REDIS_SSL = False
+# Redis is not needed for most tests, since Celery runs in-process, so the
+# default stays off and redis_instance() returns None. The magic-code auth flow
+# genuinely stores its codes in Redis though, so honour a real URL when the
+# environment supplies one; those tests skip themselves when it does not.
+REDIS_URL = os.environ.get("REDIS_URL") or None
+REDIS_SSL = bool(REDIS_URL) and "rediss" in REDIS_URL
 
 # Remove optional apps not available in test environment
 INSTALLED_APPS = [  # noqa

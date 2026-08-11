@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-**Plane** is an open-source project management platform forked from `makeplane/plane` and customized by Shinhan Bank. It provides workspace-level collaboration, issue tracking, sprint management, and customizable workflows with real-time collaboration capabilities.
+**newplane** is an open-source project management platform forked from `makeplane/plane`. It provides workspace-level collaboration, issue tracking, sprint management, and customizable workflows with real-time collaboration capabilities.
 
 **Origin:** Fork of `github.com/makeplane/plane`
 **Repository:** `github.com/shbvn/plane.git`
@@ -101,7 +101,7 @@
 
 - **Req:** States (Backlog, Todo, In Progress, Done, etc.)
 - **Req:** Custom state workflow per project
-- **Req:** Issue transitions validated via workflow rules (Shinhan)
+- **Req:** Issue transitions validated via workflow rules (CE)
 - **Req:** Blocked transitions raise `WORKFLOW_TRANSITION_BLOCKED` errors
 - **Acceptance:** State transitions respect workflow rules; blockers are caught via unhandled rejection handler
 
@@ -131,7 +131,7 @@
 - **Req:** V1 API (API key auth, external, OpenAPI)
 - **Acceptance:** V0 used by web UI; V1 documented and available to external integrations
 
-#### 8. CE Customizations (Shinhan)
+#### 8. CE Customizations
 
 - **Req:** Workflows with blockers and transition validation
 - **Req:** Time tracking (estimates, logged hours)
@@ -240,7 +240,7 @@
 
 ### Support Model
 
-- **Internal:** Shinhan Bank internal teams
+- **Internal:** internal teams
 - **External:** Community (optional, downstream of makeplane/plane)
 
 ## Dependency Management

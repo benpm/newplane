@@ -70,7 +70,7 @@ const InstanceSwingSSOAuthenticationPage = observer(function InstanceSwingSSOAut
       customHeader={
         <AuthenticationMethodCard
           name="Swing SSO"
-          description="Authenticate members via Shinhan Swing SSO service."
+          description="Authenticate members via Swing SSO service."
           icon={<Shield className="h-6 w-6 p-0.5 text-tertiary" />}
           config={
             <ToggleSwitch
