@@ -80,8 +80,8 @@ See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notab
 **1. Clone & Install**
 
 ```bash
-git clone https://github.com/shbvn/plane.git
-cd plane
+git clone https://github.com/benpm/newplane.git
+cd newplane
 pnpm install
 ```
 
@@ -341,7 +341,7 @@ It also installs `git`, which the wiki-sync tests need to seed a local bare repo
 as a stand-in for a GitHub wiki — the task itself uses the GitHub API, so the
 runtime image rightly omits it.
 
-Current state: **1097 passing, 0 failed, 0 errors**; backend coverage ~52%.
+Current state: **1105 passing, 0 failed, 0 errors**; backend coverage ~52%.
 
 ### Coverage Requirements
 
@@ -457,8 +457,8 @@ docker compose up -d
 
 ## Support & Contact
 
-- **Issues:** [GitHub Issues](https://github.com/shbvn/plane/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/shbvn/plane/discussions)
+- **Issues:** [GitHub Issues](https://github.com/benpm/newplane/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/benpm/newplane/discussions)
 - **Team:** Internal Slack channel
 - **Docs Lead:** @docs-manager
 
@@ -475,4 +475,4 @@ Plane is forked from [makeplane/plane](https://github.com/makeplane/plane) under
 
 ---
 
-**Last Updated:** 2026-04-02 | **Version:** 1.0
+**Last Updated:** 2026-08-11 | **Version:** 1.2.0
