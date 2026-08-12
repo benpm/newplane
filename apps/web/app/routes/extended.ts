@@ -9,6 +9,10 @@ import type { RouteConfigEntry } from "@react-router/dev/routes";
 
 export const extendedRoutes: RouteConfigEntry[] = [
   layout("./(all)/layout.tsx", [
+    // Top-level and workspace-independent: the instance dashboard reports on
+    // the deployment as a whole. Static "dashboard" outranks the sibling
+    // ":workspaceSlug" route, and "dashboard" is already a reserved slug.
+    layout("./(all)/dashboard/layout.tsx", [route("dashboard", "./(all)/dashboard/page.tsx")]),
     layout("./(all)/[workspaceSlug]/layout.tsx", [
       // Nest inside (projects)/layout.tsx so it gets the workspace sidebar shell —
       // same pattern as the "ho" route in core.ts

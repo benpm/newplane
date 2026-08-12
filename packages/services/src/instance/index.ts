@@ -5,5 +5,6 @@
  */
 
 export * from "./instance.service";
+export * from "./instance-dashboard.service";
 export * from "./monitoring.service";
 export * from "./usage-monitor.service";

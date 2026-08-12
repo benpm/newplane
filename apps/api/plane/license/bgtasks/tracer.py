@@ -20,6 +20,7 @@ from plane.db.models import (
     Page,
     WorkspaceMember,
 )
+from plane.license.utils.instance_counts import telemetry_counts
 from plane.utils.telemetry import init_tracer, shutdown_tracer
 
 
@@ -39,16 +40,18 @@ def instance_traces():
             tracer = trace.get_tracer(__name__)
             # Instance details
             with tracer.start_as_current_span("instance_details") as span:
-                # Count of all models
-                workspace_count = Workspace.objects.count()
-                user_count = User.objects.count()
-                project_count = Project.objects.count()
-                issue_count = Issue.objects.count()
-                module_count = Module.objects.count()
-                cycle_count = Cycle.objects.count()
-                cycle_issue_count = CycleIssue.objects.count()
-                module_issue_count = ModuleIssue.objects.count()
-                page_count = Page.objects.count()
+                # Shared with the instance dashboard so both report the same
+                # numbers from one definition.
+                counts = telemetry_counts()
+                workspace_count = counts["workspace_count"]
+                user_count = counts["user_count"]
+                project_count = counts["project_count"]
+                issue_count = counts["issue_count"]
+                module_count = counts["module_count"]
+                cycle_count = counts["cycle_count"]
+                cycle_issue_count = counts["cycle_issue_count"]
+                module_issue_count = counts["module_issue_count"]
+                page_count = counts["page_count"]
 
                 # Set span attributes
                 span.set_attribute("instance_id", instance.instance_id)
