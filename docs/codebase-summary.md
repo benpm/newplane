@@ -1,397 +1,207 @@
-# Codebase Summary: Plane Monorepo
-
-## Directory Structure
-
-```
-plane/
-├── apps/
-│   ├── web/              # Main React frontend (3000)
-│   │   ├── core/         # Upstream code (never modify)
-│   │   │   ├── components/   # Shared React components (51 dirs)
-│   │   │   ├── hooks/        # Custom React hooks (47 hooks)
-│   │   │   ├── layouts/      # App layouts
-│   │   │   ├── store/        # MobX stores (33+)
-│   │   │   └── services/     # API clients (30+)
-│   │   ├── ce/           # Fork customizations (extends core)
-│   │   │   ├── store/    # CE-specific stores (workflows, time tracking)
-│   │   │   ├── services/ # CE API methods
-│   │   │   └── components/ # CE-specific UI
-│   │   ├── app/          # Next.js app router (new layout)
-│   │   ├── public/       # Static assets
-│   │   └── tsconfig.json # @/* → core/, @/plane-web/* → ce/
-│   │
-│   ├── api/              # Django backend (8000)
-│   │   ├── plane/
-│   │   │   ├── db/models/    # 37 ORM models (Workspace, Project, Issue, etc.)
-│   │   │   ├── app/views/    # DRF viewsets (@allow_permission decorator)
-│   │   │   ├── app/serializers/ # Separate v0/v1 serializers
-│   │   │   ├── utils/        # Helpers (workflow_checker, exports, etc.)
-│   │   │   ├── middleware/   # 10-layer auth/logging/routing stack
-│   │   │   ├── tasks/        # Celery tasks (41 tasks)
-│   │   │   ├── settings/     # Django config (v0/v1 URLs)
-│   │   │   └── asgi.py       # ASGI entry
-│   │   ├── manage.py
-│   │   └── requirements.txt
-│   │
-│   ├── admin/            # Instance admin panel (3001, 211 files)
-│   │   └── God Mode UI for system management
-│   │
-│   ├── space/            # Public project pages (3002, 188 files)
-│   │   └── Guest access to shared projects
-│   │
-│   ├── live/             # WebSocket real-time (3003, 51 files)
-│   │   └── Hocuspocus + Y.js CRDT
-│   │
-│   └── proxy/            # Caddy reverse proxy
-│       └── Caddyfile (routes to web/admin/space/live)
-│
-├── packages/             # Shared libraries (17 total)
-│   ├── propel/           # New UI components (385 files)
-│   │   └── Button, Input, Dialog, Charts, Tables, etc.
-│   ├── ui/               # Legacy UI components (125 files)
-│   ├── editor/           # Tiptap v2 rich text + Y.js CRDT
-│   ├── types/            # Shared TypeScript interfaces (I* naming)
-│   ├── services/         # API client classes (axios)
-│   ├── utils/            # Helpers (date, color, markdown)
-│   ├── hooks/            # Custom React hooks
-│   ├── constants/        # App constants
-│   ├── shared-state/     # Cross-app MobX stores
-│   ├── i18n/             # Translations (EN, KO, VI)
-│   ├── logger/           # Winston logging
-│   ├── decorators/       # Express.js decorators
-│   ├── tailwind-config/  # Semantic color tokens + CSS vars
-│   ├── typescript-config/# TS configs (base, react, node)
-│   ├── eslint-plugin/    # Custom ESLint rules
-│   └── codemods/         # jscodeshift transformations
-│
-├── .claude/              # Claude context (agents, hooks, skills)
-├── plans/                # Planning & task tracking
-├── docs/                 # Project documentation
-├── pnpm-workspace.yaml   # pnpm monorepo config
-├── turbo.json            # Turbo build orchestration
-├── docker-compose.yml    # Local dev stack
-└── README.md             # Getting started guide
-
-```
-
-## Key Files & Entry Points
-
-### Backend (Django)
-
-| File/Dir                                                    | Purpose                                                   |
-| ----------------------------------------------------------- | --------------------------------------------------------- |
-| `apps/api/plane/settings/base.py`                           | Django core config (DB, cache, middleware)                |
-| `apps/api/plane/settings/urls.py`                           | API URL routing (v0, v1)                                  |
-| `apps/api/plane/db/models/`                                 | 37 ORM models (BaseModel, ProjectBaseModel)               |
-| `apps/api/plane/app/views/`                                 | 41+ DRF viewsets (@allow_permission)                      |
-| `apps/api/plane/app/serializers/v0/`                        | Legacy serializers (session auth)                         |
-| `apps/api/plane/app/serializers/v1/`                        | External API (API key auth, OpenAPI)                      |
-| `apps/api/plane/utils/workflow_checker.py`                  | Workflow validation logic                                 |
-| `apps/api/plane/utils/business_calendar/`                   | Business calendar service (holidays, schedule, overrides) |
-| `apps/api/plane/utils/celery_helpers.py`                    | Celery decorators (@working_day_required)                 |
-| `apps/api/plane/tasks/`                                     | Celery async tasks (41 tasks)                             |
-| `apps/api/manage.py`                                        | Django CLI                                                |
-
-### Frontend (React)
-
-| File/Dir                                      | Purpose                                           |
-| --------------------------------------------- | ------------------------------------------------- |
-| `apps/web/app/`                               | Next.js app router entry (layouts, pages)         |
-| `apps/web/core/store/`                        | MobX root + 33+ feature stores                    |
-| `apps/web/core/hooks/store/`                  | Store hooks (useWorkspace, useProject, etc.)      |
-| `apps/web/core/services/`                     | API client classes (axios)                        |
-| `apps/web/core/components/`                   | Reusable React components (layouts, modals)       |
-| `apps/web/ce/store/root.store.ts`             | CE root store (extends CoreRootStore)             |
-| `apps/web/ce/components/workflow/`            | Workflow UI + DnD hook                            |
-| `apps/web/ce/store/workflow.store.ts`         | Workflow MobX store                               |
-| `apps/web/core/hooks/store/use-workflow.ts`   | Workflow hook (reads CE store)                    |
-| `apps/web/tsconfig.json`                      | Path aliases (@/_, @/plane-web/_)                 |
-
-### Packages
-
-| Package      | Key Files    | Purpose                                             |
-| ------------ | ------------ | --------------------------------------------------- |
-| **propel**   | src/index.ts | New Tailwind v4 components                          |
-| **types**    | src/index.ts | TypeScript interfaces (IWorkspace, IIssue, etc.)    |
-| **services** | src/         | API client classes (WorkspaceService, IssueService) |
-| **editor**   | src/index.ts | Rich text editor (Tiptap + Y.js)                    |
-| **i18n**     | src/locales/ | Translations (English only)                         |
-
-## Core Concepts
-
-### ORM Models (Backend)
-
-**Base Hierarchy:**
-
-```
-BaseModel (id, created_at, updated_at)
-  ├─ ProjectBaseModel (project_id, project foreign key)
-  └─ WorkspaceBaseModel (workspace_id, workspace foreign key)
-```
-
-**37+ Models Include:**
-
-- **Workspace, Project, ProjectMember**
-- **Issue, IssueFavorite, IssueLabel, IssueLink, IssueActivity**
-- **Cycle (sprints), Module, CycleIssue, ModuleIssue**
-- **State (workflow states), Notification**
-- **Page (wiki), PageBlock, PageFavorite**
-- **Webhook, WebhookLog, WebhookEventLog**
-- **Label, Priority, Estimate, Project Template**
-- **WorkflowState, WorkflowTransition** (CE: state transitions, approvals)
-- **TimeLog** (CE: time tracking, estimates, logged hours)
-- **WebSocketConnection** (CE: real-time collaboration)
-- **Analytics, AnalyticsData** (CE: dashboards, reports)
-- **TaskCategory** (CE: admin task categorization)
-- **MonitoringMetric** (CE: admin monitoring dashboard)
-- **WorkSchedule, Holiday, DayOverride** (CE: business calendar, Vietnam working-day rules)
-
-**Key Patterns:**
-
-- Soft-delete: `deleted_at` field, `SoftDeletionManager` ORM
-- Audit trail: `created_by`, `updated_by` foreign keys
-- Uniqueness with soft-delete: `UniqueConstraint(condition=Q(deleted_at__isnull=True))`
-
-### MobX Stores (Frontend)
-
-**Root Store:**
-
-```
-RootStore (extends CoreRootStore in CE)
-  ├─ workspaceStore → WorkspaceRootStore
-  ├─ projectStore → ProjectRootStore
-  ├─ issueStore → IssueRootStore (list, kanban, gantt, calendar, spreadsheet)
-  ├─ cycleStore → CycleRootStore
-  ├─ moduleStore → ModuleRootStore
-  ├─ pageStore → PageRootStore
-  ├─ workflowStore (CE) → WorkflowRootStore (workflow state transitions)
-  ├─ timeTrackingStore (CE) → TimeTrackingRootStore (estimates, logged hours)
-  ├─ hoStore (CE) → HORootStore (org chart / department hierarchy)
-  ├─ analyticsStore (CE) → AnalyticsRootStore (dashboards, reports)
-  ├─ taskCategoryStore (CE) → TaskCategoryRootStore (admin task categories)
-  └─ monitoringStore (CE) → MonitoringRootStore (admin monitoring dashboard)
-```
-
-**Store Pattern:**
-
-```typescript
-makeObservable(this, {
-  items: observable,
-  error: observable,
-  fetchItems: action,
-  updateItem: action.bound,
-  asyncFetch: flow, // for async
-});
-
-// Async mutations must use runInAction
-runInAction(() => {
-  this.items = data;
-});
-```
-
-### API Architecture
-
-**V0 API (Session Auth, Internal):**
-
-- Used by web UI
-- Cookie-based session
-- `/api/v0/` routes
-- Python serializers: `apps/api/plane/app/serializers/v0/`
-
-**V1 API (API Key Auth, External):**
-
-- External integrations
-- Header-based API key: `X-API-KEY`
-- OpenAPI docs: DRF Spectacular
-- `/api/v1/` routes
-- Separate serializers: `apps/api/plane/app/serializers/v1/`
-
-**Common Patterns:**
-
-- `@allow_permission("workspace.member")` — Role check
-- `project__workspace__slug=slug` — Always scope queries
-- Paginate responses (LimitOffsetPagination)
-- Error codes: 400 (validation), 403 (permission), 404 (not found)
-
-### Middleware Stack (10 Layers)
-
-1. CORS — Domain validation
-2. Auth — Session/API key extraction
-3. Request logging — Winston + correlation IDs
-4. Workspace detection — Slug-based
-5. Read-replica routing — Reads → replica, writes → primary
-6. Rate limiting — Per-user/API-key
-7. GZip compression
-8. Request validation
-9. Response formatting
-10. Error handling
-
-### Celery Tasks (41 Tasks)
-
-**Categories:**
-
-- **Notifications:** email, Slack, webhook delivery
-- **Webhooks:** send events, retry logic
-- **Activities:** log issue/project changes
-- **Exports:** CSV, JSON exports to S3
-- **Cleanup:** soft-delete archival, session expiry
-- **Analytics:** report generation (CE)
-
-**Broker:** RabbitMQ
-**Task routing:** Celery beat for scheduled tasks
-**Redis:** Task result backend
-
-### WebSocket Real-Time (apps/live)
-
-**Stack:** Hocuspocus + Y.js CRDT
-
-- Shared document state across clients
-- Conflict-free edits (CRDT resolution)
-- WebSocket server (port 3003)
-- Y.js awareness for cursor positions (future)
-
-## Design Patterns
-
-### CE Pattern (Customization Extension)
-
-**Rule:** Never modify `core/`; extend via `ce/`
-
-**Store Extension Example:**
-
-```typescript
-// core/store/issue-root.store.ts
-export class IssueRootStore {}
-
-// ce/store/root.store.ts
-export class RootStore extends CoreRootStore {
-  workflowStore: WorkflowRootStore;
-  constructor() {
-    super();
-    this.workflowStore = new WorkflowRootStore(this);
-  }
-}
-```
-
-**Hook Pattern:**
-
-```typescript
-// core/hooks/store/use-workflow.ts
-export function useWorkflow() {
-  const { workflowStore } = useContext(StoreContext);
-  return workflowStore; // CE or core
-}
-```
-
-### Drag-and-Drop (Kanban)
-
-**Hook:** `useWorkflowFDragNDrop` in `ce/components/workflow/use-workflow-drag-n-drop.ts`
-
-- Called per Kanban column in `kanban-group.tsx`
-- Returns: `workflowDisabledSource`, `isWorkflowDropDisabled`, `handleWorkFlowState`, etc.
-- On `onDragEnter`: `handleWorkFlowState(sourceGroupId, destGroupId)`
-- Validates state transitions via workflow rules
-
-### Error Handling (Workflow 403)
-
-**Issue:** Blocked transitions raise errors in promises (unhandled rejection)
-**Solution:** `WorkflowBlockerModal` in project layout catches via:
-
-```javascript
-window.addEventListener("unhandledrejection", (e) => {
-  if (e.reason.code === "WORKFLOW_TRANSITION_BLOCKED") {
-    showBlockerModal(e.reason);
-  }
-});
-```
-
-### Type Management
-
-**Convention:** All types in `packages/types/src/` as `.ts` files (not `.d.ts`)
-
-```typescript
-// packages/types/src/workspace.ts
-export interface IWorkspace {
-  id: string;
-  name: string;
-  slug: string;
-}
-
-// packages/types/src/index.ts
-export * from "./workspace";
-export * from "./project";
-// ...
-```
-
-**Naming:** `I*` prefix for interfaces/types
-
-- `IWorkspace`, `IProject`, `IIssue`, `IPageBlock`, etc.
-
-### i18n (Internationalization)
-
-**Locales:** `packages/i18n/src/locales/`
-
-- `en/translations.ts` — English (the only locale shipped)
-
-**Usage:**
-
-```typescript
-import { useI18n } from "@plane/i18n";
-
-const { t } = useI18n();
-t("workspace.settings.title");
-```
-
-**Format:** ICU MessageFormat for plurals/gender
-
-```json
-{
-  "issues.count": "{count, plural, =0 {No issues} one {1 issue} other {# issues}}"
-}
-```
-
-## Performance Considerations
-
-- **Issue list:** <500ms load (indexed queries, pagination)
-- **Kanban:** <1s render (Atlaskit pragmatic DnD, virtualization)
-- **Real-time:** Y.js debouncing, WebSocket heartbeat (30s)
-- **Caching:** Redis for workspace/project metadata
-- **Queries:** Always use `select_related()`, `prefetch_related()` in Django
-- **No N+1:** API responses pre-computed in serializers
-
-## Testing
-
-**Backend:** Django test suite + pytest
-
-```bash
-cd apps/api && python run_tests.py          # needs a local Python env
-./scripts/dev-site-test.sh                  # or run against the dev-site datastores
-```
-
-`dev-site-test.sh` builds a test image from `requirements/test.txt` on top of the
-dev-site API image, since the runtime image carries no test dependencies. Markers
-(`-m unit`, `-m contract`, `-m smoke`) and pytest flags pass straight through.
-
-Magic-code auth stores its codes in Redis, so `settings/test.py` leaves
-`REDIS_URL` unset by default and those tests skip themselves; supply a real URL
-to exercise them.
-
-**Frontend:** Vitest + React Testing Library
-
-```bash
-pnpm test
-```
-
-**Coverage Targets:** >80% (code, integration). Backend is currently ~52% — see
-[TODO.md](../TODO.md) for why in-use paths are prioritised over the global figure.
-
-## Monitoring & Logging
-
-- **Backend:** Winston (structured JSON logs)
-- **Frontend:** Console logs + error tracking (TBD)
-- **APM:** Request tracing via correlation IDs
-- **Health checks:** `/health` endpoint (Django)
+# Codebase Summary
+
+A map of the repository: what lives where, and the entry points worth knowing
+before changing anything. For _what the software does_, see
+[`features.md`](./features.md). For _how the pieces fit at runtime_, see
+[`system-architecture.md`](./system-architecture.md).
+
+Counts in this document were taken from the tree and are approximate — treat
+them as scale indicators, not invariants.
 
 ---
 
-**Last Updated:** 2026-05-30
-**Version:** 1.2
+## Top level
+
+```
+apps/          web · admin · space · live · api · proxy
+packages/      17 shared packages (@plane/*)
+docs/          this documentation
+scripts/       dev, deploy and ops scripts
+.claude/rules/ engineering conventions, auto-loaded by file path
+```
+
+| App          | Stack                                                | Serves                         |
+| ------------ | ---------------------------------------------------- | ------------------------------ |
+| `apps/web`   | React 18 + React Router v7 + Vite, MobX, Tailwind v4 | The main application (CSR)     |
+| `apps/admin` | Same stack, **English-only, no i18n**                | God Mode at `/god-mode/` (CSR) |
+| `apps/space` | React Router v7 with **SSR loaders**                 | Public published boards        |
+| `apps/live`  | Hocuspocus / Yjs                                     | Realtime collaborative pages   |
+| `apps/api`   | Django 4.2 + DRF + Postgres + Celery                 | The backend                    |
+| `apps/proxy` | Caddy                                                | One origin, routed by path     |
+
+Caddy (`apps/proxy/Caddyfile.ce`) maps `/god-mode/*` → admin, `/api/*` → api,
+and everything else → web. That single-origin routing is why the web app and
+god-mode share a domain but not a session cookie (see below).
+
+---
+
+## Backend — `apps/api/plane/`
+
+```
+app/          The application API: views, serializers, urls (the large one)
+api/          The external/public API — separate views AND serializers
+license/      God Mode: instance config, admins, RBAC, monitoring
+authentication/ Providers (credentials + oauth), views, session middleware
+db/           Models, migrations, signals, management commands
+bgtasks/      Celery tasks (52 modules)
+utils/        Cross-cutting helpers
+settings/     common · local · production · test · redis · storage · mongo · openapi
+tests/        unit · contract · smoke
+middleware/   API-token logging, request body size
+web/          The bare health-check view
+```
+
+### Two API layers, never mixed
+
+`plane/app/` and `plane/api/` each have **their own** serializers and views.
+A `plane/app/serializers/*` class must not be used from a `plane/api/` view or
+vice versa — see `.claude/rules/backend-serializers.md`. There is no `v0/`
+or `v1/` directory; both layers are flat modules.
+
+### Entry points
+
+| File                              | Role                                                                                                             |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `plane/urls.py`                   | Root URLconf. Mounts `api/` → `plane.app.urls`, `api/instances/` → `plane.license.urls`, `""` → the health check |
+| `plane/app/urls/__init__.py`      | Splats every per-domain urlpattern list                                                                          |
+| `plane/app/views/base.py`         | `BaseAPIView` / `BaseViewSet` — auth, pagination, exception handling                                             |
+| `plane/license/api/views/base.py` | God-mode base view, defaults to `InstanceAdminMenuPermission`                                                    |
+| `plane/celery.py`                 | Celery app, `beat_schedule` (~18 jobs), DatabaseScheduler                                                        |
+| `plane/settings/common.py`        | Everything: DB, Redis, RabbitMQ, S3/MinIO, sessions                                                              |
+
+### Models — `db/models/` (44 modules)
+
+Hierarchy is `TimeAuditModel` → `AuditModel` → `BaseModel` → `ProjectBaseModel`,
+with soft delete via a custom manager. Core: `workspace`, `project`, `issue`,
+`cycle`, `module`, `page`, `view`, `state`, `label`, `estimate`, `asset`,
+`notification`, `webhook`, `api`, `dashboard`, `intake`.
+
+Fork additions: `department`, `staff`, `worklog`, `workflow`, `task_category`,
+`job_position`, `business_calendar`, `github_sync`, `ho_export`,
+`capacity_export`, `project_copy`, `project_field_permission`.
+
+### The session-cookie split
+
+`authentication/middleware/session.py` chooses which cookie to read by testing
+whether the literal substring `instances` appears in `request.path`:
+
+```python
+if "instances" in request.path:
+    session_key = request.COOKIES.get(settings.ADMIN_SESSION_COOKIE_NAME)  # admin-session-id
+else:
+    session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)        # session-id
+```
+
+Two consequences worth internalising:
+
+1. A user signed into `apps/web` **cannot** call anything under
+   `/api/instances/` — the middleware looks for a cookie they do not have and
+   resolves `AnonymousUser`. God-mode endpoints are reachable only from
+   god-mode.
+2. The test is a _substring_, not a prefix. Any new route containing
+   `instances` anywhere silently switches cookies. This is why the instance
+   dashboard is mounted at `/api/instance-dashboard/` and why a test asserts
+   that name never drifts.
+
+---
+
+## Frontend — `apps/web/`
+
+```
+app/           Routes and route-group directories
+  routes/
+    core.ts        Upstream routes — avoid modifying
+    extended.ts    Fork routes — add here
+    helper.ts      mergeRoutes(), deep-merges by `file` key
+core/          Upstream shared code — do NOT modify for fork features
+ce/            Fork overrides, mirrors core/
+```
+
+Aliases: `@/*` → `core/*`, `@/plane-web/*` → `ce/*`.
+
+`mergeRoutes` merges by the `file` string, so a route in `extended.ts` that
+should nest inside a core layout must repeat that layout's path **exactly**.
+Route groups in parentheses — `(all)`, `(projects)`, `(settings)` — affect
+nesting but not the URL.
+
+### Data flow
+
+```
+packages/services/src/<domain>/*.service.ts   class extends APIService (axios)
+        ↓
+apps/web/ce/store/*.store.ts                  MobX, registered in ce/store/root.store.ts
+        ↓
+apps/web/ce/hooks/store/use-*.ts              useContext(StoreContext)
+        ↓
+component wrapped in observer()
+```
+
+Read-only pages may skip the store and use SWR directly against a service —
+the instance dashboard does, so each panel gets its own loading and error
+state. Anything reading a store still needs `observer()` from `mobx-react`.
+
+### Conventions that bite
+
+- **i18n is mandatory in `apps/web`** (`t()` from `@plane/i18n`, keys in
+  `packages/i18n/src/locales/en/translations.ts`) and **forbidden in
+  `apps/admin`**, which is English-only.
+- **Semantic colour tokens only** — `text-tertiary`, `bg-surface-1`,
+  `bg-layer-2` for inputs. No hardcoded colours, no `dark:` variants. Chart
+  fills are the one exception, since recharts needs literals.
+- **Propel subpath imports** — `@plane/propel/button`, never the barrel.
+- Files under 200 lines, components under 150.
+
+---
+
+## Packages — `packages/`
+
+| Package                                                                                    | Contents                                                    |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| `types`                                                                                    | All shared TypeScript types (`I` interfaces, `T` aliases)   |
+| `services`                                                                                 | API service classes shared by web, admin and space          |
+| `propel`                                                                                   | The current design system — prefer over `ui`                |
+| `ui`                                                                                       | Legacy components still used where propel has no equivalent |
+| `editor`                                                                                   | TipTap editor, extensions, markdown plugins                 |
+| `i18n`                                                                                     | Translations (English only) and the `useTranslation` hook   |
+| `constants`, `utils`, `hooks`, `logger`, `shared-state`, `decorators`                      | Shared primitives                                           |
+| `tailwind-config`, `typescript-config`, `eslint-config`, `eslint-plugin-plane`, `codemods` | Tooling                                                     |
+
+---
+
+## Testing
+
+```
+apps/api/plane/tests/
+  unit/       Views, models, serializers, utils
+  contract/   End-to-end through the API layer
+  smoke/      Minimal liveness
+```
+
+Run with `cd apps/api && python run_tests.py`, or `./scripts/dev-site-test.sh`
+against the dev-site datastores when there is no local Python environment.
+
+Two traps: pytest defaults to `--reuse-db`, so a schema change needs
+`--create-db`; and `django_celery_beat` is excluded from `INSTALLED_APPS`
+under the test settings, so anything touching `PeriodicTask` must degrade
+gracefully.
+
+Frontend: `pnpm check:types`, `pnpm check:lint`, `pnpm check:format`. Several
+packages carry pre-existing failures — compare against a baseline rather than
+expecting a clean tree.
+
+---
+
+## Local development
+
+```
+pnpm dev:local     # backend + Caddy in Docker, frontends via turbo
+pnpm dev:clean     # stale ports
+```
+
+One origin at `http://localhost`: web at `/`, god-mode at `/god-mode/`, API at
+`/api`. Running `pnpm dev` per-app twice cascades ports — a second web lands on
+`:3001` and impersonates admin. Use `pnpm dev:local`.
+
+The dev site is a separate full deployment from the same checkout (compose
+project `planedev`, proxy on 8091). Drive it through `scripts/dev-site.sh`; a
+bare `docker compose` in this directory targets **production**.

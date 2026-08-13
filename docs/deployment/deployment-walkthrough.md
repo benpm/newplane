@@ -1,6 +1,6 @@
 # Deployment Walkthrough
 
-Step-by-step guide for building, publishing, and deploying Plane SHB in the air-gapped environment.
+Step-by-step guide for building, publishing, and deploying Plane in the air-gapped environment.
 
 ---
 
@@ -33,7 +33,7 @@ No manual steps needed. Used for continuous integration.
 ```
 PR merged to develop
   → lint → test → build (on plane-dev runner)
-  → deploy:dev (loads images, runs migrations, docker compose up)
+  → deploy:external-test (loads images, runs migrations, docker compose up)
   → release:publish:dev (publishes package to registry for later use)
 ```
 
@@ -151,13 +151,13 @@ Go to GitLab → CI/CD → Pipelines → find the pipeline for your tag.
 **For `dev/v1.2.0-build.5`:**
 
 ```
-deploy:dev:release   → plane-dev runner pulls package from registry → deploys to dev server
+deploy:external-test   → plane-dev runner pulls package from registry → deploys to dev server
 ```
 
 **For `prod/v1.2.0`:**
 
 ```
-deploy:prod:release  → plane-prod runner pulls package from registry → deploys to prod server
+release:production  → plane-prod runner pulls package from registry → deploys to prod server
 ```
 
 Both jobs run `scripts/deploy-from-internal-gitlab-release.sh` which:
@@ -195,7 +195,7 @@ Tag: dev/v1.2.0-build.5
 Create from: develop (or specific commit SHA)
 
 Pipeline: build:web:shell → build:admin:shell → build:api:shell
-        → release:publish:dev → deploy:dev:release (auto)
+        → release:publish:dev → deploy:external-test (auto)
 ```
 
 **For prod (Maintainer+ only):**
@@ -206,7 +206,7 @@ Tag: prod/v1.2.0
 Create from: preview branch
 
 Pipeline: build:web:shell → build:admin:shell → build:api:shell
-        → release:publish:prod → deploy:prod:release (auto)
+        → release:publish:prod → release:production (auto)
 ```
 
 > Prod tag creation restricted to Maintainer+.
@@ -265,17 +265,17 @@ curl -sf http://localhost:3000/api/health/
 
 ## Troubleshooting
 
-| Problem                                    | Fix                                                                                                 |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `gitlab.internal.example.com` — DNS lookup failed | Add to `/etc/hosts`: `<GITLAB_LAN_IP> gitlab.internal.example.com`                                         |
-| `upload-release.env not found`             | `cp scripts/upload-release.env.example upload-release.env` and fill it in                           |
-| `CI_COMMIT_SHA is not a valid full SHA`    | Run `git rev-parse HEAD` on your Mac at the exact commit you built from                             |
-| Runner not picking up jobs                 | GitLab → Settings → CI/CD → Runners → verify `plane-dev` / `plane-prod` tags match                      |
-| `RELEASE_TAG must be set explicitly`       | The deploy env file on the server is missing `RELEASE_TAG` — CI variable overrides it automatically |
-| SHA256 mismatch on deploy                  | Archive corrupt in transit — re-upload with `upload-release.sh`                                     |
-| Package upload fails (413)                 | GitLab `client_max_body_size` too small — ask GitLab admin to increase                              |
-| `Image not available after load`           | tar.gz corrupt — rebuild with `build-release-images.sh` and re-upload                                   |
-| `No space left on device`                  | Needs 4 GB free on `PLANE_DIR` partition — `docker system prune -a` on the server                   |
+| Problem                                           | Fix                                                                                                 |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `gitlab.internal.example.com` — DNS lookup failed | Add to `/etc/hosts`: `<GITLAB_LAN_IP> gitlab.internal.example.com`                                  |
+| `upload-release.env not found`                    | `cp scripts/upload-release.env.example upload-release.env` and fill it in                           |
+| `CI_COMMIT_SHA is not a valid full SHA`           | Run `git rev-parse HEAD` on your Mac at the exact commit you built from                             |
+| Runner not picking up jobs                        | GitLab → Settings → CI/CD → Runners → verify `plane-dev` / `plane-prod` tags match                  |
+| `RELEASE_TAG must be set explicitly`              | The deploy env file on the server is missing `RELEASE_TAG` — CI variable overrides it automatically |
+| SHA256 mismatch on deploy                         | Archive corrupt in transit — re-upload with `upload-release.sh`                                     |
+| Package upload fails (413)                        | GitLab `client_max_body_size` too small — ask GitLab admin to increase                              |
+| `Image not available after load`                  | tar.gz corrupt — rebuild with `build-release-images.sh` and re-upload                               |
+| `No space left on device`                         | Needs 4 GB free on `PLANE_DIR` partition — `docker system prune -a` on the server                   |
 
 ---
 

@@ -1,5 +1,74 @@
 # Changelog
 
+## 8/13/2026 — instance dashboard, and docs that match the repo
+
+### Added
+
+- **An instance dashboard at `/dashboard`.** Instance-admin-only. Four tabs:
+  live service health (Postgres, Redis/Valkey, RabbitMQ, object storage, Celery
+  workers, beat staleness), instance-wide entity counts, storage usage, and
+  paginated inventories of every workspace, user and project.
+
+  It is mounted at `/api/instance-dashboard/`, **not** under `/api/instances/`.
+  The session middleware picks the session cookie by testing
+  `"instances" in request.path`, so anything matching that would read the
+  god-mode cookie — which web users do not have — and 403 every request. A test
+  walks the urlpatterns to keep the substring out, with a failure message
+  explaining why.
+
+  Each probe sets its own short timeouts and never raises, so one dead
+  dependency renders as a red card rather than a 500. The shared helpers were
+  unsuitable: `redis_instance()` sets no socket timeout, and `S3Storage`
+  inherits botocore's 60s/5-retry defaults. RabbitMQ is inspected through kombu
+  rather than the management API, and a down broker short-circuits worker
+  inspection instead of paying the timeout twice. Broker and SMTP credentials
+  are scrubbed from every error string.
+
+  Storage reports three figures separately — declared (a client-supplied
+  reservation), measured (real `ContentLength`, present on only some rows), and
+  a bucket scan (ground truth) — plus `measured_coverage`. The gap is labelled
+  "unreconciled", not "orphaned", because partial coverage makes the stronger
+  word untrue.
+
+- **`docs/features.md`** — a reference for every feature and the code behind
+  it. Roughly thirty fork-original features had no documentation at all,
+  including GitHub sync, the page tree, page-link autocomplete, markdown
+  round-trip, god-mode RBAC and Global Projects.
+
+### Changed
+
+- Celery worker and beat-schedule inspection moved to
+  `plane/utils/instance_probes.py`; the god-mode monitoring endpoints now
+  delegate to it. Instance-wide counts moved out of the telemetry tracer into
+  `plane/license/utils/instance_counts.py`, which the tracer consumes.
+- **`docs/codebase-summary.md` and `docs/system-architecture.md` rewritten.**
+  Both described directories that do not exist (`app/serializers/v0/` and
+  `v1/`, `settings/base.py`, `plane/tasks/`), called a React Router + Vite SPA
+  a Next.js app router, and counted models and tasks wrongly. The architecture
+  doc gains sections on the session-cookie split, the instance dashboard,
+  GitHub sync and god-mode RBAC.
+- `docs/git-workflow-guide.md` described a `preview`/`develop` branch model
+  this repo has never used; it now documents the single-trunk `main` flow.
+- CI job names across the deployment docs corrected against `.gitlab-ci.yml`
+  (`deploy:dev:release` / `deploy:prod:release` never existed; the real jobs
+  are `deploy:external-test` and `release:production`). Last "Plane SHB"
+  strings removed.
+
+### Removed
+
+- **`docs/project-roadmap.md`** — invented owners (`@analytics-team`),
+  percentages and "Next Steps (Apr 2-8)" describing work long since shipped or
+  abandoned.
+- **`docs/project-changelog.md`** — duplicated this file and still listed the
+  deleted Help Centre.
+- **`docs/deployment/migrate-to-u01.md`** — a one-off runbook for a
+  decommissioned host.
+- The orphaned `# Help Center authoring` comment left behind in
+  `license/urls.py`.
+
+`docs/journals/*` are left as written — they are a record of what happened, not
+documentation of what is.
+
 ## 8/12/2026 — de-brand the fork
 
 Finished the de-branding the 8/5 pass deliberately stopped short of. Nothing

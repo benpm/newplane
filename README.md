@@ -18,7 +18,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notab
   - [System Architecture](./docs/system-architecture.md)
   - [Design Guidelines](./docs/design-guidelines.md)
   - [Deployment Guide](./docs/deployment-guide.md)
-  - [Project Roadmap](./docs/project-roadmap.md)
+  - [Feature Reference](./docs/features.md) — every feature and the code behind it
   - [GitNexus Setup Guide](./docs/gitnexus-guide.md) — code intelligence for Claude Code
 - **Repository:** https://github.com/benpm/newplane
 - **Upstream:** [`makeplane/plane`](https://github.com/makeplane/plane)
@@ -42,11 +42,10 @@ See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notab
 
 **Frontend:**
 
-- React 18 + Router v7
+- React 18 + React Router v7 (SPA, built with Vite)
 - MobX (state management)
 - Tailwind CSS v4 (semantic color tokens)
 - Atlaskit Pragmatic DnD (drag-and-drop)
-- Next.js (app router)
 
 **Backend:**
 
@@ -217,15 +216,22 @@ plane/
 
 ## Documentation Map
 
-| Document                    | Purpose                                    | Audience            |
-| --------------------------- | ------------------------------------------ | ------------------- |
-| **project-overview-pdr.md** | Project goals, requirements, constraints   | PMs, Team Leads     |
-| **codebase-summary.md**     | File structure, key modules, concepts      | All Developers      |
-| **code-standards.md**       | Naming, patterns, testing, review criteria | Developers          |
-| **system-architecture.md**  | System design, data flow, scaling          | Architects, DevOps  |
-| **design-guidelines.md**    | UI/UX, components, Tailwind tokens         | Frontend Developers |
-| **deployment-guide.md**     | Local setup, Docker, production deploy     | DevOps, Backend     |
-| **project-roadmap.md**      | Phases, milestones, timelines, metrics     | All Stakeholders    |
+| Document                          | Purpose                                        | Audience             |
+| --------------------------------- | ---------------------------------------------- | -------------------- |
+| **project-overview-pdr.md**       | Project goals, requirements, constraints       | PMs, Team Leads      |
+| **codebase-summary.md**           | File structure, key modules, concepts          | All Developers       |
+| **code-standards.md**             | Naming, patterns, testing, review criteria     | Developers           |
+| **system-architecture.md**        | System design, data flow, scaling              | Architects, DevOps   |
+| **design-guidelines.md**          | UI/UX, components, Tailwind tokens             | Frontend Developers  |
+| **deployment-guide.md**           | Local setup, Docker, production deploy         | DevOps, Backend      |
+| **features.md**                   | Every feature, with backend and frontend paths | All Developers       |
+| **git-workflow-guide.md**         | Branching, commits, PRs, release               | All Developers       |
+| **deployment/**                   | CI/CD, runners, environment, rollback          | DevOps               |
+| **swing-sso-integration-spec.md** | Swing SSO auth contract                        | Backend, Integrators |
+| **hr-system-integration-spec.md** | HR → Plane staff sync contract                 | Backend, Integrators |
+| **gitnexus-guide.md**             | Code-intelligence MCP setup                    | All Developers       |
+| **eslint.md**                     | Lint configuration and editor integration      | Frontend Developers  |
+| **journals/**                     | Historical build records — not current docs    | Reference            |
 
 ## Key Architectural Decisions
 
@@ -361,14 +367,19 @@ Current state: **1105 passing, 0 failed, 0 errors**; backend coverage ~52%.
 
 ## Performance Targets
 
-| Metric          | Target           | Current | Status        |
-| --------------- | ---------------- | ------- | ------------- |
-| API p95 latency | <200ms           | ~250ms  | ⚠️ Optimizing |
-| Kanban render   | <1s (500 issues) | ~1.2s   | ⚠️ Optimizing |
-| Frontend bundle | <250KB (gzip)    | ~280KB  | ⚠️ Optimizing |
-| Page load       | <2s              | ~1.8s   | ✅ Good       |
+| Metric | Target | Current | Status |
+| ------ | ------ | ------- | ------ |
 
-See [Project Roadmap → Performance & Stability](./docs/project-roadmap.md#phase-5-performance--stability-45-complete)
+These are targets, not measurements — nothing in this repo currently
+benchmarks them. The instance dashboard at `/dashboard` reports live service
+health and storage; it does not measure latency.
+
+| Metric          | Target           |
+| --------------- | ---------------- |
+| API p95 latency | <200ms           |
+| Kanban render   | <1s (500 issues) |
+| Frontend bundle | <250KB (gzip)    |
+| Page load       | <2s              |
 
 ## Troubleshooting
 
@@ -459,8 +470,6 @@ docker compose up -d
 
 - **Issues:** [GitHub Issues](https://github.com/benpm/newplane/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/benpm/newplane/discussions)
-- **Team:** Internal Slack channel
-- **Docs Lead:** @docs-manager
 
 ## License
 

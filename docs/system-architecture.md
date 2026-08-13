@@ -58,7 +58,7 @@
 ```
 apps/web/
 ├── core/                           # Upstream code (read-only)
-│   ├── app/                        # Next.js app router
+│   ├── app/                        # React Router v7 route tree
 │   │   ├── layout.tsx              # Root layout
 │   │   ├── (auth)/                 # Auth routes (login, signup)
 │   │   └── (all)/[workspaceSlug]/  # Main app routes
@@ -163,8 +163,8 @@ RootStore (ce/store/root.store.ts extends CoreRootStore)
 │   └── dashboardData: Map<projectId, AnalyticsData>
 ├── taskCategoryStore: TaskCategoryRootStore (CE)
 │   └── categories: Map<workspaceId, TaskCategory[]>
-└── monitoringStore: MonitoringRootStore (CE)
-    └── metrics: Map<projectId, MonitoringMetrics>
+└── workflowStore: WorkflowStore (CE)
+    └── workflows: Map<projectId, ProjectWorkflow>
 ```
 
 **Data Flow:**
@@ -233,13 +233,18 @@ KanbanLayout
 apps/api/
 ├── plane/
 │   ├── settings/
-│   │   ├── base.py           # Core Django config
-│   │   ├── urls.py           # API routing (v0, v1)
-│   │   ├── asgi.py           # ASGI entry
-│   │   └── celery.py         # Celery config
+│   │   ├── common.py         # Core Django config (DB, Redis, RabbitMQ, S3)
+│   │   ├── production.py     # Production overrides
+│   │   ├── local.py          # Local dev overrides
+│   │   ├── test.py           # Test overrides (excludes django_celery_beat)
+│   │   ├── redis.py          # Redis client helper
+│   │   └── storage.py        # S3Storage backend
+│   ├── urls.py               # Root URLconf
+│   ├── asgi.py               # ASGI entry
+│   ├── celery.py             # Celery app + beat_schedule
 │   │
 │   ├── db/
-│   │   ├── models/           # 37 ORM models
+│   │   ├── models/           # 44 model modules
 │   │   │   ├── workspace.py  # Workspace, WorkspaceMember
 │   │   │   ├── project.py    # Project, ProjectMember
 │   │   │   ├── issue.py      # Issue, IssueLabel, IssueLink
@@ -247,8 +252,8 @@ apps/api/
 │   │   │   ├── module.py     # Module, ModuleIssue
 │   │   │   ├── page.py       # Page, PageBlock
 │   │   │   ├── state.py      # State (workflow states)
-│   │   │   ├── workflow.py   # WorkflowState, WorkflowTransition (CE)
-│   │   │   ├── time-log.py   # TimeLog (CE)
+│   │   │   ├── workflow.py   # ProjectWorkflow, WorkflowTransition (fork)
+│   │   │   ├── worklog.py    # IssueWorkLog (fork)
 │   │   │   └── [other].py
 │   │   └── managers.py       # SoftDeletionManager, etc.
 │   │
@@ -330,26 +335,56 @@ HTTP Request
 Response (JSON)
 ```
 
-### API Versioning
+### The two API layers
 
-**V0 API (Session Auth, Internal):**
+There are two API layers, and they are separated by _module_, not by a version
+segment in the path.
 
-- Used by web UI (apps/web)
-- Cookie-based session
-- Endpoint: `/api/v0/{resource}/`
-- Serializers: `apps/api/plane/app/serializers/v0/`
-- Auth: `@require_http_methods("POST")`, `@login_required`
+**Application API — `plane/app/`**
 
-**V1 API (API Key Auth, External):**
+- Used by `apps/web`, `apps/admin` and `apps/space`
+- Django session cookie (`BaseSessionAuthentication`, CSRF disabled for REST)
+- Mounted at `/api/` from `plane/urls.py`
+- Views in `plane/app/views/`, serializers in `plane/app/serializers/`
 
-- Used by external integrations
-- Header-based API key: `X-API-KEY`
-- OpenAPI docs: `/api/v1/docs/`
-- Endpoint: `/api/v1/{resource}/`
-- Serializers: `apps/api/plane/app/serializers/v1/`
-- Auth: Token authentication (DRF)
+**External API — `plane/api/`**
 
-**Never share serializers between v0/v1**
+- Used by third-party integrations
+- Header API key: `X-API-KEY`
+- Mounted at `/api/v1/`, OpenAPI docs at `/api/v1/docs/`
+- Views in `plane/api/views/`, serializers in `plane/api/serializers/`
+
+**God-mode API — `plane/license/`**
+
+- Used by `apps/admin` only
+- A _separate session cookie_ (`admin-session-id`) — see below
+- Mounted at `/api/instances/`
+- Menu RBAC by URL prefix via `plane/license/menu_registry.py`
+
+**Never share serializers across layers.** A `plane/app/serializers/*` class
+must not be used from a `plane/api/` view or vice versa; the field sets and
+permission assumptions differ.
+
+### The session-cookie split
+
+`plane/authentication/middleware/session.py` selects the session cookie by
+testing whether the substring `instances` occurs anywhere in `request.path`:
+
+```python
+if "instances" in request.path:
+    session_key = request.COOKIES.get(settings.ADMIN_SESSION_COOKIE_NAME)  # admin-session-id
+else:
+    session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)        # session-id
+```
+
+Web and god-mode therefore share an origin but not a session. A user signed
+into the web app cannot call `/api/instances/*` at all — the middleware finds
+no cookie and resolves `AnonymousUser`.
+
+Because the test is a substring rather than a prefix, any new route containing
+`instances` silently switches cookies. This is why the instance dashboard
+lives at `/api/instance-dashboard/`, and why a test asserts the name never
+drifts into matching.
 
 ### User & Profile Endpoints (V0 API)
 
@@ -568,7 +603,7 @@ New issue appears in all layouts
 
 ### Frontend Optimization
 
-- **Code splitting:** Route-based chunks (Next.js)
+- **Code splitting:** Route-based chunks (Vite)
 - **Image optimization:** WebP, lazy loading
 - **Tree shaking:** Unused code removed (Webpack)
 - **Kanban virtualization:** Only visible items rendered
@@ -727,9 +762,104 @@ def archive_and_close_old_issues(): ...
 ```
 
 **Fail-open:** if `BusinessCalendarService` raises, logs exception and runs task anyway.
-**Log on skip:** `INFO plane.utils.celery_helpers "Skip {task}: {date} (VN) is not a working day"`.
+**Log on skip:** `INFO plane.utils.celery_helpers "Skip {task}: {date} is not a working day"`.
+The timezone comes from `BUSINESS_CALENDAR_TIMEZONE` (`CALENDAR_TZ`, default `UTC`).
 
 ---
 
-**Last Updated:** 2026-05-30
-**Version:** 1.3
+## Instance Dashboard Subsystem
+
+An instance-admin-only operational view at `/dashboard`, served by `apps/web`.
+
+### Why it is not under `/api/instances/`
+
+The session middleware reads the god-mode cookie for any path containing
+`instances` (see _The session-cookie split_). Since the dashboard is served to
+the web app, mounting it there would 403 every request. It lives at
+`/api/instance-dashboard/` under `plane.app.urls`, guarded by
+`InstanceAdminPermission` — which checks the same thing the client-side gate
+(`GET /api/users/me/instance-admin/`) checks, so the two agree.
+
+### Probes
+
+`plane/utils/instance_probes.py` exposes one probe per dependency. Every probe
+returns `{status, latency_ms, error, details}` and never raises; the view wraps
+each in its own guard, so one dead service renders as a red card rather than a 500.
+
+| Probe          | Mechanism                                                    | Timeout |
+| -------------- | ------------------------------------------------------------ | ------- |
+| Postgres       | `connection.cursor()`, `SET LOCAL statement_timeout`         | 3s      |
+| Redis          | probe-local client with socket timeouts                      | 2s      |
+| RabbitMQ       | kombu `queue_declare(passive=True)`, fresh channel per queue | 3s      |
+| Object storage | `head_bucket` on a short-timeout boto3 client                | 2+5s    |
+| Celery workers | `app.control.inspect()`                                      | 3s ×2   |
+| Celery beat    | `PeriodicTask.last_run_at` vs schedule                       | DB      |
+
+The three network probes run in a `ThreadPoolExecutor`; Postgres stays on the
+request thread because Django connections are thread-local. If the broker
+probes down, worker inspection is skipped rather than paying the timeout again.
+
+Two deliberate departures from the shared helpers: `redis_instance()` sets no
+socket timeout, and `S3Storage` inherits botocore's 60s/5-retry defaults and
+rewrites its endpoint to the public host when given a request. Neither is safe
+for a health check.
+
+Credentials are scrubbed from every error string — `AMQP_URL` contains the
+broker password.
+
+### Storage measurement
+
+Three sources disagree about how much space is used, and the dashboard reports
+all three rather than blending them:
+
+- `FileAsset.size` — declared by the client at presign, clamped. A reservation.
+- `storage_metadata["ContentLength"]` — a real measurement, present only on
+  assets that completed the v2 upload handshake.
+- A bucket scan — ground truth, and the only source that sees orphans.
+
+`measured_coverage` states what fraction is genuinely measured; the difference
+between the scan and the measured total is labelled _unreconciled_, not
+_orphaned_. Scans are manual, bounded to 20s / 500k objects, cached 6h, and
+lock-guarded.
+
+---
+
+## GitHub Sync Subsystem
+
+A project binds to one GitHub repository. Authentication is instance-wide via
+`GITHUB_PERSONAL_ACCESS_TOKEN`; there are no per-project credentials.
+
+**Issue sync** — `bgtasks/github_issue_sync_task.py` plus a push signal at
+`db/signals/github_issue_push.py`. `GithubIssueLink.github_state` records the
+last-observed remote state, so an update echoed back from GitHub converges
+instead of ping-ponging between the two systems.
+
+**Wiki sync** — `bgtasks/github_wiki_sync_task.py` clones
+`https://x-access-token:{token}@github.com/{owner}/{repo}.wiki.git` and
+round-trips pages as GFM. This is why the page-link editor extension inserts a
+plain link mark rather than a mention node: mentions have no Markdown
+representation and would not survive the trip.
+
+Both run on Celery beat every five minutes, and both are registered in
+`CELERY_IMPORTS` — omitting that leaves beat dispatching into an empty registry.
+
+---
+
+## God Mode RBAC
+
+Instance admins hold a subset of god-mode menus in
+`InstanceAdmin.allowed_menus`. Enforcement happens in
+`InstanceAdminMenuPermission`, which resolves a required menu key from the
+request path via `plane/license/menu_registry.py` — longest-prefix match, with
+unmapped paths denied (fail-closed). Super admins bypass.
+
+Because enforcement is by URL prefix rather than per-view annotation, one
+registry covers every endpoint under `/api/instances/`, including views
+declared outside `license/api/views/`. The trade is that `PERMISSION_KEYS` must
+stay in lockstep with `apps/admin/hooks/use-sidebar-menu/core.ts`;
+`tests/unit/test_menu_registry_parity.py` asserts it does.
+
+---
+
+**Last Updated:** 2026-08-13
+**Version:** 1.4

@@ -19,7 +19,7 @@ This runner executes on the **development server** where images are built and te
 ```
 GitLab UI → Admin → Runners → Create instance runner
 Type: Shell executor
-Description: Plane SHB Dev Runner
+Description: Plane Dev Runner
 Save → Copy registration token
 ```
 
@@ -35,7 +35,7 @@ sudo gitlab-runner register \
   --registration-token <REGISTRATION_TOKEN> \
   --executor shell \
   --shell-script bash \
-  --description "Plane SHB Dev Runner" \
+  --description "Plane Dev Runner" \
   --tag-list "plane-dev,shell,deploy" \
   --protected true \
   --run-untagged false
@@ -80,7 +80,7 @@ sudo gitlab-runner register \
   --registration-token <REGISTRATION_TOKEN> \
   --executor shell \
   --shell-script bash \
-  --description "Plane SHB Prod Runner" \
+  --description "Plane Prod Runner" \
   --tag-list "plane-prod,shell,deploy-only" \
   --protected true \
   --run-untagged false
@@ -182,7 +182,7 @@ Update GITLAB_PUBLISH_TOKEN CI/CD variable
 
 ```bash
 # Test dev deploy with new token
-# Trigger: deploy:dev:release with RELEASE_TAG=dev/v1.2.0-build.999
+# Trigger: deploy:external-test with RELEASE_TAG=dev/v1.2.0-build.999
 
 # Logs should show successful download and deployment
 ```

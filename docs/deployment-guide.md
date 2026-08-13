@@ -57,21 +57,21 @@ docker-compose -f docker-compose.dev.yml up -d
 ### 1. **Automatic Dev Deployment** (Continuous Integration)
 
 - Merge to `develop` branch
-- Pipeline auto-runs: lint → test → build → **deploy:dev**
+- Pipeline auto-runs: lint → test → build → **deploy:external-test**
 - Result: Dev server updated with latest code (~15-20 min)
 - See: [Deployment Workflow - Auto Dev](./deployment/deployment-workflow.md#strategy-1-automatic-dev-deploy-ci-artifacts)
 
 ### 2. **Manual Dev Release** (Validation)
 
 - Tag: `dev/v1.2.0-build.123`
-- Trigger: Manual job `deploy:dev:release` in GitLab UI
+- Trigger: Manual job `deploy:external-test` in GitLab UI
 - Result: Dev server deploys from immutable release package
 - See: [Deployment Workflow - Release Deploy](./deployment/deployment-workflow.md#strategy-2-release-based-deploy-gitlab-package-registry)
 
 ### 3. **Production Release** (Maintainer+ Protected Tag)
 
 - Tag: `prod/v1.2.0` (Maintainer creates)
-- Trigger: Manual job `deploy:prod:release` in GitLab UI
+- Trigger: Manual job `release:production` in GitLab UI
 - Result: Prod server deploys exact tagged version
 - See: [Deployment Workflow - Production](./deployment/deployment-workflow.md#strategy-2-release-based-deploy-gitlab-package-registry)
 

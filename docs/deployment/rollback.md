@@ -178,7 +178,7 @@ If you prefer to trigger rollback through CI/CD UI instead of SSH:
 
 1. Go to GitLab UI: CI/CD → Pipelines
 2. Find the pipeline of the **previous good release**
-3. Scroll to `deploy:prod:release` job
+3. Scroll to `release:production` job
 4. Click "▶ Play" to re-trigger
 
 This downloads the exact same archive and re-runs the full deployment flow.

@@ -6,33 +6,35 @@
 
 ## Branch Strategy
 
+This fork is **single-trunk**: `main` is the only long-lived branch. Work
+happens on short-lived branches taken from `main` and merged back into it.
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    BRANCH STRUCTURE                      │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
-│   preview (Production)                                  │
-│   ════════════════════                                  │
-│     ▲                                                   │
-│     │  Pull Request (merged at release time)            │
-│     │                                                   │
-│   develop (Development)                                 │
-│   ═════════════════════                                 │
+│   main (deployed)                                       │
+│   ═══════════════                                       │
 │     ▲         ▲         ▲                               │
-│     │         │         │                               │
+│     │         │         │  Pull Request                 │
 │   feat/     fix/      chore/                            │
 │   xxx       xxx       xxx                               │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
 
-| Branch    | Purpose                              | Who merges?                           |
-| --------- | ------------------------------------ | ------------------------------------- |
-| `preview` | Production — stable, tested          | Lead / Manager                        |
-| `develop` | Development — integrate new features | Developer                             |
-| `feat/*`  | New feature                          | Developer (create & merge to develop) |
-| `fix/*`   | Bug fix                              | Developer                             |
-| `chore/*` | Config, docs, refactor               | Developer                             |
+| Branch    | Purpose                                 | Notes                            |
+| --------- | --------------------------------------- | -------------------------------- |
+| `main`    | The trunk; what production deploys from | Never force-push                 |
+| `feat/*`  | New feature                             | Branch from `main`, PR to `main` |
+| `fix/*`   | Bug fix                                 | Same                             |
+| `chore/*` | Config, docs, refactor                  | Same                             |
+
+> **Never pull, merge or rebase from upstream (`makeplane/plane`).** This fork
+> has diverged deliberately; upstream history is not a valid base.
+>
+> **Never force-push to `main`.**
 
 ---
 
@@ -41,11 +43,11 @@
 ### Step 1 — Start a new task
 
 ```bash
-# 1. Get the latest develop
-git checkout develop
-git pull origin develop
+# 1. Get the latest main
+git checkout main
+git pull origin main
 
-# 2. Branch off develop
+# 2. Branch off main
 git checkout -b feat/feature-name
 ```
 
@@ -73,14 +75,14 @@ git commit -m "feat(auth): implement login form validation"
 > type(scope): short description
 > ```
 >
-> | Type       | When to use          | Example                                 |
-> | ---------- | -------------------- | --------------------------------------- |
-> | `feat`     | New feature          | `feat(auth): add OAuth login`           |
-> | `fix`      | Bug fix              | `fix(sidebar): resolve scroll issue`    |
-> | `perf`     | Performance work     | `perf(api): optimize query N+1`         |
-> | `refactor` | Restructuring        | `refactor(store): simplify state logic` |
-> | `chore`    | Config, deps         | `chore(deps): upgrade react to v18.3`   |
-> | `docs`     | Documentation        | `docs: update API reference`            |
+> | Type       | When to use      | Example                                 |
+> | ---------- | ---------------- | --------------------------------------- |
+> | `feat`     | New feature      | `feat(auth): add OAuth login`           |
+> | `fix`      | Bug fix          | `fix(sidebar): resolve scroll issue`    |
+> | `perf`     | Performance work | `perf(api): optimize query N+1`         |
+> | `refactor` | Restructuring    | `refactor(store): simplify state logic` |
+> | `chore`    | Config, deps     | `chore(deps): upgrade react to v18.3`   |
+> | `docs`     | Documentation    | `docs: update API reference`            |
 >
 > See `code-standards.md` for detailed commit message guidelines.
 >
@@ -110,16 +112,16 @@ git push -u origin feat/feature-name
 Then open a PR on GitHub, or use the CLI:
 
 ```bash
-gh pr create --base develop --title "feat(auth): implement login form"
+gh pr create --base main --title "feat(auth): implement login form"
 ```
 
-### Step 4 — Review & merge into develop
+### Step 4 — Review & merge into main
 
 ```
 ┌──────────┐     PR      ┌──────────┐    Review    ┌──────────┐
 │  Push    │ ──────────▶ │  GitHub  │ ──────────▶  │  Merge   │
 │  branch  │             │  PR page │    ✅ OK      │   into   │
-│          │             │          │              │  develop │
+│          │             │          │              │   main   │
 └──────────┘             └──────────┘              └──────────┘
 ```
 
@@ -130,9 +132,9 @@ gh pr create --base develop --title "feat(auth): implement login form"
 ### Step 5 — Clean up after the merge
 
 ```bash
-# Back to develop and update
-git checkout develop
-git pull origin develop
+# Back to main and update
+git checkout main
+git pull origin main
 
 # Delete the merged branch
 git branch -d feat/feature-name
@@ -140,40 +142,30 @@ git branch -d feat/feature-name
 
 ---
 
-## Release workflow (Lead / Manager)
+## Release workflow
 
-### Merge develop → preview (Production)
-
-```
-  develop                          preview
-  ═══════                          ═══════
-     │                                │
-     │  ① Open PR                     │
-     │──────────────────────────────▶ │
-     │                                │
-     │  ② Review + Approve            │
-     │                                │
-     │  ③ Merge PR                    │
-     │──────────────────────────────▶ │ ← Production updated
-     │                                │
-```
+There is no promotion step — merging into `main` _is_ the release. What
+follows a merge is a deploy, not another merge.
 
 ```bash
-# Open the release PR: develop → preview
-gh pr create --base preview --head develop \
-  --title "release: merge develop into preview" \
-  --body "## Changes
-- Feature A
-- Fix B
-- Improvement C"
+# 1. Verify on the dev site first (a full second deployment from this checkout)
+./scripts/dev-site.sh build && ./scripts/dev-site.sh up -d
+#    → https://dev.mousetrip.online
+
+# 2. Once reviewed, deploy production
+docker compose build && docker compose up -d
+#    → https://plane.mousetrip.online
 ```
 
-**Pre-merge checklist:**
+**Pre-deploy checklist:**
 
-- [ ] All tests pass on develop
-- [ ] Code review complete
-- [ ] No conflicts with preview
-- [ ] Tested on the staging/dev environment
+- [ ] Backend tests pass (`cd apps/api && python run_tests.py`)
+- [ ] `pnpm check:types` / `check:lint` / `check:format` no worse than baseline
+- [ ] Verified on the dev site
+- [ ] Database backed up if the change includes migrations
+
+> A bare `docker compose` in this repository targets **production**. The dev
+> site must be driven through `scripts/dev-site.sh`.
 
 ---
 
@@ -182,23 +174,23 @@ gh pr create --base preview --head develop \
 ### 1. Conflicts when merging a PR
 
 ```bash
-# Pull develop into your branch
+# Pull main into your branch
 git checkout feat/feature-name
-git merge develop
+git merge main
 
 # Resolve the conflicts in your editor, then:
 git add .
-git commit -m "merge: resolve conflicts with develop"
+git commit -m "merge: resolve conflicts with main"
 git push
 ```
 
-### 2. Pulling the latest develop into your working branch
+### 2. Pulling the latest main into your working branch
 
 ```bash
 git checkout feat/feature-name
-git merge develop
+git merge main
 # or
-git rebase develop  # (only if not yet pushed)
+git rebase main  # (only if not yet pushed)
 ```
 
 ### 3. Committed to the wrong branch
@@ -215,86 +207,64 @@ git commit -m "feat: message"
 ### 4. Emergency production hotfix
 
 ```bash
-# Branch the hotfix off preview
-git checkout preview
-git pull origin preview
+# Branch the hotfix off main
+git checkout main
+git pull origin main
 git checkout -b fix/critical-bug
 
 # Fix → commit → push
 git push -u origin fix/critical-bug
 
-# Open the PR straight into preview
-gh pr create --base preview --title "fix: critical bug in production"
-
-# AFTER merging: sync back into develop
-git checkout develop
-git merge preview
-git push origin develop
-```
+# Open the PR into main
+gh pr create --base main --title "fix: critical bug in production"
 
 ```
-  preview ◀── fix/critical-bug (direct PR)
-     │
-     ▼
-  develop ◀── merge preview (sync back)
-```
+
+With a single trunk there is nothing to sync back — the fix is on `main` the
+moment the PR merges. Deploy it as above.
 
 ---
 
 ## Frequently used Git commands
 
-| Situation                 | Command                 |
-| ------------------------- | ----------------------- |
-| Show the current branch   | `git branch`            |
-| Show all branches         | `git branch -a`         |
-| Show commit history       | `git log --oneline -10` |
-| Show uncommitted changes  | `git diff`              |
-| Shelve changes            | `git stash`             |
-| Restore shelved changes   | `git stash pop`         |
-| List open PRs             | `gh pr list`            |
-| Show PR status            | `gh pr status`          |
+| Situation                | Command                 |
+| ------------------------ | ----------------------- |
+| Show the current branch  | `git branch`            |
+| Show all branches        | `git branch -a`         |
+| Show commit history      | `git log --oneline -10` |
+| Show uncommitted changes | `git diff`              |
+| Shelve changes           | `git stash`             |
+| Restore shelved changes  | `git stash pop`         |
+| List open PRs            | `gh pr list`            |
+| Show PR status           | `gh pr status`          |
 
 ---
 
 ## Mandatory rules
 
-| #   | Rule                                                      | Why                                    |
-| --- | --------------------------------------------------------- | -------------------------------------- |
-| 1   | **NEVER push directly to `preview`**                      | Production branch — merge via PR only  |
-| 2   | **NEVER push directly to `develop`**                      | Must go through PR so it gets reviewed |
-| 3   | **NEVER commit `.env` files, API keys, or credentials**   | Security                               |
-| 4   | **NEVER `--force` push** (unless the Lead approves it)    | Avoid destroying other people's work   |
-| 5   | **ALWAYS pull before starting work**                      | Avoid conflicts                        |
-| 6   | **Commit messages must follow the format**                | Keeps history readable                 |
-| 7   | **1 PR = 1 feature/fix**                                  | Easy to review, easy to revert         |
+| #   | Rule                                                          | Why                                 |
+| --- | ------------------------------------------------------------- | ----------------------------------- |
+| 1   | **NEVER pull/merge/rebase from upstream (`makeplane/plane`)** | This fork has diverged deliberately |
+| 2   | **NEVER force-push to `main`**                                | Destroys history others have pulled |
+| 3   | **NEVER commit `.env` files, API keys, or credentials**       | Security                            |
+| 4   | **Branch from `main`, PR back into `main`**                   | Single trunk; no promotion step     |
+| 5   | **ALWAYS pull before starting work**                          | Avoid conflicts                     |
+| 6   | **Commit messages must follow the format**                    | Keeps history readable              |
+| 7   | **1 PR = 1 feature/fix**                                      | Easy to review, easy to revert      |
 
 ---
 
 ## End-to-end flow
 
 ```
-Developer A          Developer B          Lead/Manager
-    │                    │                     │
-    ├─ feat/login        ├─ fix/sidebar        │
-    │                    │                     │
-    ├─ PR → develop ───▶ │                     │
-    │                    ├─ PR → develop ─────▶│
-    │                    │                     │
-    │                    │              Review & Approve
-    │                    │                     │
-    │                    │       develop ◀──── Merged
-    │                    │                     │
-    │                    │              ┌──────┴──────┐
-    │                    │              │  Test on    │
-    │                    │              │  Staging    │
-    │                    │              └──────┬──────┘
-    │                    │                     │
-    │                    │              PR: develop → preview
-    │                    │                     │
-    │                    │              preview ◀── Merged
-    │                    │              (Production Updated)
+    feat/login ──┐
+                 ├──▶ PR ──▶ review ──▶ main ──▶ dev site ──▶ production
+    fix/sidebar ─┘
 ```
+
+Each branch is reviewed and merged into `main` independently. `main` is
+deployed to the dev site for verification, then to production.
 
 ---
 
-_Updated: 2026-04-08 | Repo: github.com/benpm/newplane_
+_Repo: github.com/benpm/newplane · default branch `main`_

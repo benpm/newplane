@@ -408,7 +408,7 @@ Save as `health-check.sh` on each server:
 #!/bin/bash
 set -euo pipefail
 
-echo "=== Plane SHB Health Check ==="
+echo "=== Plane Health Check ==="
 echo
 
 # 1. API endpoint
@@ -442,7 +442,7 @@ chmod +x health-check.sh
 ./health-check.sh
 
 # Output
-=== Plane SHB Health Check ===
+=== Plane Health Check ===
 
 API health: ✓ OK
 Frontend: ✓ OK

@@ -178,7 +178,7 @@ Most deployments pass RELEASE_TAG as a CI variable when triggering the job:
 
 ```bash
 # Manual trigger in GitLab UI
-# Job: deploy:dev:release
+# Job: deploy:external-test
 # Variable: RELEASE_TAG=dev/v1.2.0-build.123
 ```
 

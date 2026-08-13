@@ -38,7 +38,7 @@ Work queued from testing this branch on the dev site. One task, one commit.
 
 Row counts on the live database, not uncovered-statement counts, should drive
 what gets hardened next. Every fork headline feature holds **zero rows** —
-departments, staff profiles, help centre, GitHub sync, HO export, dashboards,
+departments, staff profiles, GitHub sync, HO export, dashboards,
 worklogs, capacity exports — so their large uncovered surface is not what puts
 the deployment at risk. The tables carrying real data are core Plane: issue
 activities, notifications, recent visits, issues, states, holidays,

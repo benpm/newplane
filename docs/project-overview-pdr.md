@@ -272,7 +272,7 @@
 - **docs/system-architecture.md** — System design & data flow
 - **docs/design-guidelines.md** — UI/UX, Tailwind, component libs
 - **docs/deployment-guide.md** — Docker, Caddy, env vars
-- **docs/project-roadmap.md** — Current development phases
+- **docs/features.md** — Every feature, with the code behind it
 
 ## Key Contacts & Roles
 

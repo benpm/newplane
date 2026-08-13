@@ -21,14 +21,14 @@ Fastest path for continuous integration. Runs automatically after merge to `deve
 1. Developer merges PR to develop
    ↓
 2. GitLab CI/CD triggers pipeline
-   - lint → test → build → deploy:dev
+   - lint → test → build → deploy:external-test
    ↓
 3. Build stage produces 3 docker images:
    - plane-frontend-vX.Y.Z.tar.gz
    - plane-admin-vX.Y.Z.tar.gz
    - plane-backend-vX.Y.Z.tar.gz
    ↓
-4. deploy:dev job (runs on plane-dev runner):
+4. deploy:external-test job (runs on plane-dev runner):
    - Copies artifacts to /tmp/plane-deploy/
    - Runs scripts/ci-deploy.sh locally
    - Loads images, runs migrations, docker-compose up
@@ -130,7 +130,7 @@ Artifacts:
 
 1. Go to GitLab UI: CI/CD → Pipelines
 2. Find release pipeline (tag: `dev/v1.2.0-build.123`)
-3. Scroll to `deploy:dev:release` job (currently manual)
+3. Scroll to `deploy:external-test` job (currently manual)
 4. Click "▶ Play" button
 5. System deploys to dev server
 
@@ -138,13 +138,13 @@ Artifacts:
 
 1. Go to GitLab UI: CI/CD → Pipelines
 2. Find release pipeline (tag: `prod/v1.2.0`)
-3. Scroll to `deploy:prod:release` job (currently manual)
+3. Scroll to `release:production` job (currently manual)
 4. Click "▶ Play" button
 5. System deploys to prod server (requires Maintainer status)
 
 ### Deploy Job Details
 
-Both `deploy:dev:release` and `deploy:prod:release` run the same script:
+Both `deploy:external-test` and `release:production` run the same script:
 
 **Script:** `scripts/deploy-from-internal-gitlab-release.sh`
 
@@ -166,7 +166,7 @@ Both `deploy:dev:release` and `deploy:prod:release` run the same script:
 
 ```bash
 # Option 1: Watch job logs in GitLab UI
-# GitLab → CI/CD → Pipelines → deploy:prod:release → Logs
+# GitLab → CI/CD → Pipelines → release:production → Logs
 
 # Option 2: SSH to server and watch locally
 ssh prod-server

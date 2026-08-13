@@ -37,7 +37,7 @@
 
 ### Directory Structure Rules
 
-**App routing:** All routes in `apps/web/app/` (Next.js app router)
+**App routing:** All routes declared in `apps/web/app/routes/{core,extended}.ts` (React Router v7)
 **Shared components:** `apps/web/core/components/` (never modify from ce/)
 **CE components:** `apps/web/ce/components/` (extensions only)
 **Core stores:** `apps/web/core/store/` (never modify)
@@ -129,7 +129,7 @@ class IssueViewSet(ReadOnlyModelViewSet):
 **Pattern:**
 
 ```python
-# apps/api/plane/app/serializers/v0/issue.py
+# apps/api/plane/app/serializers/issue.py
 class IssueSerializer(serializers.ModelSerializer):
     created_by_detail = UserLiteSerializer(source="created_by", read_only=True)
 
@@ -157,7 +157,7 @@ class IssueSerializer(serializers.ModelSerializer):
 **Pattern:**
 
 ```python
-# apps/api/plane/tasks/issues.py
+# apps/api/plane/bgtasks/issue_activity_task.py
 from celery import shared_task
 from django.core.mail import send_mail
 
