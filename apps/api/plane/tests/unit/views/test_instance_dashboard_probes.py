@@ -148,6 +148,37 @@ def test_worst_status_folds_to_the_most_severe():
     assert instance_probes.worst_status([]) == "unknown"
 
 
+@pytest.mark.parametrize(
+    "url_name",
+    [
+        "instance-dashboard-health",
+        "instance-dashboard-overview",
+        "instance-dashboard-storage",
+        "instance-dashboard-scheduled-jobs",
+    ],
+)
+def test_a_dead_cache_does_not_break_the_dashboard(admin_client, monkeypatch, url_name):
+    """The cache backend is Redis, and Redis is one of the things being reported.
+
+    The stock `cache_response` decorator calls `cache.get()` unguarded, so with
+    Redis down it raised *before* the view ran — the health page 500'd at
+    exactly the moment it was needed, and the probe that would have said
+    "redis: down" never executed. `resilient_cache_response` degrades to
+    uncached instead. This test is the guard on that.
+    """
+    from django.core.cache import cache
+
+    def explode(*args, **kwargs):
+        raise ConnectionError("Error -2 connecting to redis:6379. Name does not resolve.")
+
+    monkeypatch.setattr(cache, "get", explode)
+    monkeypatch.setattr(cache, "set", explode)
+
+    response = admin_client.get(reverse(url_name))
+
+    assert response.status_code == 200, f"{url_name} failed with the cache down"
+
+
 def test_scheduled_jobs_are_empty_without_the_beat_scheduler(admin_client):
     """django_celery_beat is not installed under the test settings.
 

@@ -237,6 +237,15 @@ def probe_rabbitmq(queues=("celery",)):
         return _result(DOWN, started, error=_sanitize(exc), details=details)
 
 
+# `inspect` cannot know how many workers should reply, so it always waits the
+# full timeout — the cost is paid on every call, not just when a worker is
+# missing. Two calls at Celery's usual 3.0 made the health endpoint take six
+# seconds. Replies come from the worker's control thread, which is not blocked
+# by task execution, so a busy worker still answers promptly over a local
+# broker; 1.5s is generous for that and caps the probe at ~3s.
+CELERY_INSPECT_TIMEOUT_SECONDS = 1.5
+
+
 def probe_celery_workers():
     """Inspect live Celery workers.
 
@@ -248,7 +257,7 @@ def probe_celery_workers():
 
     started = time.monotonic()
     try:
-        inspector = app.control.inspect(timeout=3.0)
+        inspector = app.control.inspect(timeout=CELERY_INSPECT_TIMEOUT_SECONDS)
         active = inspector.active() or {}
         stats = inspector.stats() or {}
     except Exception as exc:

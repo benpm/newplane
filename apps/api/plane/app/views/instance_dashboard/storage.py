@@ -4,13 +4,18 @@
 
 """Storage usage: database size, file-asset rollups and object-store scans."""
 
-from django.core.cache import cache
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
 from plane.app.views.instance_dashboard.base import InstanceDashboardBaseView
-from plane.utils.cache import cache_response
+from plane.app.views.instance_dashboard.caching import (
+    resilient_cache_response,
+    safe_cache_add,
+    safe_cache_delete,
+    safe_cache_get,
+    safe_cache_set,
+)
 from plane.utils.instance_storage import (
     asset_storage_rollup,
     postgres_sizes,
@@ -27,11 +32,11 @@ BUCKET_SCAN_LOCK_TTL_SECONDS = 60
 def cached_bucket_scan():
     """The last bucket scan, aged.
 
-    Read straight from the cache rather than through ``cache_response``: that
-    decorator no-ops under DEBUG (so local dev would rescan on every request)
-    and it cannot be written by the POST handler that produces the value.
+    Read straight from the cache rather than through a response decorator:
+    that path no-ops under DEBUG (so local dev would rescan on every request)
+    and cannot be written by the POST handler that produces the value.
     """
-    cached = cache.get(BUCKET_SCAN_CACHE_KEY)
+    cached = safe_cache_get(BUCKET_SCAN_CACHE_KEY)
     if not cached:
         return {"status": "never"}
 
@@ -45,7 +50,7 @@ def cached_bucket_scan():
 class InstanceStorageEndpoint(InstanceDashboardBaseView):
     """Database size, largest tables, and file-asset byte rollups."""
 
-    @cache_response(300, user=False)
+    @resilient_cache_response(300)
     def get(self, request):
         return Response(
             {
@@ -68,16 +73,18 @@ class InstanceBucketScanEndpoint(InstanceDashboardBaseView):
         return Response(cached_bucket_scan())
 
     def post(self, request):
-        # cache.add is atomic; two admins clicking at once means one scan.
-        if not cache.add(BUCKET_SCAN_LOCK_KEY, "1", BUCKET_SCAN_LOCK_TTL_SECONDS):
+        # Atomic set-if-absent; two admins clicking at once means one scan.
+        # With the cache down this returns True and the scan proceeds unlocked
+        # — a duplicate scan is a far smaller problem than a dead button.
+        if not safe_cache_add(BUCKET_SCAN_LOCK_KEY, "1", BUCKET_SCAN_LOCK_TTL_SECONDS):
             return Response({"status": "running"}, status=status.HTTP_202_ACCEPTED)
 
         try:
             result = scan_bucket()
             result["scanned_at"] = timezone.now()
-            cache.set(BUCKET_SCAN_CACHE_KEY, result, BUCKET_SCAN_TTL_SECONDS)
+            safe_cache_set(BUCKET_SCAN_CACHE_KEY, result, BUCKET_SCAN_TTL_SECONDS)
             return Response(result)
         except Exception as exc:
             return Response({"status": "error", "error": str(exc)[:200]})
         finally:
-            cache.delete(BUCKET_SCAN_LOCK_KEY)
+            safe_cache_delete(BUCKET_SCAN_LOCK_KEY)

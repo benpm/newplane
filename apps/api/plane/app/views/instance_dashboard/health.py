@@ -14,7 +14,7 @@ from rest_framework.response import Response
 
 from plane.app.views.instance_dashboard.base import InstanceDashboardBaseView
 from plane.license.models import Instance
-from plane.utils.cache import cache_response
+from plane.app.views.instance_dashboard.caching import resilient_cache_response
 from plane.utils.instance_probes import (
     DOWN,
     UNKNOWN,
@@ -40,7 +40,7 @@ class InstanceHealthEndpoint(InstanceDashboardBaseView):
     is the *content* of this response, not an error in producing it.
     """
 
-    @cache_response(15, user=False)
+    @resilient_cache_response(15)
     def get(self, request):
         # Postgres stays on the request thread. Django's connections are
         # thread-local, so probing it from a pool worker would open one that

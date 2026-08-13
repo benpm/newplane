@@ -8,12 +8,12 @@ from rest_framework.response import Response
 
 from plane.app.views.instance_dashboard.base import InstanceDashboardBaseView
 from plane.license.utils.instance_counts import instance_counts
-from plane.utils.cache import cache_response
+from plane.app.views.instance_dashboard.caching import resilient_cache_response
 
 
 class InstanceOverviewEndpoint(InstanceDashboardBaseView):
     """Counts of every major entity across the whole instance."""
 
-    @cache_response(60, user=False)
+    @resilient_cache_response(60)
     def get(self, request):
         return Response(instance_counts())
