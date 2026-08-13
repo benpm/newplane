@@ -23,12 +23,12 @@ tokens, component libraries, forms, routing, i18n.
 ## Build
 
 - PM: pnpm | Lint: `pnpm check:lint` | Format: `pnpm check:format`
-- Backend tests: `cd apps/api && python run_tests.py`, or `./scripts/dev-site-test.sh`
+- Backend tests: `cd apps/api && python run_tests.py`, or `./scripts/plane test`
   to run against the dev-site datastores without a local Python env
 
 ## Local Dev
 
-- **Start everything: `pnpm dev:local`** (backend + Caddy proxy in Docker, frontends via turbo, hot reload). Stale ports? `pnpm dev:clean`. Script: `scripts/dev-local.sh`.
+- **Start everything: `pnpm dev:local`** (backend + Caddy proxy in Docker, frontends via turbo, hot reload). Stale ports? `pnpm dev:clean`. Script: `scripts/plane dev`.
 - **One origin: http://localhost** → web · **http://localhost/god-mode/** → admin · `/api` → backend. Caddy (:80) routes by path.
 - Ports: web 3000 · admin 3001 · space 3002 · live 3003 · api 8000 · db 5434 · MinIO 9000/9090.
 - **Pitfall:** running `pnpm dev` per-app twice cascades ports — a 2nd web lands on :3001 and impersonates admin (→ "no workspace"). Run `pnpm dev:local`.
@@ -36,7 +36,7 @@ tokens, component libraries, forms, routing, i18n.
 ## Dev site
 
 A second, fully isolated deployment from the same checkout (compose project
-`planedev`, proxy on 8091). See README. Drive it through `scripts/dev-site.sh` —
+`planedev`, proxy on 8091). See README. Drive it through `scripts/plane devsite` —
 a bare `docker compose` here targets production.
 
 ## File Standards

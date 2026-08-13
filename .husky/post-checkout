@@ -5,7 +5,7 @@
 [ "${3}" != "1" ] && exit 0
 [ "${1}" = "${2}" ] && exit 0
 [ ! -d .gitnexus ] && exit 0
-[ ! -x ./scripts/gitnexus.sh ] && exit 0
+[ ! -x ./scripts/plane ] && exit 0
 
 echo "[gitnexus] branch switch detected → re-indexing in background"
-./scripts/gitnexus.sh reindex-bg
+./scripts/plane gitnexus reindex-bg

@@ -3,6 +3,6 @@
 # Skips if .gitnexus/ not initialized or if last re-index was < 60s ago (throttle).
 
 [ ! -d .gitnexus ] && exit 0
-[ ! -x ./scripts/gitnexus.sh ] && exit 0
+[ ! -x ./scripts/plane ] && exit 0
 
-./scripts/gitnexus.sh reindex-bg
+./scripts/plane gitnexus reindex-bg

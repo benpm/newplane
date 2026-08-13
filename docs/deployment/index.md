@@ -53,15 +53,15 @@ Archive previous for rollback
 
 ## Files Referenced
 
-| File                                             | Purpose                                                     |
-| ------------------------------------------------ | ----------------------------------------------------------- |
-| `scripts/ci-deploy.sh`                           | Automatic dev deployment (CI artifacts → docker-compose up) |
-| `scripts/deploy-from-internal-gitlab-release.sh` | Release deploy (GitLab Registry → verify → deploy)          |
-| `scripts/deploy-release.sh`                      | Core deployment logic (migrations, health checks)           |
-| `scripts/publish-gitlab-release-package.sh`      | Create zip, upload to GitLab                                |
-| `scripts/verify-release-package-architecture.sh` | Verify all images are linux/amd64                           |
-| `scripts/plane-release-deploy.env.example`       | Env template for deploy credentials                         |
-| `.gitlab-ci.yml`                                 | Pipeline definition (build → deploy → release)              |
+| File                                       | Purpose                                                     |
+| ------------------------------------------ | ----------------------------------------------------------- |
+| `scripts/plane deploy ci`                  | Automatic dev deployment (CI artifacts → docker-compose up) |
+| `scripts/plane deploy from-gitlab`         | Release deploy (GitLab Registry → verify → deploy)          |
+| `scripts/plane deploy release`             | Core deployment logic (migrations, health checks)           |
+| `scripts/plane release publish`            | Create zip, upload to GitLab                                |
+| `scripts/plane release verify`             | Verify all images are linux/amd64                           |
+| `scripts/plane-release-deploy.env.example` | Env template for deploy credentials                         |
+| `.gitlab-ci.yml`                           | Pipeline definition (build → deploy → release)              |
 
 ---
 

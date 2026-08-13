@@ -154,7 +154,7 @@ Separately, Plane pages sync both ways with the repo wiki over GFM.
   `bgtasks/github_wiki_sync_task.py`, `db/signals/github_issue_push.py`,
   `utils/github_client.py`, `utils/github_wiki.py`
 - **Frontend** — `ce/components/projects/settings/github-sync/`
-- **Ops** — `scripts/rotate-github-token.sh` validates a new token (API
+- **Ops** — `scripts/plane token rotate` validates a new token (API
   reachable, `repo` scope, push access to every configured repo) _before_
   writing it to either env file
 

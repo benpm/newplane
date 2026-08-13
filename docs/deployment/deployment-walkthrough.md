@@ -59,7 +59,7 @@ Use when you build images on your Mac and need to deploy without SCP'ing files t
 
 ```bash
 # In the repo root on your Mac
-./scripts/build-release-images.sh
+./scripts/plane release build
 ```
 
 Produces in `dist/`:
@@ -129,10 +129,10 @@ DIST_DIR=./dist                                  # path to the transferred dist/
 
 ```bash
 # For dev environment
-bash scripts/upload-release.sh dev/v1.2.0-build.5
+bash scripts/plane release upload dev/v1.2.0-build.5
 
 # For prod environment (requires Maintainer permission to create prod/* tag)
-bash scripts/upload-release.sh prod/v1.2.0
+bash scripts/plane release upload prod/v1.2.0
 ```
 
 The script:
@@ -160,7 +160,7 @@ deploy:external-test   → plane-dev runner pulls package from registry → depl
 release:production  → plane-prod runner pulls package from registry → deploys to prod server
 ```
 
-Both jobs run `scripts/deploy-from-internal-gitlab-release.sh` which:
+Both jobs run `scripts/plane deploy from-gitlab` which:
 
 1. Fetches Release metadata (SHA256 anchor)
 2. Downloads zip from Package Registry using deploy token
@@ -253,7 +253,7 @@ mkdir -p /tmp/rollback-pkg
 unzip /root/Documents/plane-offline-pack/plane-app/archive/<previous-release>.zip -d /tmp/rollback-pkg/
 
 PLANE_DIR=/root/Documents/plane-offline-pack/plane-app \
-  bash /tmp/rollback-pkg/*/scripts/deploy-release.sh \
+  bash /tmp/rollback-pkg/*/scripts/plane deploy release \
     /tmp/rollback-pkg/*/dist \
     /root/Documents/plane-offline-pack/plane-app/plane.env \
     /root/Documents/plane-offline-pack/plane-app/docker-compose.yaml

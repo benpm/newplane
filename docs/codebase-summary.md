@@ -177,7 +177,7 @@ apps/api/plane/tests/
   smoke/      Minimal liveness
 ```
 
-Run with `cd apps/api && python run_tests.py`, or `./scripts/dev-site-test.sh`
+Run with `cd apps/api && python run_tests.py`, or `./scripts/plane test`
 against the dev-site datastores when there is no local Python environment.
 
 Two traps: pytest defaults to `--reuse-db`, so a schema change needs
@@ -203,5 +203,5 @@ One origin at `http://localhost`: web at `/`, god-mode at `/god-mode/`, API at
 `:3001` and impersonates admin. Use `pnpm dev:local`.
 
 The dev site is a separate full deployment from the same checkout (compose
-project `planedev`, proxy on 8091). Drive it through `scripts/dev-site.sh`; a
+project `planedev`, proxy on 8091). Drive it through `scripts/plane devsite`; a
 bare `docker compose` in this directory targets **production**.

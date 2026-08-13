@@ -8,7 +8,7 @@
 #   - network  -> planedev_default
 # Only container_name is hardcoded in the base file, so every one is renamed here.
 #
-# Always drive this stack through scripts/dev-site.sh — a bare `docker compose`
+# Always drive this stack through scripts/plane devsite — a bare `docker compose`
 # command in this directory targets PRODUCTION.
 services:
   web:

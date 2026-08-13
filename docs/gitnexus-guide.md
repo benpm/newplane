@@ -8,14 +8,14 @@
 
 ```bash
 # One-time setup (Docker must already be running)
-./scripts/gitnexus.sh pull              # pull the image (~1.2GB)
-./scripts/gitnexus.sh analyze           # first index (~2-3 minutes)
-./scripts/gitnexus.sh status            # verify "up-to-date"
+./scripts/plane gitnexus pull              # pull the image (~1.2GB)
+./scripts/plane gitnexus analyze           # first index (~2-3 minutes)
+./scripts/plane gitnexus status            # verify "up-to-date"
 
 # After that: automatic re-index on commit / pull / branch switch
 ```
 
-The MCP server (`./scripts/gitnexus.sh mcp`) is already wired into Claude Code via `.mcp.json` — no manual config needed.
+The MCP server (`./scripts/plane gitnexus mcp`) is already wired into Claude Code via `.mcp.json` — no manual config needed.
 
 ---
 
@@ -25,12 +25,12 @@ GitNexus is a **knowledge graph** of the whole codebase: it reads the code → e
 
 ### Why does Plane need it?
 
-| Problem at 500k LOC              | Old way                          | GitNexus way                          |
-| -------------------------------- | -------------------------------- | ------------------------------------- |
-| Find the callers of a function   | `grep -r` → noise + misses dynamic | `gitnexus_impact`, precisely          |
-| Understand an execution flow     | Read 10+ files                   | `gitnexus_query` → ranked flows       |
-| Refactor safely                  | Find/replace → breaks at runtime | `gitnexus_rename`, call-graph aware   |
-| Verify scope before committing   | Plain `git diff`                 | `gitnexus_detect_changes` maps symbols |
+| Problem at 500k LOC            | Old way                            | GitNexus way                           |
+| ------------------------------ | ---------------------------------- | -------------------------------------- |
+| Find the callers of a function | `grep -r` → noise + misses dynamic | `gitnexus_impact`, precisely           |
+| Understand an execution flow   | Read 10+ files                     | `gitnexus_query` → ranked flows        |
+| Refactor safely                | Find/replace → breaks at runtime   | `gitnexus_rename`, call-graph aware    |
+| Verify scope before committing | Plain `git diff`                   | `gitnexus_detect_changes` maps symbols |
 
 Project rules (see `.claude/rules/gitnexus-mcp-usage.md`):
 
@@ -41,12 +41,12 @@ Project rules (see `.claude/rules/gitnexus-mcp-usage.md`):
 
 ## 2. Requirements
 
-| Tool             | Version     | Notes                                                    |
-| ---------------- | ----------- | -------------------------------------------------------- |
-| Docker Desktop   | ≥ 24        | The daemon must be running before any GitNexus command   |
-| Disk space       | ~1.4 GB     | Image ~1.2GB + index ~150MB                              |
-| RAM while indexing | ~2 GB peak | Idle ≈ 200MB                                             |
-| Architecture     | amd64/arm64 | Multi-arch image (native on Apple Silicon)               |
+| Tool               | Version     | Notes                                                  |
+| ------------------ | ----------- | ------------------------------------------------------ |
+| Docker Desktop     | ≥ 24        | The daemon must be running before any GitNexus command |
+| Disk space         | ~1.4 GB     | Image ~1.2GB + index ~150MB                            |
+| RAM while indexing | ~2 GB peak  | Idle ≈ 200MB                                           |
+| Architecture       | amd64/arm64 | Multi-arch image (native on Apple Silicon)             |
 
 **Why Docker rather than `npx gitnexus`?**
 
@@ -68,7 +68,7 @@ docker info > /dev/null && echo "Docker OK" || echo "Start Docker Desktop first"
 ### Step 2 — Pull the image
 
 ```bash
-./scripts/gitnexus.sh pull
+./scripts/plane gitnexus pull
 ```
 
 Default: `akonlabs/gitnexus:1.6.4-rc.63` (~1.2GB). Override with the env var `GITNEXUS_IMAGE=...`.
@@ -78,7 +78,7 @@ Default: `akonlabs/gitnexus:1.6.4-rc.63` (~1.2GB). Override with the env var `GI
 ### Step 3 — First index
 
 ```bash
-./scripts/gitnexus.sh analyze
+./scripts/plane gitnexus analyze
 ```
 
 Takes ~2-3 minutes on the Plane codebase (~5500 files). It creates:
@@ -91,10 +91,10 @@ Takes ~2-3 minutes on the Plane codebase (~5500 files). It creates:
 ### Step 4 — Verify
 
 ```bash
-./scripts/gitnexus.sh status
+./scripts/plane gitnexus status
 # Expected: "Status: ✅ up-to-date"
 
-./scripts/gitnexus.sh list
+./scripts/plane gitnexus list
 # Expected: "plane" appears in the list
 
 # Sanity check: the right version is running
@@ -115,7 +115,7 @@ Or verify from the shell:
 
 ```bash
 claude mcp list
-# Expected: "gitnexus: ./scripts/gitnexus.sh mcp - ✓ Connected"
+# Expected: "gitnexus: ./scripts/plane gitnexus mcp - ✓ Connected"
 ```
 
 ---
@@ -139,14 +139,14 @@ claude mcp list
                          │ background, non-blocking
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  scripts/gitnexus.sh reindex-bg                             │
+│  scripts/plane gitnexus reindex-bg                             │
 │    docker run akonlabs/gitnexus:1.6.4-rc.63 analyze         │
 │      → updates .gitnexus/lbug + meta.json                   │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  .mcp.json → ./scripts/gitnexus.sh mcp                      │
+│  .mcp.json → ./scripts/plane gitnexus mcp                      │
 │    Claude Code spawns container, talks via stdio MCP        │
 │    Tools: impact, context, query, detect_changes, rename... │
 └─────────────────────────────────────────────────────────────┘
@@ -154,11 +154,11 @@ claude mcp list
 
 ### 4.2 When does it re-index automatically?
 
-| Event                    | Hook                   | Skip condition                                                   |
-| ------------------------ | ---------------------- | ---------------------------------------------------------------- |
-| `git commit` (success)   | `.husky/post-commit`   | Throttled: skipped if it re-indexed < 60s ago                    |
-| `git pull` / `git merge` | `.husky/post-merge`    | Skipped if no `.ts/.tsx/.py/.go/.rs/...` files changed            |
-| `git checkout <branch>`  | `.husky/post-checkout` | Skipped for file checkouts (only branch switches count)          |
+| Event                    | Hook                   | Skip condition                                          |
+| ------------------------ | ---------------------- | ------------------------------------------------------- |
+| `git commit` (success)   | `.husky/post-commit`   | Throttled: skipped if it re-indexed < 60s ago           |
+| `git pull` / `git merge` | `.husky/post-merge`    | Skipped if no `.ts/.tsx/.py/.go/.rs/...` files changed  |
+| `git checkout <branch>`  | `.husky/post-checkout` | Skipped for file checkouts (only branch switches count) |
 
 Why **post-commit** rather than pre-commit: pre-commit is slow and would block the developer. Post-commit runs after the commit succeeds, detached in the background, so it never gets in the way.
 
@@ -189,7 +189,7 @@ plane.so/
 {
   "mcpServers": {
     "gitnexus": {
-      "command": "./scripts/gitnexus.sh",
+      "command": "./scripts/plane gitnexus",
       "args": ["mcp"]
     }
   }
@@ -199,7 +199,7 @@ plane.so/
 When Claude Code starts, it:
 
 1. Reads `.mcp.json`
-2. Spawns `./scripts/gitnexus.sh mcp` → starts a Docker container running the MCP server over stdio
+2. Spawns `./scripts/plane gitnexus mcp` → starts a Docker container running the MCP server over stdio
 3. The container reads `.gitnexus/lbug` from the host volume
 4. Exposes the tools: `impact`, `context`, `query`, `cypher`, `detect_changes`, `rename`...
 
@@ -230,7 +230,7 @@ git commit -m "feat(...): ..."
 ### When the index reports stale
 
 ```bash
-./scripts/gitnexus.sh analyze    # synchronous rebuild (blocks ~3 minutes)
+./scripts/plane gitnexus analyze    # synchronous rebuild (blocks ~3 minutes)
 # Or just wait for the next commit/pull to auto re-index
 ```
 
@@ -243,12 +243,12 @@ git pull
 
 ### When the team bumps the GitNexus version (e.g. rc.63 → rc.70)
 
-Trigger: `scripts/gitnexus.sh` changes the image tag in a newly merged PR.
+Trigger: `scripts/plane gitnexus` changes the image tag in a newly merged PR.
 
 ```bash
-git pull                              # pick up the new tag in scripts/gitnexus.sh
-./scripts/gitnexus.sh pull            # pull the new image
-./scripts/gitnexus.sh analyze         # rebuild the index (the schema can change between RCs)
+git pull                              # pick up the new tag in scripts/plane gitnexus
+./scripts/plane gitnexus pull            # pull the new image
+./scripts/plane gitnexus analyze         # rebuild the index (the schema can change between RCs)
 # Restart the Claude Code session so the MCP container uses the new image
 ```
 
@@ -258,27 +258,27 @@ git pull                              # pick up the new tag in scripts/gitnexus.
 
 ## 6. Command cheat sheet
 
-| Purpose                        | Command                                                            |
-| ------------------------------ | ------------------------------------------------------------------ |
-| Pull/update the Docker image   | `./scripts/gitnexus.sh pull`                                       |
-| Index synchronously (blocking) | `./scripts/gitnexus.sh analyze`                                    |
-| Index in the background        | `./scripts/gitnexus.sh reindex-bg`                                 |
-| Current status                 | `./scripts/gitnexus.sh status`                                     |
-| List all indexed repos         | `./scripts/gitnexus.sh list`                                       |
-| Start the MCP server           | `./scripts/gitnexus.sh mcp` (Claude calls this itself)             |
-| Tail the background index log  | `tail -f /tmp/gitnexus-reindex-plane.so.log`                       |
-| Wipe the index for a clean rebuild | `rm -rf .gitnexus/ && ./scripts/gitnexus.sh analyze`            |
-| Override the image tag         | `GITNEXUS_IMAGE=akonlabs/gitnexus:X.Y.Z ./scripts/gitnexus.sh ...` |
+| Purpose                            | Command                                                               |
+| ---------------------------------- | --------------------------------------------------------------------- |
+| Pull/update the Docker image       | `./scripts/plane gitnexus pull`                                       |
+| Index synchronously (blocking)     | `./scripts/plane gitnexus analyze`                                    |
+| Index in the background            | `./scripts/plane gitnexus reindex-bg`                                 |
+| Current status                     | `./scripts/plane gitnexus status`                                     |
+| List all indexed repos             | `./scripts/plane gitnexus list`                                       |
+| Start the MCP server               | `./scripts/plane gitnexus mcp` (Claude calls this itself)             |
+| Tail the background index log      | `tail -f /tmp/gitnexus-reindex-plane.so.log`                          |
+| Wipe the index for a clean rebuild | `rm -rf .gitnexus/ && ./scripts/plane gitnexus analyze`               |
+| Override the image tag             | `GITNEXUS_IMAGE=akonlabs/gitnexus:X.Y.Z ./scripts/plane gitnexus ...` |
 
 ### Commands Claude uses (via MCP — you don't type these)
 
-| MCP tool                  | Use case                              |
-| ------------------------- | ------------------------------------- |
-| `gitnexus_impact`         | "What breaks if I change X?"          |
-| `gitnexus_context`        | "Show callers/callees of X"           |
-| `gitnexus_query`          | "Find execution flows for concept Y"  |
-| `gitnexus_detect_changes` | "Map my git diff to affected symbols" |
-| `gitnexus_rename`         | "Rename X across call graph"          |
+| MCP tool                  | Use case                               |
+| ------------------------- | -------------------------------------- |
+| `gitnexus_impact`         | "What breaks if I change X?"           |
+| `gitnexus_context`        | "Show callers/callees of X"            |
+| `gitnexus_query`          | "Find execution flows for concept Y"   |
+| `gitnexus_detect_changes` | "Map my git diff to affected symbols"  |
+| `gitnexus_rename`         | "Rename X across call graph"           |
 | `gitnexus_cypher`         | Query the graph with Cypher (advanced) |
 
 ---
@@ -291,7 +291,7 @@ git pull                              # pick up the new tag in scripts/gitnexus.
 
 ### `Status: ⚠️ stale`
 
-→ Code changed since the last index. Run `./scripts/gitnexus.sh analyze`, or trigger a commit/pull so the hook runs.
+→ Code changed since the last index. Run `./scripts/plane gitnexus analyze`, or trigger a commit/pull so the hook runs.
 
 ### Background re-index locks the `lbug` file
 
@@ -312,7 +312,7 @@ Wait for it to finish or kill the stale process, then retry.
 1. Verify `.mcp.json` exists at the project root.
 2. Restart the Claude Code session.
 3. Run `/mcp` in Claude → check the `gitnexus` server status.
-4. Still broken: run `./scripts/gitnexus.sh mcp` by hand and look for stdio errors.
+4. Still broken: run `./scripts/plane gitnexus mcp` by hand and look for stdio errors.
 
 ### The image pulls too slowly
 
@@ -331,13 +331,13 @@ Error response from daemon: toomanyrequests: You have reached your pull rate lim
 
 ```bash
 docker login
-# Then retry: ./scripts/gitnexus.sh pull
+# Then retry: ./scripts/plane gitnexus pull
 ```
 
 ### The index is too large (>500MB)
 
 ```bash
-./scripts/gitnexus.sh analyze --max-file-size 256   # skip files >256KB
+./scripts/plane gitnexus analyze --max-file-size 256   # skip files >256KB
 # Or add entries to .gitnexusignore:
 echo "apps/space/dist/" >> .gitnexusignore
 echo "*.min.js" >> .gitnexusignore
@@ -399,7 +399,7 @@ No. The index is local-only and per-machine. The hooks skip themselves if `.gitn
 
 ### Re-index throttle
 
-`scripts/gitnexus.sh reindex-bg` skips itself if `.gitnexus/meta.json` was modified < 60s ago. This prevents overlapping runs during successive commits/checkouts.
+`scripts/plane gitnexus reindex-bg` skips itself if `.gitnexus/meta.json` was modified < 60s ago. This prevents overlapping runs during successive commits/checkouts.
 
 ### Excluding more paths
 
@@ -412,29 +412,29 @@ apps/web/.next/
 *.bundle.js
 ```
 
-Then run `./scripts/gitnexus.sh analyze` to rebuild with the new exclusions.
+Then run `./scripts/plane gitnexus analyze` to rebuild with the new exclusions.
 
 ### Speeding up analyze on a slower machine
 
 ```bash
-./scripts/gitnexus.sh analyze --max-file-size 256
-GITNEXUS_NO_GITIGNORE=1 ./scripts/gitnexus.sh analyze   # skip .gitignore parsing
+./scripts/plane gitnexus analyze --max-file-size 256
+GITNEXUS_NO_GITIGNORE=1 ./scripts/plane gitnexus analyze   # skip .gitignore parsing
 ```
 
 ---
 
 ## 10. Appendix: related files
 
-| File                                  | Role                                       |
-| ------------------------------------- | ------------------------------------------ |
-| `scripts/gitnexus.sh`                 | Docker wrapper and its subcommands         |
-| `.husky/post-commit`                  | Auto re-index after commit                 |
-| `.husky/post-merge`                   | Auto re-index after pull                   |
-| `.husky/post-checkout`                | Auto re-index after branch switch          |
-| `.mcp.json`                           | Registers the MCP server with Claude Code  |
-| `.gitnexus/`                          | Local index (gitignored)                   |
-| `.gitnexusignore`                     | Excludes paths from the index              |
-| `.claude/rules/gitnexus-mcp-usage.md` | MCP usage rules for Claude (auto-loaded)   |
+| File                                  | Role                                      |
+| ------------------------------------- | ----------------------------------------- |
+| `scripts/plane gitnexus`              | Docker wrapper and its subcommands        |
+| `.husky/post-commit`                  | Auto re-index after commit                |
+| `.husky/post-merge`                   | Auto re-index after pull                  |
+| `.husky/post-checkout`                | Auto re-index after branch switch         |
+| `.mcp.json`                           | Registers the MCP server with Claude Code |
+| `.gitnexus/`                          | Local index (gitignored)                  |
+| `.gitnexusignore`                     | Excludes paths from the index             |
+| `.claude/rules/gitnexus-mcp-usage.md` | MCP usage rules for Claude (auto-loaded)  |
 
 ---
 

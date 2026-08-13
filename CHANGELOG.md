@@ -1,5 +1,36 @@
 # Changelog
 
+## 8/14/2026 — one CLI instead of eighteen scripts
+
+### Changed
+
+- **`scripts/` is now a single entry point: `scripts/plane`.** The eighteen
+  loose shell scripts became subcommands of one tool with one help system, one
+  set of colours, one error handler and one log format. `scripts/plane help`
+  lists everything; `docs/scripts.md` documents it, including a table of where
+  each old script went.
+
+  Every command now reports failures the same way — `✗` plus the message, and
+  for unexpected errors the line and command that failed, which none of the
+  originals did. Colour disables itself when output is not a terminal, and
+  `--log-file` writes a timestamped transcript with the escape codes stripped.
+
+  `setup.sh` deliberately stays a separate file. It is 800 lines of upstream
+  Plane's installer; folding it in would turn every future upstream sync into a
+  manual merge. It is reachable as `plane setup`.
+
+  Callers were updated with the move: `package.json` (`dev:local`,
+  `dev:clean`), `.mcp.json`, the three husky git hooks, and `.gitlab-ci.yml`.
+
+- Shared logic that had been copy-pasted across scripts is now written once —
+  the release compose override was generated in three separate places with
+  three slightly different headers, and the preflight checks were duplicated in
+  nearly every file.
+
+- The build scripts still described themselves as building "SHB Docker images"
+  in their headers and banner output; the de-branding pass had not reached
+  `scripts/`. Gone with the rewrite.
+
 ## 8/14/2026 — user management on the dashboard
 
 ### Added

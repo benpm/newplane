@@ -3,7 +3,7 @@
 #
 # Stages: lint → test → build → deploy → release
 # CI/CD targets only 3 dynamic services: web, admin, api
-# (space, live, proxy deployed once manually via build-release-images.sh + deploy-release.sh)
+# (space, live, proxy deployed once manually via `plane release build --all` + `plane deploy release`)
 # =============================================================================
 
 stages:
@@ -262,10 +262,10 @@ deploy:external-test:
   script:
     - sshpass -p "$VPS_PASSWORD" ssh $VPS_USER@$VPS_HOST "rm -rf /tmp/plane-deploy && mkdir -p /tmp/plane-deploy"
     - sshpass -p "$VPS_PASSWORD" scp dist/*.tar.gz dist/.release-version $VPS_USER@$VPS_HOST:/tmp/plane-deploy/
-    - sshpass -p "$VPS_PASSWORD" scp scripts/ci-deploy.sh $VPS_USER@$VPS_HOST:/tmp/ci-deploy.sh
+    - sshpass -p "$VPS_PASSWORD" scp scripts/plane $VPS_USER@$VPS_HOST:/tmp/plane
     - RELEASE_VERSION=$(cat dist/.release-version)
-    - sshpass -p "$VPS_PASSWORD" ssh $VPS_USER@$VPS_HOST "PLANE_DIR=/home/$VPS_USER/plane-app RELEASE_VERSION=$RELEASE_VERSION bash /tmp/ci-deploy.sh"
-    - sshpass -p "$VPS_PASSWORD" ssh $VPS_USER@$VPS_HOST "rm -f /tmp/ci-deploy.sh"
+    - sshpass -p "$VPS_PASSWORD" ssh $VPS_USER@$VPS_HOST "PLANE_DIR=/home/$VPS_USER/plane-app RELEASE_VERSION=$RELEASE_VERSION bash /tmp/plane deploy ci"
+    - sshpass -p "$VPS_PASSWORD" ssh $VPS_USER@$VPS_HOST "rm -f /tmp/plane"
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
   environment:
@@ -276,8 +276,8 @@ deploy:external-test:
 # STAGE 5: RELEASE
 # Creates a tag + release on gitlab.com after a successful preview build.
 # Internal/production deploys are performed manually using:
-#   scripts/build-release-images.sh   — build linux/amd64 tarballs locally
-#   scripts/upload-release.sh     — push package + tag to internal GitLab
+#   scripts/plane release build      — build linux/amd64 tarballs locally
+#   scripts/plane release upload     — push package + tag to internal GitLab
 # =============================================================================
 
 release:production:

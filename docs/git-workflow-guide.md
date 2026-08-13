@@ -149,7 +149,7 @@ follows a merge is a deploy, not another merge.
 
 ```bash
 # 1. Verify on the dev site first (a full second deployment from this checkout)
-./scripts/dev-site.sh build && ./scripts/dev-site.sh up -d
+./scripts/plane devsite build && ./scripts/plane devsite up -d
 #    → https://dev.mousetrip.online
 
 # 2. Once reviewed, deploy production
@@ -165,7 +165,7 @@ docker compose build && docker compose up -d
 - [ ] Database backed up if the change includes migrations
 
 > A bare `docker compose` in this repository targets **production**. The dev
-> site must be driven through `scripts/dev-site.sh`.
+> site must be driven through `scripts/plane devsite`.
 
 ---
 

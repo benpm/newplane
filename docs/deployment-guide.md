@@ -86,7 +86,7 @@ All deployments archive the previous release locally for instant rollback — **
 ls -lh /opt/plane-deploy/plane-app/archive/
 
 # Roll back to previous version
-bash /tmp/rollback-v1.1.9/scripts/deploy-release.sh ...
+bash /tmp/rollback-v1.1.9/scripts/plane deploy release ...
 ```
 
 See: [Rollback & Recovery](./deployment/rollback.md)

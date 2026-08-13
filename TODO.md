@@ -29,7 +29,7 @@ Work queued from testing this branch on the dev site. One task, one commit.
       module, so the worker discarded every message as unregistered
 - [x] Fix the failing tests. `497 passed / 22 failed / 10 errors` →
       **`1097 passed, 0 failed, 0 errors`** across unit, contract and smoke.
-      Run: `./scripts/dev-site-test.sh`.
+      Run: `./scripts/plane test`.
 - [x] Fix the sub-page count disagreeing with the sub-page list, and the
       recursive archive hanging on a parent loop
 - [x] Stop the public invite endpoint returning its own acceptance token

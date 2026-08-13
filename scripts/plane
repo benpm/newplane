@@ -1,0 +1,1477 @@
+#!/usr/bin/env bash
+#
+# plane — one entry point for every operational task in this repository.
+#
+# Replaces the loose collection of scripts that used to live in scripts/. Each
+# former script is now a subcommand, sharing one help system, one set of
+# colours, one error handler and one log format.
+#
+#   scripts/plane help              every command
+#   scripts/plane <group> help      commands in a group
+#   scripts/plane <command> --help  usage for one command
+#
+# Global options (before or after the command):
+#   -v, --verbose        echo each command as it runs
+#   -q, --quiet          suppress informational output; errors still print
+#       --no-color       plain output (also honours NO_COLOR)
+#       --log-file PATH  append a timestamped transcript to PATH
+#
+set -euo pipefail
+
+readonly PLANE_CLI_VERSION="1.0.0"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# ═══════════════════════════════════════════════════════════ output ══════════
+
+VERBOSE=0
+QUIET=0
+LOG_FILE=""
+
+_setup_colors() {
+  # Colour only when stdout is a terminal and the user has not opted out.
+  # NO_COLOR is the de-facto standard (https://no-color.org).
+  if [[ -t 1 && -z "${NO_COLOR:-}" && "${PLANE_NO_COLOR:-0}" != "1" ]]; then
+    C_RESET=$'\033[0m'; C_BOLD=$'\033[1m'; C_DIM=$'\033[2m'
+    C_RED=$'\033[31m'; C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'
+    C_BLUE=$'\033[34m'; C_CYAN=$'\033[36m'
+  else
+    C_RESET=""; C_BOLD=""; C_DIM=""
+    C_RED=""; C_GREEN=""; C_YELLOW=""; C_BLUE=""; C_CYAN=""
+  fi
+}
+_setup_colors
+
+# Every message goes through here, so the log file sees exactly what the
+# terminal did — minus the escape codes, which would be noise in a file.
+_emit() {
+  local stream="$1" text="$2"
+  [[ "$stream" == "out" ]] && printf '%s\n' "$text" || printf '%s\n' "$text" >&2
+  if [[ -n "$LOG_FILE" ]]; then
+    printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      "$(printf '%s' "$text" | sed $'s/\033\\[[0-9;]*m//g')" >> "$LOG_FILE"
+  fi
+}
+
+log_info()  { [[ $QUIET -eq 1 ]] || _emit out "${C_BLUE}▶${C_RESET} $*"; }
+log_ok()    { [[ $QUIET -eq 1 ]] || _emit out "${C_GREEN}✓${C_RESET} $*"; }
+log_warn()  { _emit err "${C_YELLOW}⚠${C_RESET} $*"; }
+log_error() { _emit err "${C_RED}✗${C_RESET} $*"; }
+log_debug() { [[ $VERBOSE -eq 1 ]] && _emit err "${C_DIM}  $*${C_RESET}" || true; }
+log_plain() { [[ $QUIET -eq 1 ]] || _emit out "$*"; }
+
+log_step() {
+  # log_step 2 5 "Loading images"  →  [2/5] Loading images
+  [[ $QUIET -eq 1 ]] || _emit out "${C_CYAN}[$1/$2]${C_RESET} ${C_BOLD}$3${C_RESET}"
+}
+
+log_header() {
+  [[ $QUIET -eq 1 ]] && return 0
+  _emit out ""
+  _emit out "${C_BOLD}${C_CYAN}══ $* ══${C_RESET}"
+}
+
+die() { log_error "$*"; exit 1; }
+
+# Fires on any unhandled non-zero exit under `set -e`, naming the line and the
+# command. Without this a failing deploy prints nothing but a bare exit code.
+_on_error() {
+  local code=$? line=$1 cmd=$2
+  [[ $code -eq 0 ]] && return 0
+  log_error "failed at line ${line}: ${cmd}"
+  log_error "exit code ${code}"
+  exit "$code"
+}
+trap '_on_error ${LINENO} "${BASH_COMMAND}"' ERR
+
+# ══════════════════════════════════════════════════════════ helpers ══════════
+
+require_cmd() {
+  for c in "$@"; do
+    command -v "$c" >/dev/null 2>&1 || die "'$c' is required but not installed."
+  done
+}
+
+require_file() { [[ -f "$1" ]] || die "${2:-required file} not found: $1"; }
+require_dir()  { [[ -d "$1" ]] || die "${2:-required directory} not found: $1"; }
+
+require_docker() {
+  require_cmd docker
+  docker compose version >/dev/null 2>&1 || die "docker compose v2 is required."
+}
+
+# Run a command, echoing it first when --verbose.
+run() {
+  log_debug "\$ $*"
+  "$@"
+}
+
+confirm() {
+  [[ "${PLANE_ASSUME_YES:-0}" == "1" ]] && return 0
+  local reply
+  printf '%s [y/N] ' "$1" >&2
+  read -r reply
+  [[ "$reply" =~ ^[yY] ]]
+}
+
+# The release image set, in one place — build, ci-deploy and publish all
+# generate the same compose override from it.
+readonly RELEASE_SERVICES_YAML='  web:
+    image: makeplane/plane-frontend:%s
+  admin:
+    image: makeplane/plane-admin:%s
+  api:
+    image: makeplane/plane-backend:%s
+  worker:
+    image: makeplane/plane-backend:%s
+  beat-worker:
+    image: makeplane/plane-backend:%s
+  migrator:
+    image: makeplane/plane-backend:%s'
+
+write_release_compose() {
+  local tag="$1" dest="$2" note="${3:-Auto-generated — do not edit manually.}"
+  {
+    printf '# %s\n# Version: %s\n\nservices:\n' "$note" "$tag"
+    # shellcheck disable=SC2059  # the format string is a fixed template above
+    printf "${RELEASE_SERVICES_YAML}\n" "$tag" "$tag" "$tag" "$tag" "$tag" "$tag"
+  } > "$dest"
+}
+
+# ═══════════════════════════════════════════════════════════════ dev ═════════
+
+readonly LOCAL_COMPOSE=(docker compose -p planeso -f docker-compose-local.yml)
+readonly FRONTEND_PORTS=(3000 3001 3002 3003)
+
+cmd_dev() {
+  local clean=0
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --clean) clean=1; shift ;;
+      -h|--help)
+        cat <<'EOF'
+plane dev [--clean]      start the local dev stack
+plane dev stop           stop the backend containers
+
+Backend and the Caddy proxy run in Docker; frontends run on the host via turbo
+with hot reload. Everything is reached through one origin: http://localhost
+
+  --clean   kill stray host dev servers on 3000-3003 first
+EOF
+        return 0 ;;
+      stop)
+        require_docker
+        log_info "Stopping the local backend stack…"
+        run "${LOCAL_COMPOSE[@]}" down
+        log_ok "Stopped."
+        return 0 ;;
+      *) die "unknown option for 'dev': $1 (try --help)" ;;
+    esac
+  done
+
+  require_docker
+  require_cmd pnpm
+  cd "$ROOT_DIR"
+
+  # A duplicate `pnpm dev` cascades onto :3001 and impersonates the admin app,
+  # which shows up as a baffling "no workspace" error. This is the usual cause.
+  if [[ $clean -eq 1 ]]; then
+    log_info "Clearing stray host dev servers on ${FRONTEND_PORTS[*]}…"
+    for p in "${FRONTEND_PORTS[@]}"; do
+      lsof -ti "tcp:$p" -sTCP:LISTEN 2>/dev/null | xargs -r kill 2>/dev/null || true
+    done
+  fi
+
+  log_info "Starting backend and proxy (Docker)…"
+  run "${LOCAL_COMPOSE[@]}" up -d
+
+  log_plain ""
+  log_plain "  ${C_BOLD}One origin: http://localhost${C_RESET}"
+  log_plain "   http://localhost              web app          (host :3000)"
+  log_plain "   http://localhost/god-mode/    admin / god-mode (host :3001)"
+  log_plain "   http://localhost/spaces/      public spaces    (host :3002)"
+  log_plain "   http://localhost/live/        live server      (host :3003)"
+  log_plain "   http://localhost/api/…        backend API      (docker :8000)"
+  log_plain "   Postgres :5434 (plane/plane) · MinIO http://localhost:9090"
+  log_plain ""
+  log_plain "  ${C_DIM}Ctrl-C stops the frontends; backend and proxy keep running.${C_RESET}"
+  log_plain "  ${C_DIM}Stop those too with: scripts/plane dev stop${C_RESET}"
+  log_plain ""
+
+  if [[ $clean -eq 0 ]]; then
+    for p in "${FRONTEND_PORTS[@]}"; do
+      if lsof -nP -iTCP:"$p" -sTCP:LISTEN >/dev/null 2>&1; then
+        log_warn ":$p is already in use — if an app shows the wrong content, rerun with --clean"
+      fi
+    done
+  fi
+
+  log_info "Starting frontends (turbo: web + admin + space + live)…"
+  exec pnpm dev
+}
+
+# ══════════════════════════════════════════════════════════════ test ════════
+
+readonly TEST_IMAGE="plane-api-test:latest"
+
+cmd_test() {
+  if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    cat <<'EOF'
+plane test [pytest args...]      run the backend suite against dev-site datastores
+
+  plane test                          everything
+  plane test -m unit                  unit tests only
+  plane test plane/tests/unit/views   a subset
+  plane test --create-db              rebuild the test database (needed after
+                                      a schema change; pytest reuses it by default)
+
+The runtime api image ships no test dependencies and this host has no outbound
+container network, so a test image is built once with --network host from
+requirements/test.txt layered on planedev-api.
+EOF
+    return 0
+  fi
+
+  require_docker
+  cd "$ROOT_DIR"
+
+  if ! docker image inspect "$TEST_IMAGE" >/dev/null 2>&1; then
+    log_info "Building $TEST_IMAGE (test deps on top of planedev-api)…"
+    local tmp; tmp=$(mktemp -d)
+    # git is a test-only dependency: the wiki-sync tests seed a local bare repo
+    # as a stand-in for a GitHub wiki, so the runtime image omits it.
+    cat > "$tmp/Dockerfile" <<'EOF'
+FROM planedev-api:latest
+USER root
+RUN apk add --no-cache git
+COPY requirements /tmp/requirements
+RUN pip install --no-cache-dir -r /tmp/requirements/test.txt
+EOF
+    run docker build --network host -f "$tmp/Dockerfile" -t "$TEST_IMAGE" "$ROOT_DIR/apps/api" >&2
+    rm -rf "$tmp"
+    log_ok "Test image built."
+  fi
+
+  # The repo mounts at /repo rather than /code: some tests locate the repo root
+  # by parent depth from apps/api, so the real layout has to be preserved.
+  exec docker run --rm --network planedev_default -w /repo/apps/api \
+    -e DJANGO_SETTINGS_MODULE=plane.settings.test \
+    -e DATABASE_URL=postgresql://plane:plane@plane-db:5432/plane \
+    -e REDIS_URL=redis://plane-redis:6379/ \
+    -e SECRET_KEY=test-secret-key-for-pytest \
+    -e AWS_ACCESS_KEY_ID=access-key -e AWS_SECRET_ACCESS_KEY=secret-key \
+    -e AWS_S3_ENDPOINT_URL=http://plane-minio:9000 -e AWS_S3_BUCKET_NAME=uploads -e USE_MINIO=1 \
+    -v "$ROOT_DIR":/repo:rw \
+    "$TEST_IMAGE" \
+    python -m pytest --no-header --nomigrations -p no:cacheprovider "$@"
+}
+
+# ═══════════════════════════════════════════════════════════ devsite ═════════
+
+readonly DEV_ENV_DIR="/home/beb/live/plane-dev-env"
+readonly DEVSITE_APP_SERVICES=(api worker beat-worker web admin space live proxy)
+readonly DEVSITE_DATASTORES=(plane-db plane-redis plane-mq plane-minio)
+
+devsite_compose() {
+  # A bare `docker compose` in this repo targets PRODUCTION. Everything for the
+  # dev site goes through this wrapper so the project name and env files are
+  # impossible to forget.
+  require_file "$DEV_ENV_DIR/root.env" "dev-site root env"
+  require_file "$DEV_ENV_DIR/api.env" "dev-site api env"
+  docker compose \
+    --project-name planedev \
+    --project-directory "$ROOT_DIR" \
+    --env-file "$DEV_ENV_DIR/root.env" \
+    -f "$ROOT_DIR/docker-compose.yml" \
+    -f "$ROOT_DIR/docker-compose.devsite.yml" \
+    "$@"
+}
+
+cmd_devsite() {
+  case "${1:-help}" in
+    -h|--help|help)
+      cat <<'EOF'
+plane devsite <command> [args...]    drive the isolated dev-site stack
+
+The dev site is a full second deployment built from the working tree. It shares
+nothing with production: separate images, volumes, network, database, object
+store and crypto keys.
+
+  production  →  https://plane.mousetrip.online   (localhost:8090)
+  dev site    →  https://dev.mousetrip.online     (localhost:8091)
+
+Commands:
+  up [-d]              start or restart
+  down                 stop (volumes and data are kept)
+  build [service...]   rebuild images from the working tree
+  ps                   status
+  restart [service...] restart services
+  exec <service> ...   run a command in a container
+  logs [options]       follow logs — see 'plane devsite logs --help'
+  <anything else>      passed straight through to docker compose
+EOF
+      return 0 ;;
+    logs) shift; devsite_logs "$@"; return $? ;;
+  esac
+
+  require_docker
+  devsite_compose "$@"
+}
+
+devsite_logs() {
+  local tail=50 errors_only=0 include_all=0
+  local services=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --all)    include_all=1; shift ;;
+      --errors) errors_only=1; shift ;;
+      --tail)   tail="${2:?--tail needs a number}"; shift 2 ;;
+      --list)
+        log_plain "app services: ${DEVSITE_APP_SERVICES[*]}"
+        log_plain "datastores:   ${DEVSITE_DATASTORES[*]}"
+        return 0 ;;
+      -h|--help)
+        cat <<'EOF'
+plane devsite logs [options] [service...]
+
+  --all           include datastores (db, redis, mq, minio)
+  --errors        only lines that look like problems
+  --tail N        scrollback lines (default 50)
+  --list          show service names and exit
+
+Datastores are excluded by default — their chatter drowns out app logs.
+EOF
+        return 0 ;;
+      -*) die "unknown option for 'devsite logs': $1 (try --help)" ;;
+      *)  services+=("$1"); shift ;;
+    esac
+  done
+
+  require_docker
+  if [[ ${#services[@]} -eq 0 ]]; then
+    services=("${DEVSITE_APP_SERVICES[@]}")
+    [[ $include_all -eq 1 ]] && services+=("${DEVSITE_DATASTORES[@]}")
+  fi
+
+  log_header "dev site: https://dev.mousetrip.online (localhost:8091)"
+  devsite_compose ps --format '  {{.Service}}\t{{.State}}\t{{.Status}}' 2>/dev/null \
+    || log_warn "could not read stack status"
+
+  local note="following: ${services[*]} (last $tail lines, Ctrl-C to stop)"
+  [[ $errors_only -eq 1 ]] && note+=" [errors only]"
+  log_info "$note"
+  log_plain ""
+
+  # Compose exits non-zero on Ctrl-C; that is not a failure. --line-buffered
+  # keeps the feed live rather than block-buffered through grep.
+  if [[ $errors_only -eq 1 ]]; then
+    devsite_compose logs --follow --tail "$tail" "${services[@]}" 2>&1 \
+      | grep --line-buffered -iE 'error|exception|traceback|critical|fatal|failed|warn' || true
+  else
+    devsite_compose logs --follow --tail "$tail" "${services[@]}" || true
+  fi
+}
+
+# ══════════════════════════════════════════════════════════ gitnexus ═════════
+
+cmd_gitnexus() {
+  local image="${GITNEXUS_IMAGE:-akonlabs/gitnexus:1.6.4-rc.63}"
+  local repo; repo="$(git -C "$ROOT_DIR" rev-parse --show-toplevel 2>/dev/null || echo "$ROOT_DIR")"
+  local base=(--rm -v gitnexus-data:/data/gitnexus -v "${repo}:${repo}"
+              --workdir "${repo}" --entrypoint sh "${image}")
+  local cli="node /app/gitnexus/dist/cli/index.js"
+
+  # --skip-agents-md is hard-wired: gitnexus rules live in
+  # .claude/rules/, and rewriting tracked CLAUDE.md/AGENTS.md on every re-index
+  # would churn the repo per developer. There is deliberately no opt-out.
+  case "${1:-help}" in
+    analyze)    require_cmd docker; shift; exec docker run "${base[@]}" -c "$cli analyze --skip-agents-md $*" ;;
+    mcp)        require_cmd docker; exec docker run -i "${base[@]}" -c "$cli mcp" ;;
+    status)     require_cmd docker; exec docker run "${base[@]}" -c "$cli status" ;;
+    list)       require_cmd docker; exec docker run "${base[@]}" -c "$cli list" ;;
+    pull)       require_cmd docker; exec docker pull "$image" ;;
+    reindex-bg)
+      require_cmd docker
+      # Throttled: git hooks call this, and rapid commits would otherwise queue
+      # a re-index per commit.
+      local marker="${repo}/.gitnexus/.last-reindex"
+      if [[ -f "$marker" ]]; then
+        local age=$(( $(date +%s) - $(stat -c %Y "$marker" 2>/dev/null || echo 0) ))
+        if [[ $age -lt 60 ]]; then
+          log_info "skipping re-index — last run ${age}s ago (60s throttle)"
+          return 0
+        fi
+      fi
+      mkdir -p "${repo}/.gitnexus" && touch "$marker"
+      local logf="/tmp/gitnexus-reindex-$(basename "$repo").log"
+      nohup docker run "${base[@]}" -c "$cli analyze --skip-agents-md" > "$logf" 2>&1 &
+      disown 2>/dev/null || true
+      log_ok "re-indexing in background (PID $!) — log: $logf" ;;
+    -h|--help|help)
+      cat <<EOF
+plane gitnexus <command>     code-intelligence index, run through Docker
+
+  analyze [args]   re-index synchronously (~2-3 min)
+  mcp              start the MCP server on stdio (used by .mcp.json)
+  status           index status
+  list             indexed repositories
+  reindex-bg       background re-index, throttled to once per 60s
+  pull             pull or update the image
+
+Image: ${image}   (override with GITNEXUS_IMAGE)
+EOF
+      return 0 ;;
+    *) die "unknown gitnexus command: $1 (try --help)" ;;
+  esac
+}
+
+# ═════════════════════════════════════════════════════════════ token ═════════
+
+cmd_token() {
+  case "${1:-help}" in
+    rotate) shift; token_rotate "$@" ;;
+    -h|--help|help)
+      cat <<'EOF'
+plane token rotate [--no-restart]    replace GITHUB_PERSONAL_ACCESS_TOKEN
+
+Reads the new token from a hidden prompt — never argv, so it stays out of shell
+history and the process table — and validates it against the GitHub API before
+writing anything. An invalid or under-scoped token is rejected with no files
+touched.
+
+The sync pushes wiki commits and PATCHes issue state, so a read-only token is
+not enough: a classic token needs the 'repo' scope.
+
+  --no-restart   write the env files but leave containers alone
+EOF
+      return 0 ;;
+    *) die "unknown token command: $1 (try --help)" ;;
+  esac
+}
+
+token_rotate() {
+  local restart=true
+  [[ "${1:-}" == "--no-restart" ]] && restart=false
+
+  require_cmd curl python3
+  local env_files=("$ROOT_DIR/.env" "$ROOT_DIR/apps/api/.env")
+  local key="GITHUB_PERSONAL_ACCESS_TOKEN"
+
+  printf 'New GitHub token (input hidden): ' >&2
+  local token; read -rs token; printf '\n' >&2
+  [[ -n "$token" ]] || die "empty token, nothing changed."
+
+  log_info "Validating against the GitHub API…"
+  local hdrs code login scopes
+  hdrs=$(curl -sS -D - -o /dev/null \
+    -H "Authorization: Bearer $token" -H "Accept: application/vnd.github+json" \
+    https://api.github.com/user)
+  code=$(printf '%s' "$hdrs" | awk 'NR==1{print $2}')
+  [[ "$code" == "200" ]] || die "GitHub rejected the token (HTTP $code). Nothing changed."
+
+  login=$(curl -sS -H "Authorization: Bearer $token" https://api.github.com/user \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin).get("login","?"))')
+  scopes=$(printf '%s' "$hdrs" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-oauth-scopes"{print $2}')
+  log_ok "authenticated as $login"
+  log_plain "    scopes: ${scopes:-<none reported>}"
+
+  # Fine-grained tokens report no scopes at all, so only gate classic ones.
+  # (Fine-grained tokens cannot reach wikis regardless — see docs/scripts.md.)
+  if [[ -n "$scopes" ]] && ! printf '%s' "$scopes" | grep -qw "repo"; then
+    die "token lacks the 'repo' scope (wiki push and issue state need write). Nothing changed."
+  fi
+
+  log_info "Checking write access to each configured repo…"
+  local repos
+  repos=$(docker exec plane-db psql -U plane -d plane -tAc \
+    "SELECT repository_owner||'/'||repository_name FROM project_github_syncs;" 2>/dev/null || true)
+  if [[ -z "$repos" ]]; then
+    log_plain "    (no syncs configured — skipping)"
+  else
+    while IFS= read -r r; do
+      [[ -n "$r" ]] || continue
+      local push
+      push=$(curl -sS -H "Authorization: Bearer $token" "https://api.github.com/repos/$r" \
+        | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("permissions",{}).get("push", d.get("message","?")))')
+      log_plain "    $r → push=$push"
+      [[ "$push" == "True" ]] || die "no write access to $r. Nothing changed."
+    done <<< "$repos"
+  fi
+
+  log_info "Writing token to env files…"
+  local f
+  for f in "${env_files[@]}"; do
+    [[ -f "$f" ]] || { log_warn "skipping (missing): $f"; continue; }
+    cp -p "$f" "$f.bak-$(date +%Y%m%d-%H%M%S)"
+    KEY="$key" TOKEN="$token" python3 - "$f" <<'PY'
+import os, sys, pathlib
+key, token, path = os.environ["KEY"], os.environ["TOKEN"], pathlib.Path(sys.argv[1])
+lines = path.read_text().splitlines(keepends=True)
+out, seen = [], False
+for ln in lines:
+    if ln.split("=", 1)[0].strip() == key:
+        out.append(f"{key}={token}\n"); seen = True
+    else:
+        out.append(ln)
+if not seen:
+    if out and not out[-1].endswith("\n"):
+        out.append("\n")
+    out.append(f"{key}={token}\n")
+path.write_text("".join(out))
+PY
+    log_ok "updated $f (backup alongside)"
+  done
+
+  if [[ "$restart" == true ]]; then
+    log_info "Restarting api, worker, beat-worker…"
+    (cd "$ROOT_DIR" && docker compose up -d --force-recreate api worker beat-worker >/dev/null 2>&1)
+    log_ok "restarted"
+  fi
+
+  log_plain ""
+  log_ok "Token rotated. The sync retries every 5 minutes; watch it with:"
+  log_plain "    docker logs bgworker --since 6m 2>&1 | grep -i github"
+  log_warn "The backups above contain the OLD token alongside every other secret in .env — shred them once you are satisfied."
+}
+
+# ═══════════════════════════════════════════════════════════ release ═════════
+
+# Dynamic images only. Static services (space, live, proxy, postgres, redis) are
+# pre-loaded at provisioning and are not part of a release.
+readonly RELEASE_IMAGES=(
+  "plane-frontend:apps/web/Dockerfile.web:."
+  "plane-admin:apps/admin/Dockerfile.admin:."
+  "plane-backend:apps/api/Dockerfile.api:./apps/api"
+)
+readonly RELEASE_IMAGES_ALL=(
+  "plane-frontend:apps/web/Dockerfile.web:."
+  "plane-admin:apps/admin/Dockerfile.admin:."
+  "plane-space:apps/space/Dockerfile.space:."
+  "plane-live:apps/live/Dockerfile.live:."
+  "plane-backend:apps/api/Dockerfile.api:./apps/api"
+  "plane-proxy:apps/proxy/Dockerfile.ce:./apps/proxy"
+)
+
+cmd_release() {
+  case "${1:-help}" in
+    build)   shift; release_build "$@" ;;
+    verify)  shift; release_verify "$@" ;;
+    package) shift; release_package "$@" ;;
+    publish) shift; release_publish "$@" ;;
+    upload)  shift; release_upload "$@" ;;
+    -h|--help|help)
+      cat <<'EOF'
+plane release <command>      build and publish a release package
+
+  build [--all]      build images for linux/amd64 and export to dist/
+                     --all also builds space, live and proxy
+  verify [dir]       assert every image tarball in dir is linux/amd64 (default: dist)
+  package            assemble a self-contained deploy/ folder
+  upload <tag>       upload dist/ to GitLab from upload-release.env config
+                     tag must start with dev/ or prod/
+  publish            low-level publish (expects GITLAB_* env vars set)
+EOF
+      return 0 ;;
+    *) die "unknown release command: $1 (try --help)" ;;
+  esac
+}
+
+release_build() {
+  local -a images=("${RELEASE_IMAGES[@]}")
+  [[ "${1:-}" == "--all" ]] && images=("${RELEASE_IMAGES_ALL[@]}")
+
+  require_cmd docker node
+  docker buildx version >/dev/null 2>&1 || die "docker buildx is not available."
+  cd "$ROOT_DIR"
+
+  local version tag dist="dist"
+  version=$(node -p "require('./package.json').version")
+  tag="v${version}"
+
+  log_header "Release build"
+  log_plain "  Version  : $version"
+  log_plain "  Tag      : $tag"
+  log_plain "  Platform : linux/amd64"
+  log_plain "  Output   : $dist/"
+  log_plain ""
+
+  mkdir -p "$dist"
+  local total=${#images[@]} i=0
+  for entry in "${images[@]}"; do
+    i=$((i + 1))
+    local name="${entry%%:*}" rest="${entry#*:}"
+    local dockerfile="${rest%%:*}" context="${rest##*:}"
+    local image="makeplane/${name}:${tag}" outfile="${dist}/${name}-${tag}.tar.gz"
+
+    log_step "$i" "$total" "Building $image"
+    run docker buildx build --platform linux/amd64 --load -f "$dockerfile" -t "$image" "$context"
+
+    log_step "$i" "$total" "Saving → $outfile"
+    docker save "$image" | gzip > "$outfile"
+    log_plain "        size: $(du -sh "$outfile" | cut -f1)"
+  done
+
+  echo "$tag" > "${dist}/.release-version"
+  log_ok "Version manifest written → ${dist}/.release-version"
+
+  release_verify "$dist"
+  write_release_compose "$tag" "docker-compose.release.yml" \
+    "Auto-generated by 'plane release build' — do not edit manually."
+  log_ok "Override written → docker-compose.release.yml"
+
+  log_header "Build complete — $tag"
+  log_plain "Next: scripts/plane release package"
+}
+
+release_verify() {
+  local dist="${1:-dist}" failed=0 checked=0
+  require_dir "$dist" "dist directory"
+
+  # Upload-only machines have no Docker; the images were already verified at
+  # build time, so skipping is correct rather than a failure.
+  if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+    log_warn "Docker unavailable — architecture verification skipped (verified at build time)"
+    return 0
+  fi
+
+  log_info "Verifying image architecture in $dist/…"
+  local tar name load_out loaded arch os
+  for tar in "$dist"/*.tar.gz; do
+    [[ -f "$tar" ]] || continue
+    name=$(basename "$tar" .tar.gz)
+    if ! load_out=$(docker load < "$tar" 2>&1); then
+      log_error "$name — docker load failed: $load_out"; failed=1; continue
+    fi
+    loaded=$(echo "$load_out" | grep -E 'Loaded image' | sed 's/.*Loaded image.*: //' || true)
+    [[ -n "$loaded" ]] || { log_error "$name — load produced no image reference"; failed=1; continue; }
+    arch=$(docker inspect --format '{{.Architecture}}' "$loaded" 2>/dev/null || echo unknown)
+    os=$(docker inspect --format '{{.Os}}' "$loaded" 2>/dev/null || echo unknown)
+    if [[ "$arch" == "amd64" && "$os" == "linux" ]]; then
+      log_ok "$name ($os/$arch)"
+    else
+      log_error "$name ($os/$arch) — expected linux/amd64"; failed=1
+    fi
+    checked=$((checked + 1))
+  done
+
+  [[ $checked -gt 0 ]] || die "no .tar.gz files found in $dist/"
+  [[ $failed -eq 0 ]]  || die "architecture verification failed — not every image is linux/amd64"
+  log_ok "All $checked image(s) verified: linux/amd64"
+}
+
+release_package() {
+  cd "$ROOT_DIR"
+  local deploy="deploy"
+  require_file "dist/.release-version" "dist/.release-version (run 'plane release build' first)"
+  require_file "docker-compose.release.yml" "docker-compose.release.yml (run 'plane release build' first)"
+
+  local tag; tag=$(tr -d '[:space:]' < dist/.release-version)
+  local missing=0 name file
+  for name in plane-frontend plane-admin plane-backend; do
+    file="dist/${name}-${tag}.tar.gz"
+    if [[ ! -f "$file" ]]; then
+      log_error "missing: $file"; missing=1
+    elif [[ "$(wc -c < "$file")" -lt 1000 ]]; then
+      log_error "invalid: $file (too small — likely a failed build)"; missing=1
+    else
+      log_ok "$file ($(du -sh "$file" | cut -f1))"
+    fi
+  done
+  [[ $missing -eq 0 ]] || die "some images are missing or invalid — rebuild and retry."
+
+  log_info "Assembling $deploy/…"
+  rm -rf "$deploy"
+  mkdir -p "$deploy/scripts" "$deploy/dist"
+  cp docker-compose.release.yml "$deploy/docker-compose.release.yml"
+  # The package carries this CLI so the target server deploys with the same tool.
+  cp "$SCRIPT_DIR/plane" "$deploy/scripts/plane"
+  chmod +x "$deploy/scripts/plane"
+  cp dist/.release-version "$deploy/dist/"
+  for name in plane-frontend plane-admin plane-backend; do
+    cp "dist/${name}-${tag}.tar.gz" "$deploy/dist/"
+  done
+
+  log_header "Deploy package ready — $tag"
+  log_plain "  dist/*.tar.gz  ($(du -sh "$deploy/dist/" | cut -f1) total)"
+  log_plain ""
+  log_plain "Transfer into the server's plane-app directory:"
+  log_plain "  scp -r $deploy/* user@server:/path/to/plane-app/"
+  log_plain "Then on the server:"
+  log_plain "  ./scripts/plane deploy release"
+}
+
+release_upload() {
+  cd "$ROOT_DIR"
+  local tag="${1:-}"
+  [[ -n "$tag" ]] || die "usage: plane release upload <dev/vX.Y.Z-build.N | prod/vX.Y.Z>"
+  [[ "$tag" == dev/* || "$tag" == prod/* ]] || die "release tag must start with dev/ or prod/; got '$tag'"
+
+  local env_file="$ROOT_DIR/upload-release.env"
+  require_file "$env_file" "upload-release.env (copy scripts/upload-release.env.example)"
+  # shellcheck disable=SC1090
+  set -a; source "$env_file"; set +a
+
+  require_file "dist/.release-version" "dist/.release-version"
+  RELEASE_VERSION=$(tr -d '[:space:]' < dist/.release-version)
+  export RELEASE_VERSION RELEASE_TAG="$tag"
+  log_info "Uploading $RELEASE_VERSION as $tag…"
+  release_publish
+}
+
+release_publish() {
+  cd "$ROOT_DIR"
+  require_cmd curl
+  local var
+  for var in GITLAB_URL CI_PROJECT_ID GITLAB_PUBLISH_TOKEN RELEASE_VERSION RELEASE_TAG; do
+    [[ -n "${!var:-}" ]] || die "$var is required but not set."
+  done
+
+  local pkg_name="${PACKAGE_NAME:-plane-release}" dist="${DIST_DIR:-dist}"
+  local pkg_version="${RELEASE_TAG##*/}"
+  local archive="${pkg_name}-${pkg_version}.zip"
+  local sums="${pkg_name}-${pkg_version}.SHA256SUMS"
+  local stage="release-stage-${RELEASE_VERSION}"
+  local api="${GITLAB_URL}/api/v4/projects/${CI_PROJECT_ID}"
+  local pkg_base="${api}/packages/generic/${pkg_name}/${pkg_version}"
+  local tag_ref="${TAG_REF:-}"
+
+  if [[ -z "$tag_ref" ]]; then
+    case "$RELEASE_TAG" in
+      dev/*)  tag_ref="develop" ;;
+      prod/*) tag_ref="preview" ;;
+      *) die "RELEASE_TAG must start with dev/ or prod/" ;;
+    esac
+  fi
+
+  # macOS ships shasum rather than sha256sum.
+  if ! command -v sha256sum >/dev/null 2>&1; then
+    command -v shasum >/dev/null 2>&1 || die "sha256sum or shasum is required."
+    sha256sum() { shasum -a 256 "$@"; }
+  fi
+
+  log_header "Publish release package"
+  log_plain "  Version    : $RELEASE_VERSION"
+  log_plain "  Release tag: $RELEASE_TAG"
+  log_plain "  Target ref : $tag_ref"
+
+  log_step 0 5 "Validating tag target ref"
+  local ref_encoded ref_status
+  ref_encoded=$(printf '%s' "$tag_ref" | sed 's|/|%2F|g; s| |%20|g')
+  ref_status=$(curl -s -o /dev/null -w "%{http_code}" \
+    --header "PRIVATE-TOKEN: ${GITLAB_PUBLISH_TOKEN}" "${api}/repository/branches/${ref_encoded}")
+  case "$ref_status" in
+    200) log_ok "ref exists" ;;
+    401) die "unauthorized — GITLAB_PUBLISH_TOKEN lacks the 'api' scope." ;;
+    404) die "TAG_REF '$tag_ref' does not exist in project ${CI_PROJECT_ID}." ;;
+    *)   die "could not validate ref '$tag_ref' (HTTP $ref_status)" ;;
+  esac
+
+  require_file "${dist}/.release-version" "${dist}/.release-version — run 'plane release build' first"
+
+  log_step 1 5 "Assembling package"
+  rm -rf "$stage"
+  mkdir -p "$stage/dist" "$stage/scripts"
+  cp "${dist}/.release-version" "$stage/dist/"
+  cp "$SCRIPT_DIR/plane" "$stage/scripts/plane"
+  chmod +x "$stage/scripts/plane"
+  local img file
+  for img in plane-frontend plane-admin plane-backend; do
+    file="${dist}/${img}-${RELEASE_VERSION}.tar.gz"
+    require_file "$file"
+    cp "$file" "$stage/dist/"
+  done
+  write_release_compose "$RELEASE_VERSION" "$stage/docker-compose.release.yml" \
+    "Auto-generated — ${RELEASE_TAG}"
+
+  cat > "$stage/MANIFEST" <<MANIFEST
+VERSION=${RELEASE_VERSION}
+RELEASE_TAG=${RELEASE_TAG}
+BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+COMMIT_REF=${tag_ref}
+TAG_REF=${tag_ref}
+TARGET_ARCH=linux/amd64
+IMAGES=makeplane/plane-frontend:${RELEASE_VERSION},makeplane/plane-admin:${RELEASE_VERSION},makeplane/plane-backend:${RELEASE_VERSION}
+MANIFEST
+
+  _zip_create "$archive" "$stage"
+  local sha; sha=$(sha256sum "$archive" | awk '{print $1}')
+  echo "$sha  $archive" > "$sums"
+  rm -rf "$stage"
+  log_plain "  SHA256: $sha"
+
+  log_step 2 5 "Uploading to the package registry"
+  local http remote_sha
+  http=$(curl -s -o /dev/null -w "%{http_code}" \
+    --header "PRIVATE-TOKEN: ${GITLAB_PUBLISH_TOKEN}" "${pkg_base}/${archive}")
+  if [[ "$http" == "200" ]]; then
+    remote_sha=$(curl -sf --header "PRIVATE-TOKEN: ${GITLAB_PUBLISH_TOKEN}" \
+      "${pkg_base}/${sums}" 2>/dev/null | awk '{print $1}' || echo "")
+    if [[ "$remote_sha" == "$sha" ]]; then
+      log_ok "already published with a matching SHA256 — skipping upload (idempotent)"
+    else
+      die "package $pkg_version already exists with a different SHA256 (remote $remote_sha, local $sha)"
+    fi
+  else
+    curl --fail -s --request PUT --header "PRIVATE-TOKEN: ${GITLAB_PUBLISH_TOKEN}" \
+      --upload-file "$archive" "${pkg_base}/${archive}"
+    log_ok "uploaded $archive"
+    curl --fail -s --request PUT --header "PRIVATE-TOKEN: ${GITLAB_PUBLISH_TOKEN}" \
+      --upload-file "$sums" "${pkg_base}/${sums}"
+    log_ok "uploaded $sums"
+  fi
+
+  local package_url="${pkg_base}/${archive}"
+  local tag_encoded; tag_encoded=$(echo "$RELEASE_TAG" | sed 's|/|%2F|g; s| |%20|g')
+
+  log_step 3 5 "Creating git tag $RELEASE_TAG"
+  local tag_status; tag_status=$(curl -s -o /dev/null -w "%{http_code}" \
+    --header "PRIVATE-TOKEN: ${GITLAB_PUBLISH_TOKEN}" "${api}/repository/tags/${tag_encoded}")
+  if [[ "$tag_status" == "200" ]]; then
+    log_ok "tag already exists — skipping"
+  else
+    local resp code body
+    resp=$(curl -s -w "\n%{http_code}" --request POST \
+      --header "PRIVATE-TOKEN: ${GITLAB_PUBLISH_TOKEN}" --header "Content-Type: application/json" \
+      --data "{\"tag_name\":\"${RELEASE_TAG}\",\"ref\":\"${tag_ref}\",\"message\":\"Release ${RELEASE_TAG}\"}" \
+      "${api}/repository/tags")
+    code="${resp##*$'\n'}"; body="${resp%$'\n'*}"
+    case "$code" in
+      200|201) log_ok "tag created" ;;
+      409|422) log_ok "tag already exists — skipping" ;;
+      401)     die "unauthorized — GITLAB_PUBLISH_TOKEN lacks the 'api' scope." ;;
+      404)     die "project not found — check CI_PROJECT_ID (${CI_PROJECT_ID})" ;;
+      *)       die "tag creation failed (HTTP $code): $body" ;;
+    esac
+  fi
+
+  log_step 4 5 "Creating the GitLab release"
+  # The SHA256 in this description is the integrity anchor read back by
+  # 'plane deploy from-gitlab' — independent of the package registry asset.
+  local desc="Release ${RELEASE_VERSION} (ref ${tag_ref}). Package: ${package_url}. SHA256: ${sha}"
+  local rel_status; rel_status=$(curl -s -o /dev/null -w "%{http_code}" \
+    --header "PRIVATE-TOKEN: ${GITLAB_PUBLISH_TOKEN}" "${api}/releases/${tag_encoded}")
+
+  local resp code body
+  if [[ "$rel_status" == "200" ]]; then
+    resp=$(curl -s -w "\n%{http_code}" --request PUT \
+      --header "PRIVATE-TOKEN: ${GITLAB_PUBLISH_TOKEN}" \
+      --data-urlencode "description=${desc}" "${api}/releases/${tag_encoded}")
+    code="${resp##*$'\n'}"; body="${resp%$'\n'*}"
+    [[ "$code" == "200" ]] || die "release update failed (HTTP $code): $body"
+    log_ok "release updated"
+  else
+    resp=$(curl -s -w "\n%{http_code}" --request POST \
+      --header "PRIVATE-TOKEN: ${GITLAB_PUBLISH_TOKEN}" \
+      --data-urlencode "tag_name=${RELEASE_TAG}" --data-urlencode "description=${desc}" \
+      "${api}/releases")
+    code="${resp##*$'\n'}"; body="${resp%$'\n'*}"
+    [[ "$code" == "200" || "$code" == "201" ]] || die "release creation failed (HTTP $code): $body"
+    log_ok "release created"
+  fi
+
+  resp=$(curl -s -w "\n%{http_code}" --request POST \
+    --header "PRIVATE-TOKEN: ${GITLAB_PUBLISH_TOKEN}" \
+    --data-urlencode "name=Release Package" --data-urlencode "url=${package_url}" \
+    --data-urlencode "link_type=other" "${api}/releases/${tag_encoded}/assets/links")
+  code="${resp##*$'\n'}"; body="${resp%$'\n'*}"
+  case "$code" in
+    200|201) log_ok "release asset link created" ;;
+    409|422) log_ok "release asset link already exists — skipping" ;;
+    404)     die "release not found while creating the asset link" ;;
+    *)       die "release asset link failed (HTTP $code): $body" ;;
+  esac
+
+  log_step 5 5 "Cleaning up"
+  rm -f "$archive" "$sums"
+
+  log_header "Published: $RELEASE_TAG"
+  log_plain "  SHA256 : $sha"
+  log_plain "  URL    : $package_url"
+}
+
+# Always cd into the parent before zipping so paths inside the archive use
+# forward slashes on every OS — Windows zip tools otherwise embed backslashes.
+_zip_create() {
+  local archive="$1" source="$2" abs parent base
+  abs="$(cd "$(dirname "$archive")" 2>/dev/null && pwd)/$(basename "$archive")"
+  parent="$(dirname "$source")"; base="$(basename "$source")"
+  if command -v zip >/dev/null 2>&1; then
+    (cd "$parent" && zip -rq "$abs" "$base/")
+  elif command -v 7z >/dev/null 2>&1; then
+    (cd "$parent" && 7z a -tzip "$abs" "$base/" > /dev/null)
+  elif command -v powershell.exe >/dev/null 2>&1; then
+    local src dst
+    src=$(cygpath -w "$(realpath "$source")" 2>/dev/null || echo "$source")
+    dst=$(cygpath -w "$abs" 2>/dev/null || echo "$abs")
+    powershell.exe -NoProfile -Command "Compress-Archive -Path '${src}\\*' -DestinationPath '${dst}' -Force"
+  else
+    die "no zip tool found — install zip, 7-Zip, or make PowerShell available."
+  fi
+}
+
+# ══════════════════════════════════════════════════════════════ deploy ═══════
+
+cmd_deploy() {
+  case "${1:-help}" in
+    release)     shift; deploy_release "$@" ;;
+    ci)          shift; deploy_ci "$@" ;;
+    from-gitlab) shift; deploy_from_gitlab "$@" ;;
+    -h|--help|help)
+      cat <<'EOF'
+plane deploy <command>       deploy a release onto a server
+
+  release [options]   load dist/ images, migrate, recreate services
+      --dist DIR      dist directory      (default: dist)
+      --env FILE      env file            (default: plane.env)
+      --compose FILE  base compose file   (default: docker-compose.yaml)
+
+  ci                  deploy images that CI dropped in /tmp/plane-deploy
+                      requires RELEASE_VERSION; honours PLANE_DIR
+
+  from-gitlab         download, verify and deploy a package from the internal
+                      GitLab release registry (runs on the target server)
+EOF
+      return 0 ;;
+    *) die "unknown deploy command: $1 (try --help)" ;;
+  esac
+}
+
+deploy_release() {
+  local dist="dist" env_file="plane.env" base="docker-compose.yaml"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --dist)    dist="${2:?--dist needs a path}"; shift 2 ;;
+      --env)     env_file="${2:?--env needs a path}"; shift 2 ;;
+      --compose) base="${2:?--compose needs a path}"; shift 2 ;;
+      # Positional form kept for the packaged deploy path and older runbooks.
+      *) if [[ "$dist" == "dist" ]]; then dist="$1"
+         elif [[ "$env_file" == "plane.env" ]]; then env_file="$1"
+         else base="$1"; fi; shift ;;
+    esac
+  done
+
+  require_docker
+  local override="docker-compose.release.yml"
+  require_dir "$dist" "dist directory (transfer it from the build machine first)"
+  require_file "$base" "base compose file"
+  require_file "$override" "release override (transfer it from the build machine first)"
+  require_file "${dist}/.release-version" "${dist}/.release-version"
+
+  local tag; tag=$(tr -d '[:space:]' < "${dist}/.release-version")
+  local compose=(docker compose --env-file "$env_file" -f "$base" -f "$override")
+
+  log_header "Deploy — $tag"
+  log_plain "  Dist   : $dist/"
+  log_plain "  Server : $(hostname)"
+
+  log_step 1 5 "Loading Docker images"
+  local loaded=0 tar
+  for tar in "$dist"/*-"${tag}".tar.gz; do
+    [[ -f "$tar" ]] || continue
+    log_plain "  → $(basename "$tar")"
+    docker load < "$tar"
+    loaded=$((loaded + 1))
+  done
+  [[ $loaded -gt 0 ]] || die "no tar.gz matching '*-${tag}.tar.gz' found in $dist/"
+  log_ok "$loaded image(s) loaded"
+
+  log_step 2 5 "Checking for conflicting Plane deployments"
+  # Another compose project (e.g. the official installer) can hold the same
+  # ports. Stop it rather than failing halfway through the deploy.
+  local current conflicts stopped=()
+  current=$("${compose[@]}" config --format json 2>/dev/null \
+    | python3 -c "import sys,json; print(json.load(sys.stdin).get('name',''))" 2>/dev/null || echo "")
+  conflicts=$(docker ps --filter "ancestor=artifacts.plane.so/makeplane/plane-proxy" \
+    --filter "ancestor=makeplane/plane-proxy" \
+    --format '{{.ID}} {{index .Labels "com.docker.compose.project"}} {{index .Labels "com.docker.compose.project.working_dir"}}' 2>/dev/null || true)
+
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    local cid cproject cdir skip=0
+    cid=$(awk '{print $1}' <<< "$line")
+    cproject=$(awk '{print $2}' <<< "$line")
+    cdir=$(awk '{print $3}' <<< "$line")
+    [[ -n "$current" && "$cproject" == "$current" ]] && continue
+    local sp
+    for sp in ${stopped[@]+"${stopped[@]}"}; do [[ "$sp" == "$cproject" ]] && skip=1; done
+    [[ $skip -eq 1 ]] && continue
+
+    log_warn "conflicting deployment: project='$cproject' dir='$cdir'"
+    if [[ -n "$cdir" && -d "$cdir" ]]; then
+      (cd "$cdir" && docker compose -p "$cproject" down --remove-orphans 2>&1 | sed 's/^/    /')
+      stopped+=("$cproject")
+    else
+      docker stop "$cid" 2>/dev/null || true
+    fi
+  done <<< "$conflicts"
+  [[ ${#stopped[@]} -eq 0 ]] && log_ok "no conflicting deployments" || log_ok "conflicting deployments stopped"
+
+  log_step 3 5 "Running Django migrations"
+  # --force-recreate so the migrator runs even if a previous container exited.
+  "${compose[@]}" up -d migrator --force-recreate --no-build
+  if ! "${compose[@]}" wait migrator; then
+    log_error "migration failed — aborting to protect data integrity."
+    log_error "logs: docker compose -f $base -f $override logs migrator"
+    exit 1
+  fi
+  log_ok "migrations complete"
+
+  log_step 4 5 "Recreating all services on the release images"
+  "${compose[@]}" up -d --no-build --force-recreate
+
+  log_step 5 5 "Service status"
+  "${compose[@]}" ps
+
+  log_header "Deploy complete — $tag"
+  log_plain "  Logs     : docker compose -f $base -f $override logs -f [service]"
+  log_plain "  Rollback : docker compose -f $base up -d"
+}
+
+deploy_ci() {
+  require_docker
+  local version="${RELEASE_VERSION:-}"
+  [[ -n "$version" ]] || die "RELEASE_VERSION is required (set it as a CI variable)."
+  local plane_dir="${PLANE_DIR:-/opt/plane-deploy/plane-app}"
+  local images_dir="/tmp/plane-deploy"
+  local env_file="${plane_dir}/plane.env"
+  local base="${plane_dir}/docker-compose.yaml"
+  local release="${plane_dir}/docker-compose.release.yml"
+  local ci="${plane_dir}/docker-compose.ci.yml"
+
+  require_dir "$plane_dir" "deploy directory (run the initial deploy first)"
+  require_file "$env_file"
+  require_file "$base"
+  require_file "$release" "release override (run the initial deploy first)"
+
+  log_header "CI deploy — $version"
+  log_plain "  Server: $(hostname)"
+
+  log_step 1 5 "Loading Docker images from $images_dir/"
+  local loaded=0 f
+  for f in "$images_dir"/*.tar.gz; do
+    [[ -f "$f" ]] || continue
+    docker load < "$f"
+    log_ok "loaded $(basename "$f")"
+    loaded=$((loaded + 1))
+  done
+  [[ $loaded -gt 0 ]] || die "no tar.gz files found in $images_dir/"
+
+  log_step 2 5 "Persisting images to ${plane_dir}/dist/ for rollback"
+  mkdir -p "${plane_dir}/dist"
+  cp -f "$images_dir"/*.tar.gz "${plane_dir}/dist/"
+  cp -f "${images_dir}/.release-version" "${plane_dir}/dist/.release-version" 2>/dev/null || true
+
+  log_step 3 5 "Generating $ci"
+  write_release_compose "$version" "$ci" "Auto-generated by CI — overwritten on every deploy."
+
+  local compose=(docker compose --env-file "$env_file" -f "$base" -f "$release" -f "$ci")
+
+  log_step 4 5 "Running Django migrations"
+  "${compose[@]}" up -d migrator --force-recreate --no-build
+  "${compose[@]}" wait migrator || {
+    log_error "migration failed — aborting to protect data integrity."
+    exit 1
+  }
+  log_ok "migrations complete"
+
+  log_step 5 5 "Deploying web, admin, api, worker, beat-worker"
+  "${compose[@]}" up -d web admin api worker beat-worker --force-recreate --no-build
+
+  log_header "Deploy complete — $version"
+  "${compose[@]}" ps
+}
+
+deploy_from_gitlab() {
+  require_docker
+  require_cmd curl python3
+  local stage="/tmp/plane-release-stage-$$"
+  trap 'rm -rf "$stage"' RETURN
+
+  local gitlab="${CI_SERVER_URL:-}" project="${CI_PROJECT_ID:-}"
+  local token="${CI_JOB_TOKEN:-}" pkg_name="${PACKAGE_NAME:-plane-release}"
+  local plane_dir="${PLANE_DIR:-}" release_tag="${CI_COMMIT_TAG:-${RELEASE_TAG:-}}"
+
+  local target_env
+  case "$release_tag" in
+    prod/*) target_env="prod" ;;
+    dev/*)  target_env="dev" ;;
+    *) die "RELEASE_TAG '$release_tag' must start with dev/ or prod/" ;;
+  esac
+
+  local var
+  for var in gitlab project token pkg_name plane_dir release_tag; do
+    [[ -n "${!var:-}" ]] || die "$var is not set — configure it as a GitLab CI variable."
+  done
+
+  local archive_dir="${plane_dir}/archive" audit="${plane_dir}/deploy-audit.log"
+  local pkg_version="${release_tag##*/}"
+  local archive="${pkg_name}-${pkg_version}.zip"
+  local api="${gitlab}/api/v4/projects/${project}"
+  local tag_encoded; tag_encoded=$(echo "$release_tag" | sed 's|/|%2F|g; s| |%20|g')
+
+  log_header "Deploy from GitLab release"
+  log_plain "  Tag         : $release_tag"
+  log_plain "  Environment : $target_env"
+  log_plain "  Server      : $(hostname)"
+
+  # ~2 GB archive plus room to extract it.
+  local needed=4096 avail
+  avail=$(df -m "$plane_dir" | awk 'NR==2 {print $4}')
+  [[ "$avail" -ge "$needed" ]] || die "insufficient disk — need ${needed} MB, have ${avail} MB on $plane_dir"
+
+  log_step 1 8 "Fetching release metadata"
+  local release_json expected_sha
+  release_json=$(curl -sf --header "Job-Token: ${token}" "${api}/releases/${tag_encoded}" 2>&1) \
+    || die "could not fetch release '$release_tag' from $gitlab"
+  expected_sha=$(grep -oE '"description":"[^"]*"' <<< "$release_json" \
+    | grep -oE 'SHA256: [a-f0-9]{64}' | awk '{print $2}' || echo "")
+  [[ -n "$expected_sha" ]] || die "SHA256 not found in the release description — was it published by 'plane release publish'?"
+  log_plain "  expected SHA256: $expected_sha"
+
+  log_step 2 8 "Downloading $archive"
+  mkdir -p "$stage"
+  curl -sfS -o "${stage}/${archive}" --header "Job-Token: ${token}" \
+    "${api}/packages/generic/${pkg_name}/${pkg_version}/${archive}"
+
+  log_step 3 8 "Verifying checksum"
+  local actual_sha; actual_sha=$(sha256sum "${stage}/${archive}" | awk '{print $1}')
+  [[ "$actual_sha" == "$expected_sha" ]] \
+    || die "SHA256 mismatch — archive may be corrupted or substituted (expected $expected_sha, got $actual_sha)"
+  log_ok "checksum verified"
+
+  log_step 4 8 "Extracting package"
+  # python rather than unzip: it normalises the backslash paths that Windows
+  # zip tools embed, which unzip would turn into literal filenames.
+  python3 - "${stage}/${archive}" "${stage}/pkg" <<'PYEOF'
+import zipfile, os, sys
+archive, dest = sys.argv[1], sys.argv[2]
+os.makedirs(dest, exist_ok=True)
+with zipfile.ZipFile(archive) as zf:
+    for info in zf.infolist():
+        info.filename = info.filename.replace(chr(92), '/')
+        if info.filename.endswith('/'):
+            os.makedirs(os.path.join(dest, info.filename), exist_ok=True)
+        else:
+            zf.extract(info, dest)
+PYEOF
+
+  # Locate by MANIFEST so this works for flat, wrapped and double-nested zips,
+  # and skips macOS __MACOSX metadata directories.
+  local manifest; manifest=$(find "${stage}/pkg" -name MANIFEST -type f ! -path '*__MACOSX*' | head -1)
+  [[ -n "$manifest" && -f "$manifest" ]] || die "MANIFEST not found in the package — it may be corrupt."
+  local pkg_dir; pkg_dir=$(dirname "$manifest")
+  local m_arch m_images m_version
+  m_arch=$(grep '^TARGET_ARCH=' "$manifest" | cut -d= -f2)
+  m_images=$(grep '^IMAGES=' "$manifest" | cut -d= -f2)
+  m_version=$(grep '^VERSION=' "$manifest" | cut -d= -f2)
+  [[ "$m_arch" == "linux/amd64" ]] || die "package TARGET_ARCH is '$m_arch' — expected linux/amd64"
+  log_plain "  package: $m_version ($m_arch)"
+
+  log_step 5 8 "Loading Docker images"
+  # Everything is loaded and verified BEFORE any running container is touched,
+  # so a bad package cannot leave the server half-deployed.
+  local count=0 tar loaded
+  for tar in "${pkg_dir}/dist"/*.tar.gz; do
+    [[ -f "$tar" ]] || continue
+    loaded=$(docker load < "$tar" | grep 'Loaded image' | sed 's/.*Loaded image.*: //')
+    log_ok "loaded $loaded"
+    count=$((count + 1))
+  done
+  [[ $count -gt 0 ]] || die "no images loaded from the package"
+
+  local img
+  IFS=',' read -ra expected_images <<< "$m_images"
+  for img in "${expected_images[@]}"; do
+    docker inspect --format '{{.Id}}' "$img" >/dev/null 2>&1 \
+      || die "image not available after load: $img — nothing has been stopped yet."
+    log_ok "verified $img"
+  done
+
+  log_step 6 8 "Deploying"
+  cp "${pkg_dir}/docker-compose.release.yml" "${plane_dir}/docker-compose.release.yml"
+  cp -r "${pkg_dir}/dist/." "${plane_dir}/dist/"
+  ( cd "$plane_dir" && deploy_release --dist "${plane_dir}/dist" \
+      --env "${plane_dir}/plane.env" --compose "${plane_dir}/docker-compose.yaml" )
+
+  log_step 7 8 "Archiving the release package"
+  local keep="${ARCHIVE_KEEP:-3}" safe_tag
+  safe_tag=$(echo "$release_tag" | sed 's|/|-|g')
+  mkdir -p "$archive_dir"
+  cp "${stage}/${archive}" "${archive_dir}/${safe_tag}-${archive}"
+  ls -t "${archive_dir}"/*.zip 2>/dev/null | tail -n "+$((keep + 1))" | xargs -r rm -f
+  log_ok "archived ${safe_tag}-${archive} (keeping last $keep)"
+
+  log_step 8 8 "Writing the audit log"
+  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) | ${release_tag} | $(id -u):$(id -un) | ${actual_sha} | 0" >> "$audit"
+  chmod 0644 "$audit"
+
+  log_header "Deploy complete: $release_tag"
+}
+
+# ══════════════════════════════════════════════════════════════ server ═══════
+
+cmd_server() {
+  case "${1:-help}" in
+    setup) shift; server_setup "$@" ;;
+    -h|--help|help)
+      cat <<'EOF'
+plane server setup [options]     prepare a fresh server for deploys
+
+Creates the deploy tree, the proxy config directory and a Caddyfile.
+
+  --domain DOMAIN   Caddy domain (default: plane.example.com)
+  --vps             HTTP-only Caddyfile for an external VPS (no TLS cert)
+  --dir PATH        deploy directory (default: /root/Documents/plane-offline-pack/plane-app)
+EOF
+      return 0 ;;
+    *) die "unknown server command: $1 (try --help)" ;;
+  esac
+}
+
+server_setup() {
+  local plane_dir="/root/Documents/plane-offline-pack/plane-app"
+  local proxy_dir="/opt/plane-deploy/plane-app/proxy"
+  local certs_dir="/opt/certs"
+  local domain="plane.example.com" vps=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --domain) domain="${2:?--domain needs a value}"; shift 2 ;;
+      --dir)    plane_dir="${2:?--dir needs a path}"; shift 2 ;;
+      --vps)    vps=true; shift ;;
+      *) die "unknown option for 'server setup': $1" ;;
+    esac
+  done
+
+  log_header "Plane server setup"
+  log_plain "  Deploy dir : $plane_dir"
+  log_plain "  Proxy dir  : $proxy_dir"
+  log_plain "  Domain     : $domain"
+  log_plain "  Mode       : $([[ "$vps" == true ]] && echo 'VPS (HTTP only)' || echo 'Internal (HTTPS/TLS)')"
+
+  log_step 1 3 "Creating the deploy directory structure"
+  mkdir -p "${plane_dir}/dist" "${plane_dir}/scripts" "${plane_dir}/archive"
+  log_ok "${plane_dir}/{dist,scripts,archive}"
+
+  log_step 2 3 "Generating ${proxy_dir}/Caddyfile"
+  mkdir -p "$proxy_dir"
+  local tls_line=""
+  if [[ "$vps" != true ]]; then
+    mkdir -p "$certs_dir"
+    tls_line="    tls ${certs_dir}/fullchain.pem ${certs_dir}/privkey.pem"
+  fi
+  cat > "${proxy_dir}/Caddyfile" <<CADDY
+${domain} {
+${tls_line}
+    redir /live /live/
+    redir /space /space/
+    redir /god-mode /god-mode/
+
+    reverse_proxy /api/* api:8000
+    reverse_proxy /auth/* api:8000
+
+    reverse_proxy /uploads* plane-minio:9000 {
+        header_up Host {http.request.host}
+    }
+
+    reverse_proxy /live/* live:3000
+    reverse_proxy /space* space:3000
+    reverse_proxy /god-mode* admin:3000
+    reverse_proxy * web:3000
+}
+CADDY
+  log_ok "Caddyfile written"
+
+  log_step 3 3 "Installing this CLI into ${plane_dir}/scripts/"
+  cp "$SCRIPT_DIR/plane" "${plane_dir}/scripts/plane"
+  chmod +x "${plane_dir}/scripts/plane"
+  log_ok "${plane_dir}/scripts/plane"
+
+  log_header "Server ready"
+  [[ "$vps" == true ]] || log_warn "Copy TLS certificates into ${certs_dir}/ (fullchain.pem, privkey.pem)"
+  log_plain "  Next: transfer a deploy package, then run ./scripts/plane deploy release"
+}
+
+# ══════════════════════════════════════════════════════════════ images ═══════
+
+readonly SEED_BUILD_IMAGES=(
+  "docker/dockerfile:1.7"
+  "node:22-alpine"
+  "nginx:1.29-alpine"
+  "nginx:1.27-alpine"
+  "python:3.12.10-alpine"
+  "caddy:2.10.0-builder-alpine"
+  "caddy:2.10.0-alpine"
+)
+
+cmd_images() {
+  case "${1:-help}" in
+    save) shift; images_save "$@" ;;
+    load) shift; images_load "$@" ;;
+    -h|--help|help)
+      cat <<'EOF'
+plane images <command>       move base images to an airgapped build host
+
+  save [out-dir]     pull every base image and write base-images.tar.gz
+                     run on a machine WITH internet access (linux/amd64)
+  load <archive>     load and verify them on the airgapped host
+EOF
+      return 0 ;;
+    *) die "unknown images command: $1 (try --help)" ;;
+  esac
+}
+
+images_save() {
+  require_cmd docker
+  local out_dir="${1:-.}" platform="linux/amd64"
+  local out_file="${out_dir}/base-images.tar"
+  mkdir -p "$out_dir"
+
+  log_header "Pulling ${#SEED_BUILD_IMAGES[@]} base images for $platform"
+  local img
+  for img in "${SEED_BUILD_IMAGES[@]}"; do
+    log_info "$img"
+    run docker pull --platform "$platform" "$img"
+  done
+
+  log_info "Saving → ${out_file}.gz"
+  docker save "${SEED_BUILD_IMAGES[@]}" > "$out_file"
+  gzip -f "$out_file"
+  log_ok "${out_file}.gz ($(du -sh "${out_file}.gz" | cut -f1))"
+  log_plain ""
+  log_plain "Transfer it to the airgapped host, then run:"
+  log_plain "  ./scripts/plane images load ${out_file}.gz"
+}
+
+images_load() {
+  require_cmd docker
+  local archive="${1:-}"
+  [[ -n "$archive" ]] || die "usage: plane images load <base-images.tar.gz>"
+  require_file "$archive" "image archive"
+
+  log_header "Loading images from $archive"
+  if [[ "$archive" == *.gz ]]; then
+    gunzip -c "$archive" | docker load
+  else
+    docker load -i "$archive"
+  fi
+
+  log_info "Verifying expected images…"
+  local missing=0 img
+  for img in "${SEED_BUILD_IMAGES[@]}"; do
+    if docker image inspect "$img" >/dev/null 2>&1; then
+      log_ok "$img"
+    else
+      log_error "$img — not loaded"
+      missing=$((missing + 1))
+    fi
+  done
+  [[ $missing -eq 0 ]] || die "$missing image(s) missing"
+  log_header "All base images present — an offline build can proceed"
+}
+
+# ═══════════════════════════════════════════════════════════════ setup ═══════
+
+cmd_setup() {
+  # setup.sh is upstream Plane's self-hosted installer, carried unmodified so it
+  # can be diffed against upstream. Folding 800 lines of third-party installer
+  # into this CLI would make every future upstream sync a manual merge.
+  local upstream="$SCRIPT_DIR/setup.sh"
+  require_file "$upstream" "upstream installer"
+  exec bash "$upstream" "$@"
+}
+
+# ════════════════════════════════════════════════════════════════ help ═══════
+
+cmd_help() {
+  cat <<EOF
+${C_BOLD}plane${C_RESET} — operations CLI for this repository (v${PLANE_CLI_VERSION})
+
+${C_BOLD}USAGE${C_RESET}
+  scripts/plane <command> [subcommand] [options]
+
+${C_BOLD}DEVELOPMENT${C_RESET}
+  ${C_CYAN}dev${C_RESET} [--clean]            start the local stack (one origin: http://localhost)
+  ${C_CYAN}dev${C_RESET} stop                 stop the local backend containers
+  ${C_CYAN}test${C_RESET} [pytest args]       backend suite against the dev-site datastores
+  ${C_CYAN}gitnexus${C_RESET} <cmd>           code-intelligence index (analyze, mcp, status, …)
+
+${C_BOLD}DEV SITE${C_RESET}  ${C_DIM}(second full deployment — dev.mousetrip.online)${C_RESET}
+  ${C_CYAN}devsite${C_RESET} <cmd>            up, down, build, ps, restart, exec, …
+  ${C_CYAN}devsite logs${C_RESET} [opts]      follow logs (--errors, --all, --tail N)
+
+${C_BOLD}RELEASE${C_RESET}
+  ${C_CYAN}release build${C_RESET} [--all]    build linux/amd64 images into dist/
+  ${C_CYAN}release verify${C_RESET} [dir]     assert every tarball is linux/amd64
+  ${C_CYAN}release package${C_RESET}          assemble a self-contained deploy/ folder
+  ${C_CYAN}release upload${C_RESET} <tag>     publish to GitLab (dev/vX.Y.Z or prod/vX.Y.Z)
+  ${C_CYAN}release publish${C_RESET}          low-level publish (expects GITLAB_* env vars)
+
+${C_BOLD}DEPLOY${C_RESET}
+  ${C_CYAN}deploy release${C_RESET}           load dist/, migrate, recreate services
+  ${C_CYAN}deploy ci${C_RESET}                deploy images CI dropped in /tmp/plane-deploy
+  ${C_CYAN}deploy from-gitlab${C_RESET}       fetch, verify and deploy a GitLab release
+
+${C_BOLD}OPERATIONS${C_RESET}
+  ${C_CYAN}server setup${C_RESET} [--vps]     prepare a fresh server (dirs + Caddyfile)
+  ${C_CYAN}images save${C_RESET}|${C_CYAN}load${C_RESET}       move base images to an airgapped host
+  ${C_CYAN}token rotate${C_RESET}             replace the GitHub sync token, validated first
+  ${C_CYAN}setup${C_RESET}                    upstream Plane self-host installer
+
+${C_BOLD}GLOBAL OPTIONS${C_RESET}
+  -v, --verbose            echo each command as it runs
+  -q, --quiet              suppress informational output
+      --no-color           plain output (also honours NO_COLOR)
+      --log-file PATH      append a timestamped transcript
+      --yes                assume yes for confirmations (PLANE_ASSUME_YES=1)
+
+Any command accepts --help for its own usage.
+Full documentation: docs/scripts.md
+EOF
+}
+
+# ═══════════════════════════════════════════════════════════ dispatch ════════
+
+main() {
+  local -a args=()
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -v|--verbose)  VERBOSE=1; shift ;;
+      -q|--quiet)    QUIET=1; shift ;;
+      --no-color)    PLANE_NO_COLOR=1; _setup_colors; shift ;;
+      --yes)         PLANE_ASSUME_YES=1; shift ;;
+      --log-file)    LOG_FILE="${2:?--log-file needs a path}"
+                     mkdir -p "$(dirname "$LOG_FILE")"
+                     printf '\n=== plane %s === %s\n' "$*" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
+                     shift 2 ;;
+      --version)     printf 'plane %s\n' "$PLANE_CLI_VERSION"; return 0 ;;
+      *)             args+=("$1"); shift ;;
+    esac
+  done
+  set -- ${args[@]+"${args[@]}"}
+
+  local command="${1:-help}"
+  [[ $# -gt 0 ]] && shift
+
+  case "$command" in
+    dev)          cmd_dev "$@" ;;
+    test)         cmd_test "$@" ;;
+    devsite)      cmd_devsite "$@" ;;
+    gitnexus)     cmd_gitnexus "$@" ;;
+    release)      cmd_release "$@" ;;
+    deploy)       cmd_deploy "$@" ;;
+    server)       cmd_server "$@" ;;
+    images)       cmd_images "$@" ;;
+    token)        cmd_token "$@" ;;
+    setup)        cmd_setup "$@" ;;
+    help|-h|--help) cmd_help ;;
+    *)
+      log_error "unknown command: $command"
+      log_plain ""
+      cmd_help
+      exit 1 ;;
+  esac
+}
+
+main "$@"

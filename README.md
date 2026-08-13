@@ -20,6 +20,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notab
   - [Deployment Guide](./docs/deployment-guide.md)
   - [Feature Reference](./docs/features.md) — every feature and the code behind it
   - [Instance Dashboard](./docs/instance-dashboard.md) — health, storage and user management at `/dashboard`
+  - [The `plane` CLI](./docs/scripts.md) — every operational command in one tool
   - [GitNexus Setup Guide](./docs/gitnexus-guide.md) — code intelligence for Claude Code
 - **Repository:** https://github.com/benpm/newplane
 - **Upstream:** [`makeplane/plane`](https://github.com/makeplane/plane)
@@ -122,9 +123,9 @@ Open **http://localhost** and sign in. For instance admin (god-mode) first-time 
 For testing a branch as a real deployment rather than a hot-reload dev server:
 
 ```bash
-./scripts/dev-site.sh build && ./scripts/dev-site.sh up -d   # start / rebuild
-./scripts/dev-site-logs.sh                                   # live log feed
-./scripts/dev-site.sh down                                   # stop (data kept)
+./scripts/plane devsite build && ./scripts/plane devsite up -d   # start / rebuild
+./scripts/plane devsite logs                                     # live log feed
+./scripts/plane devsite down                                     # stop (data kept)
 ```
 
 It runs as the `planedev` compose project, which gives it its own images,
@@ -133,7 +134,7 @@ with a production stack in the same checkout. The proxy publishes **8091**
 (production keeps 8090); environment files live outside the repo so no secrets
 enter version control.
 
-> Drive it through `scripts/dev-site.sh`, never a bare `docker compose`: an
+> Drive it through `scripts/plane devsite`, never a bare `docker compose`: an
 > unqualified compose command in this directory resolves to the production
 > stack. Note `docker-compose.dev.yml` is the separate local hot-reload overlay
 > used by `pnpm dev:local`; the dev site uses `docker-compose.devsite.yml`.
@@ -141,8 +142,8 @@ enter version control.
 **4. (Recommended) Setup Code Intelligence**
 
 ```bash
-./scripts/gitnexus.sh pull       # pull pinned Docker image (~1.2GB)
-./scripts/gitnexus.sh analyze    # index codebase (~2-3 min)
+./scripts/plane gitnexus pull       # pull pinned Docker image (~1.2GB)
+./scripts/plane gitnexus analyze    # index codebase (~2-3 min)
 ```
 
 Enables Claude Code's GitNexus MCP tools (impact analysis, call graph, refactor safety). See [GitNexus Setup Guide](./docs/gitnexus-guide.md) for details.
@@ -227,6 +228,7 @@ plane/
 | **deployment-guide.md**           | Local setup, Docker, production deploy          | DevOps, Backend      |
 | **features.md**                   | Every feature, with backend and frontend paths  | All Developers       |
 | **instance-dashboard.md**         | The /dashboard operations view, user management | Admins, DevOps       |
+| **scripts.md**                    | The `plane` CLI — every operational command     | All Developers       |
 | **git-workflow-guide.md**         | Branching, commits, PRs, release                | All Developers       |
 | **deployment/**                   | CI/CD, runners, environment, rollback           | DevOps               |
 | **swing-sso-integration-spec.md** | Swing SSO auth contract                         | Backend, Integrators |
@@ -338,12 +340,12 @@ pnpm test
 cd apps/api && python run_tests.py
 
 # Backend, against the dev-site datastores (no local Python env needed)
-./scripts/dev-site-test.sh                 # everything
-./scripts/dev-site-test.sh -m unit         # one marker
-./scripts/dev-site-test.sh --cov=plane     # with coverage
+./scripts/plane test                 # everything
+./scripts/plane test -m unit         # one marker
+./scripts/plane test --cov=plane     # with coverage
 ```
 
-`dev-site-test.sh` builds a test image once from `requirements/test.txt` on top
+`plane test` builds a test image once from `requirements/test.txt` on top
 of the dev-site API image, because the runtime image ships no test dependencies.
 It also installs `git`, which the wiki-sync tests need to seed a local bare repo
 as a stand-in for a GitHub wiki — the task itself uses the GitHub API, so the

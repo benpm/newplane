@@ -70,7 +70,7 @@ ROLLBACK_DIR="/tmp/rollback-v1.1.9"
 unzip -q "${ARCHIVE_FILE}" -d "${ROLLBACK_DIR}"
 
 # Run the deploy script from the archived release
-bash "${ROLLBACK_DIR}/release-stage-*/scripts/deploy-release.sh" \
+bash "${ROLLBACK_DIR}/release-stage-*/scripts/plane deploy release" \
   "${ROLLBACK_DIR}/release-stage-*/dist" \
   "/opt/plane-deploy/plane-app/plane.env" \
   "/opt/plane-deploy/plane-app/docker-compose.yaml"

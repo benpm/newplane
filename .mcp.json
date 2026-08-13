@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "gitnexus": {
-      "command": "./scripts/gitnexus.sh",
-      "args": ["mcp"]
+      "command": "./scripts/plane",
+      "args": ["gitnexus", "mcp"]
     }
   }
 }

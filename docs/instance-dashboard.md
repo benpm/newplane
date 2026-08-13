@@ -285,7 +285,7 @@ apps/api/plane/tests/unit/views/
   test_instance_dashboard_user_management.py rename, deactivation guards, invites
 ```
 
-Run with `./scripts/dev-site-test.sh plane/tests/unit/views/` or
+Run with `./scripts/plane test plane/tests/unit/views/` or
 `cd apps/api && python run_tests.py`.
 
 ---

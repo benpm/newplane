@@ -3,7 +3,7 @@
 # Skips if repo not yet initialized for gitnexus or no source files changed.
 
 [ ! -d .gitnexus ] && exit 0
-[ ! -x ./scripts/gitnexus.sh ] && exit 0
+[ ! -x ./scripts/plane ] && exit 0
 
 # Only re-index if code files changed (skip pure docs/config pulls)
 CHANGED=$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD \
@@ -14,4 +14,4 @@ CHANGED=$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD \
 [ "${CHANGED:-0}" -eq 0 ] && exit 0
 
 echo "[gitnexus] $CHANGED source files changed in pull → re-indexing in background"
-./scripts/gitnexus.sh reindex-bg
+./scripts/plane gitnexus reindex-bg

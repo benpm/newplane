@@ -30,7 +30,7 @@ Fastest path for continuous integration. Runs automatically after merge to `deve
    ↓
 4. deploy:external-test job (runs on plane-dev runner):
    - Copies artifacts to /tmp/plane-deploy/
-   - Runs scripts/ci-deploy.sh locally
+   - Runs scripts/plane deploy ci locally
    - Loads images, runs migrations, docker-compose up
    ↓
 5. Result: Dev server updated with latest code
@@ -146,7 +146,7 @@ Artifacts:
 
 Both `deploy:external-test` and `release:production` run the same script:
 
-**Script:** `scripts/deploy-from-internal-gitlab-release.sh`
+**Script:** `scripts/plane deploy from-gitlab`
 
 **What it does:**
 
