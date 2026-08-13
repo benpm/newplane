@@ -9,7 +9,6 @@ from opentelemetry import trace
 # Module imports
 from plane.license.models import Instance
 from plane.db.models import (
-    User,
     Workspace,
     Project,
     Issue,
