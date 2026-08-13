@@ -9,11 +9,12 @@ import { useState } from "react";
 import { useTranslation } from "@plane/i18n";
 import { cn } from "@plane/utils";
 // local
+import { InvitesTable } from "./invites-table";
 import { ProjectsTable } from "./projects-table";
 import { UsersTable } from "./users-table";
 import { WorkspacesTable } from "./workspaces-table";
 
-const SUB_TABS = ["workspaces", "projects", "users"] as const;
+const SUB_TABS = ["workspaces", "projects", "users", "invites"] as const;
 type TSubTab = (typeof SUB_TABS)[number];
 
 /** Full inventories, one table at a time. */
@@ -36,7 +37,7 @@ export const ListingsPanel = () => {
                 : "border-transparent text-tertiary hover:text-secondary"
             )}
           >
-            {t(`instance_dashboard.counts.${subTab}`)}
+            {t(`instance_dashboard.listings.tab.${subTab}`)}
           </button>
         ))}
       </div>
@@ -44,6 +45,7 @@ export const ListingsPanel = () => {
       {tab === "workspaces" && <WorkspacesTable />}
       {tab === "projects" && <ProjectsTable />}
       {tab === "users" && <UsersTable />}
+      {tab === "invites" && <InvitesTable />}
     </div>
   );
 };

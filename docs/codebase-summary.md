@@ -137,8 +137,8 @@ component wrapped in observer()
 ```
 
 Read-only pages may skip the store and use SWR directly against a service —
-the instance dashboard does, so each panel gets its own loading and error
-state. Anything reading a store still needs `observer()` from `mobx-react`.
+the [instance dashboard](./instance-dashboard.md) does, so each panel gets its
+own loading and error state. Anything reading a store still needs `observer()` from `mobx-react`.
 
 ### Conventions that bite
 

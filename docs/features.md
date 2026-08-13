@@ -14,6 +14,8 @@ web frontend under `apps/web/` (`core/` upstream, `ce/` fork), god-mode under
 
 ### Instance dashboard
 
+> Full documentation: **[Instance Dashboard](./instance-dashboard.md)**
+
 `/dashboard` — an instance-admin-only operational view: service health
 (Postgres, Redis/Valkey, RabbitMQ, object storage, Celery workers and beat),
 storage usage, instance-wide entity counts, and paginated inventories of every
@@ -48,6 +50,11 @@ plus `measured_coverage`, and calls the gap "unreconciled" rather than
 
 Bucket scans are manual, bounded to 20s / 500k objects, cached 6h, and
 lock-guarded so two admins cannot double-scan.
+
+It also carries **user management**: rename an account's display name (email
+and username untouched), deactivate and reactivate accounts, and create named
+invite links that carry the invitee's name and need no SMTP. There is no
+delete — see the doc for why.
 
 ### Global Projects
 

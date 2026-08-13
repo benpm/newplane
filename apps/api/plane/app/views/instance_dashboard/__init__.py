@@ -3,6 +3,10 @@
 # See the LICENSE file for details.
 
 from .health import InstanceHealthEndpoint
+from .invites import (
+    InstanceDashboardInviteDetailEndpoint,
+    InstanceDashboardInviteEndpoint,
+)
 from .jobs import InstanceDashboardScheduledJobsEndpoint
 from .listings import (
     InstanceDashboardProjectListEndpoint,
@@ -11,11 +15,15 @@ from .listings import (
 )
 from .overview import InstanceOverviewEndpoint
 from .storage import InstanceBucketScanEndpoint, InstanceStorageEndpoint
+from .users import InstanceDashboardUserDetailEndpoint
 
 __all__ = [
     "InstanceBucketScanEndpoint",
+    "InstanceDashboardInviteDetailEndpoint",
+    "InstanceDashboardInviteEndpoint",
     "InstanceDashboardProjectListEndpoint",
     "InstanceDashboardScheduledJobsEndpoint",
+    "InstanceDashboardUserDetailEndpoint",
     "InstanceDashboardUserListEndpoint",
     "InstanceDashboardWorkspaceListEndpoint",
     "InstanceHealthEndpoint",

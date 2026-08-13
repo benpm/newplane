@@ -240,6 +240,10 @@ class WorkspaceMemberInvite(BaseModel):
     message = models.TextField(null=True)
     responded_at = models.DateTimeField(null=True)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=5)
+    # Optional name for the invitee. Without it a new account is labelled from
+    # the local part of the email address, so naming the person up front saves
+    # a rename later. Blank for invites made through the stock workspace UI.
+    display_name = models.CharField(max_length=255, blank=True, default="")
 
     class Meta:
         unique_together = ["email", "workspace", "deleted_at"]

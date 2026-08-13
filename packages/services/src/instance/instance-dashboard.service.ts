@@ -7,6 +7,8 @@
 import { API_BASE_URL } from "@plane/constants";
 import type {
   TBucketScan,
+  TDashboardInvite,
+  TDashboardInvitePayload,
   TDashboardPaginated,
   TDashboardProject,
   TDashboardUser,
@@ -90,6 +92,42 @@ export class InstanceDashboardService extends APIService {
 
   async fetchProjects(params?: Record<string, string>): Promise<TDashboardPaginated<TDashboardProject>> {
     return this.get("/api/instance-dashboard/projects/", { params })
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  /** Rename an account, or deactivate/reactivate it. Never touches email or username. */
+  async updateUser(
+    userId: string,
+    payload: { display_name?: string; is_active?: boolean }
+  ): Promise<Pick<TDashboardUser, "id" | "email" | "display_name" | "is_active">> {
+    return this.patch(`/api/instance-dashboard/users/${userId}/`, payload)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async fetchInvites(params?: Record<string, string>): Promise<{ results: TDashboardInvite[] }> {
+    return this.get("/api/instance-dashboard/invites/", { params })
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async createInvite(payload: TDashboardInvitePayload): Promise<TDashboardInvite> {
+    return this.post("/api/instance-dashboard/invites/", payload)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async revokeInvite(inviteId: string): Promise<void> {
+    return this.delete(`/api/instance-dashboard/invites/${inviteId}/`)
       .then((response) => response?.data)
       .catch((error) => {
         throw error?.response?.data;

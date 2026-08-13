@@ -223,6 +223,31 @@ export type TDashboardProject = {
   created_at: string;
 };
 
+export type TDashboardInvite = {
+  id: string;
+  email: string;
+  /** Name to apply to the account on acceptance; blank for stock invites. */
+  display_name: string;
+  role: number;
+  workspace_id: string;
+  workspace_slug: string;
+  workspace_name: string;
+  accepted: boolean;
+  responded_at: string | null;
+  created_at: string;
+  /** The URL to hand to the invitee — same shape the email flow sends. */
+  link: string;
+  /** True when an outstanding invite was updated instead of a new one made. */
+  reused?: boolean;
+};
+
+export type TDashboardInvitePayload = {
+  email: string;
+  display_name?: string;
+  workspace_id: string;
+  role: number;
+};
+
 /** Cursor-paginated envelope returned by `BasePaginator.paginate`. */
 export type TDashboardPaginated<T> = {
   results: T[];

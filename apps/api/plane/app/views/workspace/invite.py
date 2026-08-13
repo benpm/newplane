@@ -43,6 +43,26 @@ from plane.utils.analytics_events import USER_JOINED_WORKSPACE, USER_INVITED_TO_
 from .. import BaseViewSet
 
 
+def _apply_invited_display_name(user, workspace_invite):
+    """Adopt the name the inviter supplied, if the account never chose one.
+
+    A new account's display name is derived from the local part of its email
+    address, so an invite created with a real name can label it properly on
+    arrival. Only ever overwrites that derived default — a name the person set
+    for themselves is theirs, and a second invite must not rewrite it.
+    """
+    invited_name = (getattr(workspace_invite, "display_name", "") or "").strip()
+    if not invited_name or invited_name == user.display_name:
+        return
+
+    derived_default = User.get_display_name(user.email)
+    if user.display_name and user.display_name != derived_default:
+        return
+
+    user.display_name = invited_name
+    user.save(update_fields=["display_name"])
+
+
 def _add_admin_to_all_projects(workspace, member_id, created_by):
     """Bulk-add a workspace Admin to every project in the workspace (active + archived).
 
@@ -315,6 +335,7 @@ class WorkspaceJoinEndpoint(BaseAPIView):
 
                 # If the user is present then create the workspace member
                 if user is not None:
+                    _apply_invited_display_name(user, workspace_invite)
                     # Check if the user was already a member of workspace then activate the user
                     workspace_member = WorkspaceMember.objects.filter(
                         workspace=workspace_invite.workspace, member=user

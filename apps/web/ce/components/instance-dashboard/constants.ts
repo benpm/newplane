@@ -15,7 +15,15 @@ export const SWR_KEY = {
   WORKSPACES: "INSTANCE_DASHBOARD_WORKSPACES",
   USERS: "INSTANCE_DASHBOARD_USERS",
   PROJECTS: "INSTANCE_DASHBOARD_PROJECTS",
+  INVITES: "INSTANCE_DASHBOARD_INVITES",
 } as const;
+
+/** Mirrors ROLE_CHOICES on the membership models. */
+export const INVITE_ROLES = [
+  { value: 20, labelKey: "instance_dashboard.invites.role_admin" },
+  { value: 15, labelKey: "instance_dashboard.invites.role_member" },
+  { value: 5, labelKey: "instance_dashboard.invites.role_guest" },
+] as const;
 
 export const SWR_KEY_PREFIX = "INSTANCE_DASHBOARD_";
 

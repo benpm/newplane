@@ -41,7 +41,7 @@ export const useListing = <T>(
     setCursor(undefined);
   };
 
-  const { data, isLoading, error } = useSWR([key, debouncedSearch, cursor], () => {
+  const { data, isLoading, error, mutate } = useSWR([key, debouncedSearch, cursor], () => {
     const params: Record<string, string> = {};
     if (debouncedSearch) params.search = debouncedSearch;
     if (cursor) params.cursor = cursor;
@@ -59,5 +59,7 @@ export const useListing = <T>(
     hasPrev: Boolean(data?.prev_page_results),
     goNext: () => setCursor(data?.next_cursor),
     goPrev: () => setCursor(data?.prev_cursor),
+    /** Re-fetch the current page after a mutation. */
+    refresh: () => void mutate(),
   };
 };

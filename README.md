@@ -19,6 +19,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notab
   - [Design Guidelines](./docs/design-guidelines.md)
   - [Deployment Guide](./docs/deployment-guide.md)
   - [Feature Reference](./docs/features.md) — every feature and the code behind it
+  - [Instance Dashboard](./docs/instance-dashboard.md) — health, storage and user management at `/dashboard`
   - [GitNexus Setup Guide](./docs/gitnexus-guide.md) — code intelligence for Claude Code
 - **Repository:** https://github.com/benpm/newplane
 - **Upstream:** [`makeplane/plane`](https://github.com/makeplane/plane)
@@ -216,22 +217,23 @@ plane/
 
 ## Documentation Map
 
-| Document                          | Purpose                                        | Audience             |
-| --------------------------------- | ---------------------------------------------- | -------------------- |
-| **project-overview-pdr.md**       | Project goals, requirements, constraints       | PMs, Team Leads      |
-| **codebase-summary.md**           | File structure, key modules, concepts          | All Developers       |
-| **code-standards.md**             | Naming, patterns, testing, review criteria     | Developers           |
-| **system-architecture.md**        | System design, data flow, scaling              | Architects, DevOps   |
-| **design-guidelines.md**          | UI/UX, components, Tailwind tokens             | Frontend Developers  |
-| **deployment-guide.md**           | Local setup, Docker, production deploy         | DevOps, Backend      |
-| **features.md**                   | Every feature, with backend and frontend paths | All Developers       |
-| **git-workflow-guide.md**         | Branching, commits, PRs, release               | All Developers       |
-| **deployment/**                   | CI/CD, runners, environment, rollback          | DevOps               |
-| **swing-sso-integration-spec.md** | Swing SSO auth contract                        | Backend, Integrators |
-| **hr-system-integration-spec.md** | HR → Plane staff sync contract                 | Backend, Integrators |
-| **gitnexus-guide.md**             | Code-intelligence MCP setup                    | All Developers       |
-| **eslint.md**                     | Lint configuration and editor integration      | Frontend Developers  |
-| **journals/**                     | Historical build records — not current docs    | Reference            |
+| Document                          | Purpose                                         | Audience             |
+| --------------------------------- | ----------------------------------------------- | -------------------- |
+| **project-overview-pdr.md**       | Project goals, requirements, constraints        | PMs, Team Leads      |
+| **codebase-summary.md**           | File structure, key modules, concepts           | All Developers       |
+| **code-standards.md**             | Naming, patterns, testing, review criteria      | Developers           |
+| **system-architecture.md**        | System design, data flow, scaling               | Architects, DevOps   |
+| **design-guidelines.md**          | UI/UX, components, Tailwind tokens              | Frontend Developers  |
+| **deployment-guide.md**           | Local setup, Docker, production deploy          | DevOps, Backend      |
+| **features.md**                   | Every feature, with backend and frontend paths  | All Developers       |
+| **instance-dashboard.md**         | The /dashboard operations view, user management | Admins, DevOps       |
+| **git-workflow-guide.md**         | Branching, commits, PRs, release                | All Developers       |
+| **deployment/**                   | CI/CD, runners, environment, rollback           | DevOps               |
+| **swing-sso-integration-spec.md** | Swing SSO auth contract                         | Backend, Integrators |
+| **hr-system-integration-spec.md** | HR → Plane staff sync contract                  | Backend, Integrators |
+| **gitnexus-guide.md**             | Code-intelligence MCP setup                     | All Developers       |
+| **eslint.md**                     | Lint configuration and editor integration       | Frontend Developers  |
+| **journals/**                     | Historical build records — not current docs     | Reference            |
 
 ## Key Architectural Decisions
 

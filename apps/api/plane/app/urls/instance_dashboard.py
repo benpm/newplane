@@ -17,8 +17,11 @@ from django.urls import path
 
 from plane.app.views.instance_dashboard import (
     InstanceBucketScanEndpoint,
+    InstanceDashboardInviteDetailEndpoint,
+    InstanceDashboardInviteEndpoint,
     InstanceDashboardProjectListEndpoint,
     InstanceDashboardScheduledJobsEndpoint,
+    InstanceDashboardUserDetailEndpoint,
     InstanceDashboardUserListEndpoint,
     InstanceDashboardWorkspaceListEndpoint,
     InstanceHealthEndpoint,
@@ -66,5 +69,20 @@ urlpatterns = [
         "instance-dashboard/scheduled-jobs/",
         InstanceDashboardScheduledJobsEndpoint.as_view(),
         name="instance-dashboard-scheduled-jobs",
+    ),
+    path(
+        "instance-dashboard/users/<uuid:pk>/",
+        InstanceDashboardUserDetailEndpoint.as_view(),
+        name="instance-dashboard-user-detail",
+    ),
+    path(
+        "instance-dashboard/invites/",
+        InstanceDashboardInviteEndpoint.as_view(),
+        name="instance-dashboard-invites",
+    ),
+    path(
+        "instance-dashboard/invites/<uuid:pk>/",
+        InstanceDashboardInviteDetailEndpoint.as_view(),
+        name="instance-dashboard-invite-detail",
     ),
 ]

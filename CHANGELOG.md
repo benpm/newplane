@@ -1,5 +1,48 @@
 # Changelog
 
+## 8/14/2026 — user management on the dashboard
+
+### Added
+
+- **Rename accounts.** Changes `display_name` only — email and username are
+  untouched, since they are the login key and identity and sessions and audit
+  trails are keyed on them.
+- **Deactivate and reactivate accounts.** Suspends sign-in and workspace
+  membership together; everything the person authored stays put, and both
+  restore on reactivation.
+
+  **There is no delete, on purpose.** `User` is not soft-deletable and Django
+  cascades in Python across the ~300 relations pointing at it. Simulated
+  against a real account here, a delete would have removed **173 rows across 15
+  models** — 31 work items, 16 states, 10 pages, 2 projects, 81 activity
+  records — unrecoverable without a restore. Two guards refuse outright:
+  deactivating yourself, and deactivating the last super admin who can sign in.
+  Recovering from either needs shell access.
+
+- **Named invite links.** Creates the invite and hands back the link rather
+  than emailing it, which matters because this instance has no SMTP configured
+  and emailed invites go nowhere. An invite carries an optional name, applied
+  on acceptance — but only when the account never chose one for itself, so a
+  second invite can't rewrite a name someone picked. Migration `0187` adds
+  `display_name` to `WorkspaceMemberInvite`. Re-inviting the same address
+  updates the outstanding invite instead of colliding with the
+  `(email, workspace)` constraint.
+
+- **`docs/instance-dashboard.md`** — full documentation for the feature:
+  every tab, the probe model, why storage reports three separate figures, user
+  management, the API table, and why the namespace cannot contain the substring
+  `instances`. Linked from the README, `features.md`, `system-architecture.md`,
+  `codebase-summary.md` and `deployment/health-monitoring.md`.
+
+### Fixed
+
+- **`docs/deployment/health-monitoring.md` documented five endpoints that do
+  not exist.** It described `/health` returning per-dependency status plus
+  `/health/db`, `/health/cache`, `/health/celery` and `/health/storage`. The
+  only real route is `""` returning a static `{"status": "OK"}` that touches no
+  dependency at all. Corrected, with a pointer to the dashboard, which actually
+  does what that section claimed.
+
 ## 8/13/2026 — instance dashboard, and docs that match the repo
 
 ### Added

@@ -770,6 +770,7 @@ The timezone comes from `BUSINESS_CALENDAR_TIMEZONE` (`CALENDAR_TZ`, default `UT
 ## Instance Dashboard Subsystem
 
 An instance-admin-only operational view at `/dashboard`, served by `apps/web`.
+Full documentation: [Instance Dashboard](./instance-dashboard.md).
 
 ### Why it is not under `/api/instances/`
 

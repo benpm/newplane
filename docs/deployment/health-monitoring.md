@@ -1,53 +1,37 @@
 # Health Checks & Monitoring
 
-## Health Endpoint (Backend)
+> **Dependency health lives in the instance dashboard.**
+> [`/dashboard`](../instance-dashboard.md) probes Postgres, Redis/Valkey,
+> RabbitMQ, object storage, Celery workers and beat, and reports each with a
+> status and latency. That is the surface to use for "is this instance
+> healthy" — the endpoint below only proves the API process is accepting
+> requests.
 
-The backend API provides a health check endpoint:
+## Liveness Endpoint (Backend)
+
+The API answers a bare liveness check at the **root path**:
 
 ```bash
-# Check service health
-curl http://localhost:8000/health
+curl http://localhost:8000/
 
 # Response (200 OK)
-{
-  "database": "ok",
-  "redis": "ok",
-  "rabbitmq": "ok",
-  "s3": "ok"
-}
+{ "status": "OK" }
 ```
 
-All dependencies must return `"ok"` for the service to be considered healthy.
-
-### Individual Service Checks
-
-**Database:**
+It is a static response (`plane/web/views.py`). It touches no database, cache,
+broker or object store — a 200 here means gunicorn is up and routing, nothing
+more. There are no `/health/db`, `/health/cache`, `/health/celery` or
+`/health/storage` sub-endpoints; for those checks use the dashboard, or query
+its API directly:
 
 ```bash
-curl http://localhost:8000/health/db
-# Returns: {"status": "connected", "latency_ms": 5}
+curl -b "session-id=<admin session>" \
+  http://localhost:8090/api/instance-dashboard/health/
 ```
 
-**Redis:**
-
-```bash
-curl http://localhost:8000/health/cache
-# Returns: {"status": "connected", "latency_ms": 2}
-```
-
-**RabbitMQ (Celery):**
-
-```bash
-curl http://localhost:8000/health/celery
-# Returns: {"status": "connected", "queue_depth": 0}
-```
-
-**S3:**
-
-```bash
-curl http://localhost:8000/health/storage
-# Returns: {"status": "connected", "bucket": "plane-uploads"}
-```
+Note also that docker-compose declares **no healthchecks** for the API,
+worker or beat services, so `docker compose ps` reports them as `running`
+rather than `healthy`. Only `web`, `admin` and `space` carry one.
 
 ## Container Health Checks
 
@@ -246,8 +230,8 @@ LIMIT 10;
 ### API Response Times
 
 ```bash
-# Check response time to health endpoint
-time curl http://localhost:8000/health
+# Check response time to the liveness endpoint
+time curl http://localhost:8000/
 
 # Check response time to public endpoints
 ab -n 100 -c 10 http://localhost/
@@ -258,7 +242,7 @@ curl -w "
   Connect: %{time_connect}
   DNS: %{time_namelookup}
   Redirect: %{time_redirect}
-\n" -o /dev/null -s http://localhost:8000/health
+\n" -o /dev/null -s http://localhost:8000/
 ```
 
 ## Celery Background Jobs
@@ -413,7 +397,7 @@ echo
 
 # 1. API endpoint
 echo -n "API health: "
-curl -sf http://localhost:8000/health > /dev/null && echo "✓ OK" || echo "✗ FAILED"
+curl -sf http://localhost:8000/ > /dev/null && echo "✓ OK" || echo "✗ FAILED"
 
 # 2. Frontend
 echo -n "Frontend: "
