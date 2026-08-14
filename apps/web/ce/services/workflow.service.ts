@@ -129,5 +129,3 @@ export class WorkflowService extends APIService {
       });
   }
 }
-
-export const workflowService = new WorkflowService();

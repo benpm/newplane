@@ -80,15 +80,3 @@ class HoIssueSerializer(serializers.Serializer):
 
     def get_module_names(self, obj):
         return [im.module.name for im in obj.issue_module.all() if im.module_id]
-
-
-class HoCategorySummarySerializer(serializers.Serializer):
-    """Read-only serializer for cross-workspace category summary."""
-
-    department_name = serializers.CharField(source="project__workspace__name", allow_null=True)
-    workspace_slug = serializers.CharField(source="project__workspace__slug", allow_null=True)
-    project_id = serializers.UUIDField()
-    project_name = serializers.CharField(source="project__name", allow_null=True)
-    main_task_category_name = serializers.CharField(source="main_task_category__name", allow_null=True)
-    sub_task_category_name = serializers.CharField(source="sub_task_category__name", allow_null=True)
-    work_item_count = serializers.IntegerField()

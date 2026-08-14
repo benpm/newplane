@@ -38,6 +38,3 @@ def set_year_data(schedule_id: UUID, year: int, data: dict[str, Any]) -> None:
     cache.set(_cache_key(schedule_id, year), data, _CACHE_TTL_SECONDS)
 
 
-def delete_year_data(schedule_id: UUID, year: int) -> None:
-    """Remove a single year entry (called by signal handlers)."""
-    cache.delete(_cache_key(schedule_id, year))
