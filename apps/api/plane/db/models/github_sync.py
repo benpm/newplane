@@ -59,7 +59,10 @@ class GithubIssueLink(ProjectBaseModel):
     """
 
     github_sync = models.ForeignKey("db.ProjectGithubSync", on_delete=models.CASCADE, related_name="issue_links")
-    issue = models.OneToOneField("db.Issue", on_delete=models.CASCADE, related_name="github_link")
+    # ForeignKey rather than OneToOneField, for the same reason as the wiki
+    # link above: a plain UNIQUE(issue_id) is still occupied by soft-deleted
+    # rows, so unlinking an issue would block ever re-linking it.
+    issue = models.ForeignKey("db.Issue", on_delete=models.CASCADE, related_name="github_link")
     github_issue_number = models.IntegerField()
     github_state = models.CharField(max_length=30, choices=GITHUB_ISSUE_STATE_CHOICES, default="open")
     github_updated_at = models.DateTimeField(null=True, blank=True)
@@ -74,7 +77,12 @@ class GithubIssueLink(ProjectBaseModel):
                 fields=["github_sync", "github_issue_number"],
                 condition=models.Q(deleted_at__isnull=True),
                 name="github_issue_link_unique_sync_number_when_deleted_at_null",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["issue"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="github_issue_link_unique_issue_when_deleted_at_null",
+            ),
         ]
 
     def __str__(self):
@@ -91,7 +99,11 @@ class GithubWikiPageLink(ProjectBaseModel):
     """
 
     github_sync = models.ForeignKey("db.ProjectGithubSync", on_delete=models.CASCADE, related_name="wiki_page_links")
-    page = models.OneToOneField("db.Page", on_delete=models.CASCADE, related_name="github_wiki_link")
+    # ForeignKey, not OneToOneField: a one-to-one emits a plain UNIQUE(page_id)
+    # that soft-deleted rows still occupy, so removing a link would permanently
+    # block ever re-linking that page. Uniqueness is enforced below instead,
+    # scoped to live rows.
+    page = models.ForeignKey("db.Page", on_delete=models.CASCADE, related_name="github_wiki_link")
     wiki_slug = models.CharField(max_length=255)
     wiki_content_hash = models.CharField(max_length=64, null=True, blank=True)
     last_synced_at = models.DateTimeField(null=True, blank=True)
@@ -106,7 +118,12 @@ class GithubWikiPageLink(ProjectBaseModel):
                 fields=["github_sync", "wiki_slug"],
                 condition=models.Q(deleted_at__isnull=True),
                 name="github_wiki_page_link_unique_sync_slug_when_deleted_at_null",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["page"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="github_wiki_page_link_unique_page_when_deleted_at_null",
+            ),
         ]
 
     def __str__(self):

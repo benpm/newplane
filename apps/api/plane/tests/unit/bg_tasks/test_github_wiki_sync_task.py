@@ -233,6 +233,46 @@ class TestGithubWikiSync:
         link.refresh_from_db()
         assert link.wiki_content_hash is not None
 
+    def test_a_soft_deleted_link_does_not_block_relinking(self, env):
+        """Uniqueness must be scoped to live rows.
+
+        These links used a OneToOneField, whose unconditional UNIQUE(page_id)
+        stayed occupied by soft-deleted rows — so unlinking a page made it
+        impossible to ever link again, and clearing one needed a hard DELETE
+        against the table.
+        """
+        page = env["make_page"]("Relinkable")
+        run_sync(env)
+        link = GithubWikiPageLink.objects.get(wiki_slug="Relinkable")
+
+        link.delete()  # soft delete: the row survives with deleted_at set
+        assert not GithubWikiPageLink.objects.filter(page=page).exists()
+
+        # Re-linking the same page must succeed rather than raise IntegrityError.
+        recreated = GithubWikiPageLink.objects.create(
+            github_sync=env["github_sync"],
+            project=env["project"],
+            page=page,
+            wiki_slug="Relinkable-again",
+        )
+        assert recreated.pk is not None
+        assert GithubWikiPageLink.objects.filter(page=page).count() == 1
+
+    def test_two_live_links_to_one_page_are_still_rejected(self, env):
+        """The partial constraint must still enforce one live link per page."""
+        from django.db import IntegrityError, transaction
+
+        page = env["make_page"]("Only Once")
+        run_sync(env)
+
+        with pytest.raises(IntegrityError), transaction.atomic():
+            GithubWikiPageLink.objects.create(
+                github_sync=env["github_sync"],
+                project=env["project"],
+                page=page,
+                wiki_slug="Only-Once-duplicate",
+            )
+
     def test_wiki_side_deletion_is_still_not_propagated(self, env):
         """The recovery path must not resurrect a genuinely deleted wiki file.
 

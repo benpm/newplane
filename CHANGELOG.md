@@ -27,12 +27,23 @@ other.
 
   Both paths are covered by tests; the recovery test fails without the fix.
 
-### Known issue
+### Also fixed
 
-`github_wiki_page_links` has `UNIQUE (page_id)` with no exclusion for
-soft-deleted rows, so a soft-deleted link permanently blocks re-linking that
-page. Clearing wedged links needs a hard delete. A partial unique index on
-`deleted_at IS NULL` would fix it properly.
+- **Link uniqueness is now soft-delete aware** (migration `0188`). Both link
+  models used a `OneToOneField`, which emits an unconditional
+  `UNIQUE (page_id)` / `UNIQUE (issue_id)`. Plane soft-deletes, so a removed
+  link kept its row and kept occupying that constraint — a page or issue could
+  never be re-linked once unlinked, and clearing a broken link meant a hard
+  `DELETE` straight against the table. They are `ForeignKey`s now, with partial
+  unique constraints scoped to `deleted_at IS NULL`, matching the pattern
+  already used on the same models for `(github_sync, wiki_slug)` and
+  `(github_sync, github_issue_number)`.
+
+  The issue-link side had the identical bug and is fixed with it.
+
+  The migration was hand-written: `makemigrations` also wanted to sweep in a
+  large amount of unrelated pre-existing model drift, which does not belong in
+  a targeted fix. That drift is untouched and still outstanding.
 
 ## 8/14/2026 — one CLI instead of eighteen scripts
 
