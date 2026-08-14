@@ -15,7 +15,10 @@ class Department(BaseModel):
 
     # Basic info
     name = models.CharField(max_length=255)
-    code = models.CharField(max_length=20, blank=True, null=True, default=None)
+    # Non-null with an empty-string default, not nullable: "" is how a department
+    # says it has no code, and the unique constraint below excludes it explicitly
+    # so that any number of code-less departments can coexist. See migration 0139.
+    code = models.CharField(max_length=20, blank=True, default="")
     short_name = models.CharField(max_length=10, blank=True, null=True)
     dept_code = models.CharField(max_length=4, blank=True, null=True)
     description = models.TextField(blank=True, default="")
@@ -63,10 +66,23 @@ class Department(BaseModel):
         verbose_name_plural = "Departments"
         ordering = ["sort_order", "name"]
         constraints = [
+            # `code__gt=""` keeps code-less departments out of the constraint;
+            # short_name and dept_code are nullable instead and rely on SQL's
+            # NULL != NULL for the same effect.
+            models.UniqueConstraint(
+                fields=["code"],
+                condition=models.Q(deleted_at__isnull=True, code__gt=""),
+                name="department_unique_code",
+            ),
             models.UniqueConstraint(
                 fields=["short_name"],
                 condition=models.Q(deleted_at__isnull=True),
                 name="department_unique_short_name",
+            ),
+            models.UniqueConstraint(
+                fields=["dept_code"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="department_unique_dept_code",
             ),
         ]
 
@@ -88,4 +104,4 @@ class Department(BaseModel):
                 current = current.parent
 
     def __str__(self):
-        return f"{self.code} - {self.name}"
+        return f"{self.code} - {self.name}" if self.code else self.name

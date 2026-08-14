@@ -214,6 +214,55 @@ EOF
 
 readonly TEST_IMAGE="plane-api-test:latest"
 
+# Builds API_CONTAINER_ARGV to run a command against the working tree. The api
+# containers bake their code in rather than mounting it, so anything that must
+# see uncommitted edits has to go through a fresh container with a bind mount.
+# Returns the argv rather than running it so callers can choose exec or not.
+api_container_argv() {
+  local image="$1"; shift
+  local net=()
+  # Without the dev-site network there are no datastores to reach; commands that
+  # need none (drift) still work, so this is a filter rather than a requirement.
+  docker network inspect planedev_default >/dev/null 2>&1 && net=(--network planedev_default)
+
+  # The repo mounts at /repo rather than /code: some tests locate the repo root
+  # by parent depth from apps/api, so the real layout has to be preserved.
+  API_CONTAINER_ARGV=(
+    docker run --rm "${net[@]}" -w /repo/apps/api
+    -e DJANGO_SETTINGS_MODULE=plane.settings.test
+    -e DATABASE_URL=postgresql://plane:plane@plane-db:5432/plane
+    -e REDIS_URL=redis://plane-redis:6379/
+    -e SECRET_KEY=test-secret-key-for-pytest
+    -e AWS_ACCESS_KEY_ID=access-key -e AWS_SECRET_ACCESS_KEY=secret-key
+    -e AWS_S3_ENDPOINT_URL=http://plane-minio:9000 -e AWS_S3_BUCKET_NAME=uploads -e USE_MINIO=1
+    -v "$ROOT_DIR":/repo:rw
+    "$image" "$@"
+  )
+}
+
+# Fails when a model has been edited without a matching migration. Kept separate
+# from the suite so the pre-push hook can run it without the test image: this
+# needs Django and nothing else, not even a database.
+test_drift() {
+  require_docker
+  cd "$ROOT_DIR"
+  docker image inspect planedev-api:latest >/dev/null 2>&1 \
+    || die "planedev-api:latest not found — run 'plane devsite build api' first."
+
+  log_info "Checking models against migrations…"
+  # --check already implies --dry-run on Django 4.2; passed anyway so that a
+  # version bump can never turn this into a command that writes a file.
+  api_container_argv planedev-api:latest python manage.py makemigrations --check --dry-run
+  if "${API_CONTAINER_ARGV[@]}"; then
+    log_ok "Models and migrations agree."
+  else
+    log_error "Models have drifted from migrations (listed above)."
+    log_error "Run 'python manage.py makemigrations' and commit the result, or"
+    log_error "fix the model if the database is the authoritative side."
+    return 1
+  fi
+}
+
 cmd_test() {
   if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     cat <<'EOF'
@@ -224,12 +273,21 @@ plane test [pytest args...]      run the backend suite against dev-site datastor
   plane test plane/tests/unit/views   a subset
   plane test --create-db              rebuild the test database (needed after
                                       a schema change; pytest reuses it by default)
+  plane test drift                    check models against migrations, nothing else
 
 The runtime api image ships no test dependencies and this host has no outbound
 container network, so a test image is built once with --network host from
 requirements/test.txt layered on planedev-api.
 EOF
     return 0
+  fi
+
+  # Checked before the pytest passthrough; every other argument goes to pytest.
+  if [[ "${1:-}" == "drift" ]]; then
+    shift
+    [[ $# -eq 0 ]] || die "'plane test drift' takes no arguments (got: $*)"
+    test_drift
+    return $?
   fi
 
   require_docker
@@ -252,18 +310,9 @@ EOF
     log_ok "Test image built."
   fi
 
-  # The repo mounts at /repo rather than /code: some tests locate the repo root
-  # by parent depth from apps/api, so the real layout has to be preserved.
-  exec docker run --rm --network planedev_default -w /repo/apps/api \
-    -e DJANGO_SETTINGS_MODULE=plane.settings.test \
-    -e DATABASE_URL=postgresql://plane:plane@plane-db:5432/plane \
-    -e REDIS_URL=redis://plane-redis:6379/ \
-    -e SECRET_KEY=test-secret-key-for-pytest \
-    -e AWS_ACCESS_KEY_ID=access-key -e AWS_SECRET_ACCESS_KEY=secret-key \
-    -e AWS_S3_ENDPOINT_URL=http://plane-minio:9000 -e AWS_S3_BUCKET_NAME=uploads -e USE_MINIO=1 \
-    -v "$ROOT_DIR":/repo:rw \
-    "$TEST_IMAGE" \
+  api_container_argv "$TEST_IMAGE" \
     python -m pytest --no-header --nomigrations -p no:cacheprovider "$@"
+  exec "${API_CONTAINER_ARGV[@]}"
 }
 
 # ═══════════════════════════════════════════════════════════ devsite ═════════
@@ -1395,6 +1444,7 @@ ${C_BOLD}DEVELOPMENT${C_RESET}
   ${C_CYAN}dev${C_RESET} [--clean]            start the local stack (one origin: http://localhost)
   ${C_CYAN}dev${C_RESET} stop                 stop the local backend containers
   ${C_CYAN}test${C_RESET} [pytest args]       backend suite against the dev-site datastores
+  ${C_CYAN}test drift${C_RESET}                check models against migrations
   ${C_CYAN}gitnexus${C_RESET} <cmd>           code-intelligence index (analyze, mcp, status, …)
 
 ${C_BOLD}DEV SITE${C_RESET}  ${C_DIM}(second full deployment — dev.mousetrip.online)${C_RESET}

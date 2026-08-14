@@ -5,24 +5,36 @@
 echo "Running pre-push checks..."
 
 # 1. Frontend format check
-echo "\n[1/4] Checking frontend format..."
+echo "\n[1/5] Checking frontend format..."
 pnpm turbo run check:format --affected || { echo "ERROR: Format check failed. Run 'pnpm fix:format' to fix."; exit 1; }
 
 # 2. Frontend lint check
-echo "\n[2/4] Checking frontend lint..."
+echo "\n[2/5] Checking frontend lint..."
 pnpm turbo run check:lint --filter="web" --filter="admin" || { echo "ERROR: Lint check failed. Run 'pnpm fix:lint' to fix."; exit 1; }
 
 # 3. Frontend type check
-echo "\n[3/4] Checking frontend types..."
+echo "\n[3/5] Checking frontend types..."
 pnpm turbo run check:types --filter="web" --filter="admin" || { echo "ERROR: Type check failed."; exit 1; }
 
 # 4. Backend lint (ruff)
-echo "\n[4/4] Checking backend lint..."
+echo "\n[4/5] Checking backend lint..."
 if command -v ruff >/dev/null 2>&1; then
   ruff check apps/api || { echo "ERROR: Backend lint failed. Run 'ruff check --fix apps/api' to fix."; exit 1; }
 else
   pip3 install ruff -q
   python3 -m ruff check apps/api || { echo "ERROR: Backend lint failed. Run 'ruff check --fix apps/api' to fix."; exit 1; }
+fi
+
+# 5. Backend model drift (models vs migrations)
+# The test suite runs with --nomigrations, so it builds its schema from the
+# models and can never notice a model that has no migration behind it.
+echo "\n[5/5] Checking for model drift..."
+if docker image inspect planedev-api:latest >/dev/null 2>&1; then
+  ./scripts/plane test drift || { echo "ERROR: Model drift detected. See above."; exit 1; }
+else
+  # Skipped rather than fatal: this needs the dev-site image, and not every
+  # checkout has one. The pytest guard in plane/tests/unit/db/ still covers it.
+  echo "WARNING: skipped — planedev-api:latest not found. Run 'scripts/plane devsite build api' to enable this check."
 fi
 
 echo "\nAll pre-push checks passed!"

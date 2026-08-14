@@ -80,6 +80,27 @@ from `requirements/test.txt` layered on `planedev-api`. The repo mounts at
 `/repo` rather than `/code` because some tests locate the repo root by parent
 depth from `apps/api`.
 
+### `plane test drift`
+
+Fails if a model has been edited without a matching migration.
+
+```bash
+plane test drift
+```
+
+Worth having as its own command because the suite structurally cannot catch
+this: pytest runs with `--nomigrations`, so it builds its schema from the
+models and never executes a migration file. Models and migrations can diverge
+indefinitely with every test still passing — and the test database then stops
+matching production, so a test can pass here and the same code fail there.
+
+Needs Django and nothing else, not even a database, so it runs against
+`planedev-api` rather than the test image and takes a couple of seconds.
+`.husky/pre-push` runs it as step 5, skipping with a warning if the
+`planedev-api` image has not been built. The same check also runs inside the
+suite as `plane/tests/unit/db/test_migrations_in_sync.py`, which prints every
+pending operation on failure.
+
 ### `plane gitnexus <command>`
 
 Code-intelligence index, run through Docker so the version is pinned across
