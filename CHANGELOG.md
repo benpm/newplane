@@ -1,5 +1,52 @@
 # Changelog
 
+## 8/14/2026 — models and migrations agree again, and stay that way
+
+`makemigrations` had been reporting 35 pending operations for months. It was
+invisible: `pytest.ini` passes `--nomigrations`, so the suite builds its schema
+from the **models** and never executes a migration file, and nothing anywhere
+ran `makemigrations --check`. Models and migrations could diverge freely with
+every test still green.
+
+### Fixed
+
+- **`departments.code` was `NOT NULL` in the database and `null=True` in the
+  model.** The bulk importer normalised a missing code to `None`, so every
+  code-less row violated the constraint, was swallowed by its own per-row
+  savepoint, and came back as a "skipped" entry carrying raw Postgres error
+  text. It now sends `""`, which is what the schema means by "no code".
+
+- **Two unique constraints existed in the database but not on the model** —
+  `department_unique_code` and `department_unique_dept_code`. All three
+  department changes came from a commit about joining admin workspaces to
+  projects, which edited the model as collateral and shipped no migration. The
+  database, migrations `0136`/`0139` and the serializer all agreed with each
+  other, so the model was corrected rather than the database loosened.
+
+  This also stops the test schema lying: it now carries the same `NOT NULL` and
+  the same three partial indexes production has, so a test asserting on them
+  can no longer pass vacuously.
+
+### Added
+
+- **Migration `0189`** catches the state up. 31 of its 32 operations emit no SQL
+  — `related_name`, `verbose_name`, `help_text`, `choices` labels and Meta
+  `ordering` are all in `Field.non_db_attrs`, and the seven `AlterField`s on
+  `id` are inert because a primary key is already unique. `sqlmigrate` labels
+  every one of them `-- (no-op)`. The single real statement renames
+  `issue_workl_workspa_logged_idx`, a name migration `0179` hand-picked that the
+  autodetector would never generate — resolved the same way `0137` already
+  resolved it for the two sibling indexes on that table.
+
+- **A drift guard, in two places.** `plane/tests/unit/db/test_migrations_in_sync.py`
+  drives the migration autodetector directly and fails with every pending
+  operation listed; it needs no database and runs in under half a second.
+  `scripts/plane test drift` does the same check from the command line, and
+  `.husky/pre-push` now runs it as step 5.
+
+  A full schema audit — a database built from migrations alone, diffed against
+  the real one — came back clean apart from that one index name.
+
 ## 8/14/2026 — wiki sync fixed: the markdown service was never wired up
 
 The GitHub wiki sync had never transferred content. Two faults, one behind the
@@ -43,7 +90,7 @@ other.
 
   The migration was hand-written: `makemigrations` also wanted to sweep in a
   large amount of unrelated pre-existing model drift, which does not belong in
-  a targeted fix. That drift is untouched and still outstanding.
+  a targeted fix. (That drift was resolved separately in `0189` — see above.)
 
 ## 8/14/2026 — one CLI instead of eighteen scripts
 

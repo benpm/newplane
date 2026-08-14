@@ -142,7 +142,11 @@ def _resolve_and_create(sorted_rows, skipped_from_sort):
         short_name = str(row.get("short_name", "") or "").strip() or None
         dept_code = str(row.get("dept_code", "") or "").strip() or None
         dept_type = str(row.get("dept_type", "") or "").strip()
-        code = str(row.get("code", "") or "").strip() or None
+        # "" not None: `code` is NOT NULL, and "" is how the schema spells "no
+        # code" — the unique constraint on code excludes empty strings so any
+        # number of code-less departments can coexist. Passing None here made
+        # every code-less row fail its savepoint and be silently skipped.
+        code = str(row.get("code", "") or "").strip()
         parent_code = str(row.get("parent_code", "") or "").strip()
         manager_email = str(row.get("manager_email", "") or "").strip()
 

@@ -29,5 +29,3 @@ export class ProjectFieldPermissionService extends APIService {
       });
   }
 }
-
-export const projectFieldPermissionService = new ProjectFieldPermissionService();
