@@ -170,8 +170,19 @@ def sync_github_wiki(github_sync_id):
         # --- linked pairs: decide direction ---------------------------------------
         for slug, link in links.items():
             page = pages_by_id.get(link.page_id)
-            if page is None or slug not in wiki_files:
-                continue  # deletion on either side: do not propagate
+            if page is None:
+                continue  # page deleted: do not propagate
+            if slug not in wiki_files:
+                # A link with no recorded content hash was never transferred —
+                # the link row is written before the first push, so an outage in
+                # the markdown conversion service leaves the pairing recorded
+                # with no file behind it. Retry the push instead of reading the
+                # missing file as a wiki-side deletion, which would strand the
+                # page permanently: the pairing exists, so the "unlinked pages"
+                # pass below skips it on every subsequent run.
+                if link.wiki_content_hash is None and _apply_push(page, wiki_dir, link):
+                    pushed += 1
+                continue  # genuine wiki-side deletion: do not propagate
             markdown = wiki_files[slug]
             wiki_changed = _hash(markdown) != link.wiki_content_hash
             page_changed = link.last_synced_at is None or page.updated_at > link.last_synced_at

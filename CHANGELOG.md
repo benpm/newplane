@@ -1,5 +1,39 @@
 # Changelog
 
+## 8/14/2026 — wiki sync fixed: the markdown service was never wired up
+
+The GitHub wiki sync had never transferred content. Two faults, one behind the
+other.
+
+### Fixed
+
+- **`LIVE_BASE_URL` was empty in the API environment.** The API converts between
+  HTML and Markdown by calling the live service; with the URL unset, `LIVE_URL`
+  is `None` and both conversion helpers return `None` immediately. Every push
+  and pull then no-ops **while the task still reports success** — the sync logged
+  "wiki success: 0 pulled, 0 pushed" and nothing looked wrong.
+
+  `apps/api/.env.example` shipped `http://localhost:3100`, which is wrong inside
+  Docker and invites exactly this. It now carries the compose value with a
+  comment about the silent-failure mode.
+
+- **A failed transfer wedged the sync permanently.** The link row is written
+  _before_ the first push, so an outage left a pairing with no file behind it.
+  On every later run the linked-pairs loop saw a link whose wiki file was
+  missing and treated it as a wiki-side deletion, while the "unlinked pages"
+  pass skipped the page because a link existed. The page could never reach the
+  wiki again. Links with no recorded content hash are now retried instead —
+  genuine deletions, which do have a hash, are still not propagated.
+
+  Both paths are covered by tests; the recovery test fails without the fix.
+
+### Known issue
+
+`github_wiki_page_links` has `UNIQUE (page_id)` with no exclusion for
+soft-deleted rows, so a soft-deleted link permanently blocks re-linking that
+page. Clearing wedged links needs a hard delete. A partial unique index on
+`deleted_at IS NULL` would fix it properly.
+
 ## 8/14/2026 — one CLI instead of eighteen scripts
 
 ### Changed

@@ -125,3 +125,8 @@ temp/
 upload-release.env
 # Gemini CLI settings (contains user-specific config)
 .gemini/
+
+# Env backups written by `plane token rotate` and manual edits — these are
+# full copies of .env, secrets and all. Never commit them.
+.env.bak-*
+**/.env.bak-*

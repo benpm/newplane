@@ -199,3 +199,58 @@ class TestGithubWikiSync:
         run_sync(env)
 
         assert env["github_sync"].last_sync_status.startswith("wiki error")
+
+    def test_sync_recovers_when_conversion_was_unavailable(self, env, monkeypatch):
+        """A push that could not convert must be retried, not read as a deletion.
+
+        The link row is written before the first push, so if the live markdown
+        service is unreachable the pairing is recorded with no file behind it.
+        Treating the missing file as a wiki-side deletion stranded the page
+        forever: the link exists, so the "unlinked pages" pass skips it on every
+        later run, and the page could never reach the wiki.
+        """
+        env["make_page"]("Stranded Page")
+
+        # First run with conversion down: the link is created, no file written.
+        monkeypatch.setattr(github_wiki_sync_task, "convert_html_to_markdown", lambda _html: None)
+        run_sync(env)
+
+        link = GithubWikiPageLink.objects.get(wiki_slug="Stranded-Page")
+        assert link.wiki_content_hash is None
+        assert "Stranded-Page.md" not in read_remote(env["bare"], env["tmp"], "down")
+
+        # Conversion recovers: the next run must push it rather than skip it.
+        monkeypatch.setattr(
+            github_wiki_sync_task,
+            "convert_html_to_markdown",
+            lambda html: (html or "").replace("<p>", "").replace("</p>", "").strip() + "\n",
+        )
+        run_sync(env)
+
+        remote = read_remote(env["bare"], env["tmp"], "recovered")
+        assert "Stranded-Page.md" in remote
+        assert remote["Stranded-Page.md"].strip() == "page body"
+        link.refresh_from_db()
+        assert link.wiki_content_hash is not None
+
+    def test_wiki_side_deletion_is_still_not_propagated(self, env):
+        """The recovery path must not resurrect a genuinely deleted wiki file.
+
+        Only links that never transferred anything are retried; one that has a
+        recorded content hash represents a real deletion on the wiki side.
+        """
+        env["make_page"]("Doomed Page")
+        run_sync(env)
+        link = GithubWikiPageLink.objects.get(wiki_slug="Doomed-Page")
+        assert link.wiki_content_hash is not None
+
+        # Delete the file on the wiki side, as a person would.
+        work = env["tmp"] / "deleter"
+        git(["clone", str(env["bare"]), str(work)], cwd=env["tmp"])
+        git(["rm", "Doomed-Page.md"], cwd=work)
+        git(["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-m", "remove"], cwd=work)
+        git(["push"], cwd=work)
+
+        run_sync(env)
+
+        assert "Doomed-Page.md" not in read_remote(env["bare"], env["tmp"], "after-delete")
