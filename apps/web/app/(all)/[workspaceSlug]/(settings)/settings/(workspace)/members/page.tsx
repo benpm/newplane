@@ -19,6 +19,7 @@ import { NotAuthorizedView } from "@/components/auth-screens/not-authorized-view
 import { CountChip } from "@/components/common/count-chip";
 import { PageHead } from "@/components/core/page-title";
 import { MemberListFiltersDropdown } from "@/components/project/dropdowns/filters/member-list";
+import { WorkspaceInviteLinkSection } from "@/components/workspace/settings/invite-link";
 import { WorkspaceMembersList } from "@/components/workspace/settings/members-list";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
@@ -117,6 +118,7 @@ const WorkspaceMembersSettingsPage = observer(function WorkspaceMembersSettingsP
           "opacity-60": !canPerformWorkspaceMemberActions,
         })}
       >
+        {canPerformWorkspaceAdminActions && <WorkspaceInviteLinkSection workspaceSlug={workspaceSlug} />}
         <div className="flex justify-between gap-4 pb-3.5 items-center">
           <h4 className="flex items-center gap-2.5 text-h3-medium">
             {t("workspace_settings.settings.members.title")}

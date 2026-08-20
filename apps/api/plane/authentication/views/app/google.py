@@ -12,6 +12,7 @@ from django.views import View
 
 # Module imports
 from plane.authentication.provider.oauth.google import GoogleOAuthProvider
+from plane.authentication.utils.invite_link import stash_invite_link_token
 from plane.authentication.utils.login import user_login
 from plane.authentication.utils.redirection_path import get_redirection_path
 from plane.authentication.utils.user_auth_workflow import post_user_auth_workflow
@@ -30,6 +31,9 @@ class GoogleOauthInitiateEndpoint(View):
         next_path = request.GET.get("next_path")
         if next_path:
             request.session["next_path"] = str(next_path)
+        # Parked here so it survives the round trip to Google, the same way
+        # next_path and state already do.
+        stash_invite_link_token(request, request.GET.get("invite_link_token"))
 
         # Check instance configuration
         instance = Instance.objects.first()

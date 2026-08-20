@@ -11,6 +11,8 @@ from plane.app.views import (
     WorkspaceJoinEndpoint,
     WorkSpaceMemberViewSet,
     WorkspaceInvitationsViewset,
+    WorkspaceInviteLinkEndpoint,
+    WorkspaceInviteLinkPublicEndpoint,
     WorkspaceMemberUserEndpoint,
     WorkspaceMemberUserViewsEndpoint,
     WorkSpaceAvailabilityCheckEndpoint,
@@ -94,6 +96,17 @@ urlpatterns = [
         "workspaces/<str:slug>/invitations/<uuid:pk>/join/",
         WorkspaceJoinEndpoint.as_view(),
         name="workspace-join",
+    ),
+    # reusable invite link
+    path(
+        "workspaces/<str:slug>/invite-link/",
+        WorkspaceInviteLinkEndpoint.as_view(),
+        name="workspace-invite-link",
+    ),
+    path(
+        "invite-links/<str:token>/",
+        WorkspaceInviteLinkPublicEndpoint.as_view(),
+        name="workspace-invite-link-public",
     ),
     # user join workspace
     path(

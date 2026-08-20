@@ -19,6 +19,7 @@ from zxcvbn import zxcvbn
 
 # Module imports
 from plane.db.models import Profile, User, WorkspaceMemberInvite, FileAsset
+from plane.authentication.utils.invite_link import peek_invite_link
 from plane.license.utils.instance_value import get_configuration_value
 from .error import AuthenticationException, AUTHENTICATION_ERROR_CODES
 from plane.bgtasks.user_activation_email_task import user_activation_email
@@ -100,7 +101,14 @@ class Adapter:
         ])
 
         # Check if sign up is disabled and invite is present or not
-        if ENABLE_SIGNUP == "0" and not WorkspaceMemberInvite.objects.filter(email=email).exists():
+        if (
+            ENABLE_SIGNUP == "0"
+            and not WorkspaceMemberInvite.objects.filter(email=email).exists()
+            # A reusable invite link admits its holder too. Unlike the invite
+            # above it is not keyed to an email address, so there is no row to
+            # match on -- the token in the session is the invitation.
+            and peek_invite_link(self.request) is None
+        ):
             # Raise exception
             raise AuthenticationException(
                 error_code=AUTHENTICATION_ERROR_CODES["SIGNUP_DISABLED"],

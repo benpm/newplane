@@ -12,6 +12,7 @@ from .user import UserLiteSerializer, UserAdminLiteSerializer
 
 from plane.db.models import (
     Workspace,
+    WorkspaceInviteLink,
     WorkspaceMember,
     WorkspaceMemberInvite,
     WorkspaceTheme,
@@ -358,3 +359,56 @@ class WorkspaceUserPreferenceSerializer(BaseSerializer):
         model = WorkspaceUserPreference
         fields = ["key", "is_pinned", "sort_order"]
         read_only_fields = ["workspace", "created_by", "updated_by"]
+
+
+class WorkspaceInviteLinkSerializer(BaseSerializer):
+    """The admin-facing view of a reusable invite link, token included."""
+
+    invite_link = serializers.SerializerMethodField()
+
+    def get_invite_link(self, obj):
+        return f"/invite/{obj.token}"
+
+    class Meta:
+        model = WorkspaceInviteLink
+        fields = [
+            "id",
+            "workspace",
+            "token",
+            "invite_link",
+            "role",
+            "is_active",
+            "uses",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "workspace",
+            "token",
+            "invite_link",
+            "uses",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class WorkspaceInviteLinkPublicSerializer(BaseSerializer):
+    """What an unauthenticated visitor holding the link may see.
+
+    The landing page has to name the workspace before the visitor has an
+    account, so this is readable without authentication. It must therefore
+    never echo the token back: the caller already holds it, and anything else
+    reading this response should not learn it. Fields are listed explicitly
+    rather than excluded, so a column added to the model stays private until
+    someone opts it in.
+    """
+
+    workspace_name = serializers.CharField(source="workspace.name", read_only=True)
+    workspace_slug = serializers.CharField(source="workspace.slug", read_only=True)
+    workspace_logo_url = serializers.CharField(source="workspace.logo_url", read_only=True)
+
+    class Meta:
+        model = WorkspaceInviteLink
+        fields = ["workspace_name", "workspace_slug", "workspace_logo_url", "role"]
+        read_only_fields = fields

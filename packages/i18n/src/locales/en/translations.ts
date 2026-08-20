@@ -2068,6 +2068,22 @@ export default {
         add_member: "Add member",
         pending_invites: "Pending invites",
         invitations_sent_successfully: "Invitations sent successfully",
+        invite_link: {
+          title: "Invite link",
+          description:
+            "Anyone with this link can join this workspace at the role you pick. It stays valid until you revoke it.",
+          generate: "Create invite link",
+          generated: "Invite link created",
+          generate_failed: "Could not create the invite link",
+          revoke: "Revoke",
+          revoked: "Invite link revoked",
+          revoke_failed: "Could not revoke the invite link",
+          copied: "Invite link copied",
+          usage: "{count, plural, =0 {Not used yet} one {Used once} other {Used # times}}",
+          role_guest: "Guest",
+          role_member: "Member",
+          role_admin: "Admin",
+        },
         leave_confirmation:
           "Are you sure you want to leave the workspace? You will no longer have access to this workspace. This action cannot be undone.",
         details: {
@@ -2241,10 +2257,26 @@ export default {
       },
     },
   },
+  invite_link: {
+    join_heading: "Join {workspace}",
+    join_description:
+      "Create an account to join this workspace. You can sign up with an email and password, or with Google.",
+    invalid: {
+      title: "This invite link is no longer valid",
+      description: "It may have been revoked. Ask whoever shared it with you for a new one.",
+    },
+  },
   profile: {
     label: "Profile",
     page_label: "My Work",
     work: "Work",
+    discord_username: {
+      label: "Discord username",
+      placeholder: "Enter your Discord username",
+      help: "Shown on your profile so teammates can find you on Discord.",
+      copy_tooltip: "Click to copy",
+      copied: "Discord username copied",
+    },
     details: {
       joined_on: "Joined on",
       time_zone: "Timezone",

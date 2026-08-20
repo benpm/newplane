@@ -43,6 +43,9 @@ export const coreRoutes: RouteConfigEntry[] = [
     route("workspace-invitations", "./(all)/workspace-invitations/page.tsx"),
   ]),
 
+  // Reusable invite links
+  layout("./(all)/invite/layout.tsx", [route("invite/:token", "./(all)/invite/page.tsx")]),
+
   // ========================================================================
   // ALL APP ROUTES
   // ========================================================================
