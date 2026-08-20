@@ -88,7 +88,11 @@ WORKDIR /app/apps/space
 
 EXPOSE 3000
 
+# Unlike web and admin, this image ends on node:22-alpine rather than nginx, so
+# there is no curl to probe with -- busybox wget is what we have. The app is also
+# served under a /spaces base path, so / answers 404 and would fail a probe that
+# only web and admin can pass.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -fsS http://127.0.0.1:3000/ >/dev/null || exit 1
+  CMD wget -q --spider http://127.0.0.1:3000/spaces/ || exit 1
 
 CMD ["npx", "react-router-serve", "./build/server/index.js"]
