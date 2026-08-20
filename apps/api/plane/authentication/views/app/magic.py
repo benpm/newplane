@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 
 # Module imports
 from plane.authentication.provider.credentials.magic_code import MagicCodeProvider
+from plane.authentication.utils.invite_link import stash_invite_link_token
 from plane.authentication.utils.login import user_login
 from plane.authentication.utils.redirection_path import get_redirection_path
 from plane.authentication.utils.user_auth_workflow import post_user_auth_workflow
@@ -64,6 +65,7 @@ class MagicSignInEndpoint(View):
         code = request.POST.get("code", "").strip()
         email = request.POST.get("email", "").strip().lower()
         next_path = request.POST.get("next_path")
+        stash_invite_link_token(request, request.POST.get("invite_link_token"))
 
         if code == "" or email == "":
             exc = AuthenticationException(
@@ -135,6 +137,7 @@ class MagicSignUpEndpoint(View):
         code = request.POST.get("code", "").strip()
         email = request.POST.get("email", "").strip().lower()
         next_path = request.POST.get("next_path")
+        stash_invite_link_token(request, request.POST.get("invite_link_token"))
 
         if code == "" or email == "":
             exc = AuthenticationException(

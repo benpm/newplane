@@ -262,6 +262,36 @@ class WorkspaceMemberInvite(BaseModel):
         return f"{self.workspace.name} {self.email} {self.accepted}"
 
 
+class WorkspaceInviteLink(BaseModel):
+    """A reusable join link for a workspace.
+
+    ``WorkspaceMemberInvite`` is keyed to one email address, unique per
+    workspace, and is deleted the moment it is accepted -- so it cannot back a
+    link handed to several people at once. This model is that link: one token,
+    any number of redemptions, valid until an admin revokes it.
+
+    The token grants membership of one workspace at one role and nothing else.
+    It is never treated as proof of identity -- whoever opens the link still has
+    to authenticate normally before it is redeemed.
+    """
+
+    workspace = models.ForeignKey("db.Workspace", on_delete=models.CASCADE, related_name="invite_links")
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=15)
+    is_active = models.BooleanField(default=True)
+    # Recorded for display only. There is deliberately no use cap.
+    uses = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Workspace Invite Link"
+        verbose_name_plural = "Workspace Invite Links"
+        db_table = "workspace_invite_links"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.workspace.name} {self.role} {self.is_active}"
+
+
 class Team(BaseModel):
     name = models.CharField(max_length=255, verbose_name="Team Name")
     description = models.TextField(verbose_name="Team Description", blank=True)

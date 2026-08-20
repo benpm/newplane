@@ -11,6 +11,9 @@ import type {
   IWorkspaceMemberMe,
   IWorkspaceMember,
   IWorkspaceMemberInvitation,
+  IWorkspaceInviteLink,
+  IWorkspaceInviteLinkPublic,
+  TUserPermissions,
   ILastActiveWorkspaceDetails,
   IWorkspaceSearchResults,
   IProductUpdateResponse,
@@ -180,6 +183,39 @@ export class WorkspaceService extends APIService {
 
   async getWorkspaceInvitation(workspaceSlug: string, invitationId: string): Promise<IWorkspaceMemberInvitation> {
     return this.get(`/api/workspaces/${workspaceSlug}/invitations/${invitationId}/join/`, { headers: {} })
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async getWorkspaceInviteLink(workspaceSlug: string): Promise<{ invite_link: null } | IWorkspaceInviteLink> {
+    return this.get(`/api/workspaces/${workspaceSlug}/invite-link/`)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async createWorkspaceInviteLink(workspaceSlug: string, role: TUserPermissions): Promise<IWorkspaceInviteLink> {
+    return this.post(`/api/workspaces/${workspaceSlug}/invite-link/`, { role })
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async revokeWorkspaceInviteLink(workspaceSlug: string): Promise<void> {
+    return this.delete(`/api/workspaces/${workspaceSlug}/invite-link/`)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  /** Unauthenticated: names the workspace behind a link for the landing page. */
+  async getPublicInviteLink(token: string): Promise<IWorkspaceInviteLinkPublic> {
+    return this.get(`/api/invite-links/${token}/`, { headers: {} })
       .then((response) => response?.data)
       .catch((error) => {
         throw error?.response?.data;

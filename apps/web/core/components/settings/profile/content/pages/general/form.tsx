@@ -29,7 +29,7 @@ import { handleCoverImageChange } from "@/helpers/cover-image.helper";
 import { useInstance } from "@/hooks/store/use-instance";
 import { useUser, useUserProfile } from "@/hooks/store/user";
 // utils
-import { validatePersonName, validateDisplayName } from "@plane/utils";
+import { validatePersonName, validateDisplayName, validateDiscordUsername } from "@plane/utils";
 
 type TUserProfileForm = {
   avatar_url: string;
@@ -39,6 +39,7 @@ type TUserProfileForm = {
   first_name: string;
   last_name: string;
   display_name: string;
+  discord_username: string;
   email: string;
   role: string;
   language: string;
@@ -74,6 +75,7 @@ export const GeneralProfileSettingsForm = observer(function GeneralProfileSettin
       first_name: user.first_name || "",
       last_name: user.last_name || "",
       display_name: user.display_name || "",
+      discord_username: user.discord_username || "",
       email: user.email || "",
       role: profile.role || "Product / Project Manager",
       language: profile.language || "en",
@@ -123,6 +125,7 @@ export const GeneralProfileSettingsForm = observer(function GeneralProfileSettin
       last_name: formData.last_name,
       avatar_url: formData.avatar_url,
       display_name: formData?.display_name,
+      discord_username: formData?.discord_username?.trim() ?? "",
     };
 
     try {
@@ -335,6 +338,32 @@ export const GeneralProfileSettingsForm = observer(function GeneralProfileSettin
                 />
                 {errors?.display_name && (
                   <span className="text-11 text-danger-primary">{errors?.display_name?.message}</span>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <h4 className="text-13 font-medium text-secondary">{t("profile.discord_username.label")}</h4>
+                <Controller
+                  control={control}
+                  name="discord_username"
+                  rules={{ validate: validateDiscordUsername }}
+                  render={({ field: { value, onChange, ref } }) => (
+                    <Input
+                      id="discord_username"
+                      name="discord_username"
+                      type="text"
+                      value={value}
+                      onChange={(e) => onChange(e.target.value.toLowerCase())}
+                      ref={ref}
+                      hasError={Boolean(errors?.discord_username)}
+                      placeholder={t("profile.discord_username.placeholder")}
+                      className={`w-full ${errors?.discord_username ? "border-danger-strong" : ""}`}
+                      maxLength={32}
+                    />
+                  )}
+                />
+                <span className="text-11 text-tertiary">{t("profile.discord_username.help")}</span>
+                {errors?.discord_username && (
+                  <span className="text-11 text-danger-primary">{errors?.discord_username?.message}</span>
                 )}
               </div>
               <div className="flex flex-col gap-1">

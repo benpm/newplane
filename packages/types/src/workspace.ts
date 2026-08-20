@@ -42,6 +42,27 @@ export interface IWorkspaceLite {
   slug: string;
 }
 
+/** A reusable join link. Unlike an invitation it is not keyed to an email. */
+export interface IWorkspaceInviteLink {
+  id: string;
+  workspace: string;
+  token: string;
+  invite_link: string;
+  role: TUserPermissions;
+  is_active: boolean;
+  uses: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** What a visitor holding a link may see before they have an account. */
+export interface IWorkspaceInviteLinkPublic {
+  workspace_name: string;
+  workspace_slug: string;
+  workspace_logo_url: string | null;
+  role: TUserPermissions;
+}
+
 export interface IWorkspaceMemberInvitation {
   accepted: boolean;
   email: string;

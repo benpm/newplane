@@ -44,6 +44,11 @@ export type TProfileSetupFormValues = {
 
 const authService = new AuthService();
 
+const NAME_FIELDS = [
+  { name: "first_name", label: "First name", placeholder: "Enter your first name", autoFocus: true },
+  { name: "last_name", label: "Last name", placeholder: "Enter your last name", autoFocus: false },
+] as const;
+
 const defaultValues: Partial<TProfileSetupFormValues> = {
   first_name: "",
   last_name: "",
@@ -89,6 +94,10 @@ export const ProfileSetupStep = observer(function ProfileSetupStep({ handleStepC
     const userDetailsPayload: Partial<IUser> = {
       first_name: formData.first_name,
       last_name: formData.last_name,
+      // Without this, display_name keeps the email local-part that User.save()
+      // falls back to, and the app shows "john.smith" instead of "John Smith"
+      // in the activity feed, comments and @mentions.
+      display_name: `${formData.first_name} ${formData.last_name}`.trim(),
       avatar_url: formData.avatar_url ?? undefined,
     };
     try {
@@ -195,47 +204,51 @@ export const ProfileSetupStep = observer(function ProfileSetupStep({ handleStepC
       </div>
 
       <div className="flex flex-col gap-6 w-full">
-        {/* Name Input */}
-        <div className="flex flex-col gap-2">
-          <label
-            className="block text-13 font-medium text-tertiary after:content-['*'] after:ml-0.5 after:text-danger-primary"
-            htmlFor="first_name"
-          >
-            Name
-          </label>
-          <Controller
-            control={control}
-            name="first_name"
-            rules={{
-              required: "Name is required",
-              validate: validatePersonName,
-              maxLength: {
-                value: 50,
-                message: "Name must be within 50 characters.",
-              },
-            }}
-            render={({ field: { value, onChange, ref } }) => (
-              <input
-                ref={ref}
-                id="first_name"
-                name="first_name"
-                type="text"
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                autoFocus
-                className={cn(
-                  "w-full px-3 py-2 text-secondary border border-strong rounded-md bg-surface-1 focus:outline-none focus:ring-2 focus:ring-accent-strong placeholder:text-placeholder focus:border-transparent transition-all duration-200",
-                  {
-                    "border-strong": !errors.first_name,
-                    "border-danger-strong": errors.first_name,
-                  }
+        {/* Name Inputs — both required; together they become the display name. */}
+        <div className="flex flex-col gap-4 sm:flex-row">
+          {NAME_FIELDS.map(({ name, label, placeholder, autoFocus }) => (
+            <div key={name} className="flex flex-col gap-2 flex-1">
+              <label
+                className="block text-13 font-medium text-tertiary after:content-['*'] after:ml-0.5 after:text-danger-primary"
+                htmlFor={name}
+              >
+                {label}
+              </label>
+              <Controller
+                control={control}
+                name={name}
+                rules={{
+                  required: `${label} is required`,
+                  validate: validatePersonName,
+                  maxLength: {
+                    value: 50,
+                    message: `${label} must be within 50 characters.`,
+                  },
+                }}
+                render={({ field: { value, onChange, ref } }) => (
+                  <input
+                    ref={ref}
+                    id={name}
+                    name={name}
+                    type="text"
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    autoFocus={autoFocus}
+                    className={cn(
+                      "w-full px-3 py-2 text-secondary border rounded-md bg-layer-2 focus:outline-none focus:ring-2 focus:ring-accent-strong placeholder:text-placeholder focus:border-transparent transition-all duration-200",
+                      {
+                        "border-strong": !errors[name],
+                        "border-danger-strong": errors[name],
+                      }
+                    )}
+                    placeholder={placeholder}
+                    autoComplete="on"
+                  />
                 )}
-                placeholder="Enter your full name"
-                autoComplete="on"
               />
-            )}
-          />
-          {errors.first_name && <span className="text-13 text-danger-primary">{errors.first_name.message}</span>}
+              {errors[name] && <span className="text-13 text-danger-primary">{errors[name]?.message}</span>}
+            </div>
+          ))}
         </div>
 
         {/* setting up password for the first time */}

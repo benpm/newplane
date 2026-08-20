@@ -64,6 +64,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     display_name = models.CharField(max_length=255, default="")
     first_name = models.CharField(max_length=255, blank=True)
     last_name = models.CharField(max_length=255, blank=True)
+    # 32 is Discord's own limit on a username.
+    discord_username = models.CharField(max_length=32, blank=True, default="")
     # avatar
     avatar = models.TextField(blank=True)
     avatar_asset = models.ForeignKey(

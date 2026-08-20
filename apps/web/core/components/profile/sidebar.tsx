@@ -13,11 +13,12 @@ import { useOutsideClickDetector } from "@plane/hooks";
 import { useTranslation } from "@plane/i18n";
 import { Logo } from "@plane/propel/emoji-icon-picker";
 import { IconButton } from "@plane/propel/icon-button";
-import { EditIcon, ChevronDownIcon } from "@plane/propel/icons";
+import { DiscordIcon, EditIcon, ChevronDownIcon } from "@plane/propel/icons";
+import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { IUserProfileProjectSegregation } from "@plane/types";
 import { Loader } from "@plane/ui";
-import { cn, renderFormattedDate, getFileURL } from "@plane/utils";
+import { cn, renderFormattedDate, getFileURL, copyTextToClipboard } from "@plane/utils";
 // components
 import { CoverImage } from "@/components/common/cover-image";
 // hooks
@@ -49,6 +50,14 @@ export const ProfileSidebar = observer(function ProfileSidebar(props: TProfileSi
   const { t } = useTranslation();
   // derived values
   const userData = userProjectsData?.user_data;
+
+  // Discord has no public profile URL keyed by username, so the handle is
+  // copied to the clipboard rather than linked.
+  const handleCopyDiscordUsername = (username: string) => {
+    copyTextToClipboard(username).then(() =>
+      setToast({ type: TOAST_TYPE.SUCCESS, title: t("profile.discord_username.copied") })
+    );
+  };
 
   useOutsideClickDetector(ref, () => {
     if (profileSidebarCollapsed === false) {
@@ -137,6 +146,18 @@ export const ProfileSidebar = observer(function ProfileSidebar(props: TProfileSi
                 {userData?.first_name} {userData?.last_name}
               </h4>
               <h6 className="text-13 text-secondary">({userData?.display_name})</h6>
+              {userData?.discord_username && (
+                <Tooltip tooltipContent={t("profile.discord_username.copy_tooltip")} isMobile={isMobile}>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyDiscordUsername(userData.discord_username ?? "")}
+                    className="mt-2 flex items-center gap-1.5 text-13 text-secondary hover:text-primary transition-colors"
+                  >
+                    <DiscordIcon className="size-4 flex-shrink-0 text-secondary" />
+                    <span className="break-all">{userData.discord_username}</span>
+                  </button>
+                </Tooltip>
+              )}
             </div>
             <div className="mt-6 space-y-5">
               {userDetails.map((detail) => (

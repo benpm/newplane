@@ -10,6 +10,7 @@ from django.views import View
 
 # Module imports
 from plane.authentication.provider.credentials.email import EmailProvider
+from plane.authentication.utils.invite_link import stash_invite_link_token
 from plane.authentication.utils.login import user_login
 from plane.license.models import Instance
 from plane.authentication.utils.host import base_host
@@ -26,6 +27,7 @@ from plane.utils.path_validator import get_safe_redirect_url
 class SignInAuthEndpoint(View):
     def post(self, request):
         next_path = request.POST.get("next_path")
+        stash_invite_link_token(request, request.POST.get("invite_link_token"))
         # Check instance configuration
         instance = Instance.objects.first()
         if instance is None or not instance.is_setup_done:
@@ -135,6 +137,7 @@ class SignInAuthEndpoint(View):
 class SignUpAuthEndpoint(View):
     def post(self, request):
         next_path = request.POST.get("next_path")
+        stash_invite_link_token(request, request.POST.get("invite_link_token"))
         # Check instance configuration
         instance = Instance.objects.first()
         if instance is None or not instance.is_setup_done:

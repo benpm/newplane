@@ -33,6 +33,15 @@ export const PERSON_NAME_REGEX = /^[\p{L}\s'-]+$/u;
 export const DISPLAY_NAME_REGEX = /^[\p{L}\p{N}\s_.-]+$/u;
 
 /**
+ * Discord Username Pattern (for discord_username)
+ * Allows: lowercase letters, digits, underscore, period — 2 to 32 characters
+ * Use case: Discord's post-2023 handle format, e.g. "jane.doe", "benpm_1"
+ * Note: stored as a handle only. Discord has no public profile URL keyed by
+ * username, so this is never rendered as an outbound link.
+ */
+export const DISCORD_USERNAME_REGEX = /^[a-z0-9._]{2,32}$/;
+
+/**
  * Company/Organization Name Pattern (for company_name, workspace names)
  * Allows: Unicode letters (\p{L}), numbers (\p{N}), spaces, underscores, hyphens
  * Use case: International business names like "Société Générale", "株式会社", "Müller GmbH"
@@ -107,6 +116,27 @@ export const validateDisplayName = (displayName: string): boolean | string => {
 
   if (!DISPLAY_NAME_REGEX.test(displayName)) {
     return "Display name can only contain letters, numbers, spaces, periods, hyphens, and underscores";
+  }
+
+  return true;
+};
+
+/**
+ * @description Validates a Discord username (handle)
+ * @param {string} discordUsername - Discord username to validate
+ * @returns {boolean | string} true if valid, error message if invalid
+ * @example
+ * validateDiscordUsername("") // returns true (optional, clears the handle)
+ * validateDiscordUsername("jane.doe") // returns true
+ * validateDiscordUsername("Jane#1234") // returns error message
+ */
+export const validateDiscordUsername = (discordUsername: string): boolean | string => {
+  if (!discordUsername || discordUsername.trim() === "") {
+    return true; // Optional — an empty value clears the handle
+  }
+
+  if (!DISCORD_USERNAME_REGEX.test(discordUsername.trim())) {
+    return "Enter a valid Discord username: 2-32 characters, using lowercase letters, numbers, underscores or periods";
   }
 
   return true;
