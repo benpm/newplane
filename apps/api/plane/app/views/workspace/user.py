@@ -372,6 +372,7 @@ class WorkspaceUserProfileEndpoint(BaseAPIView):
                     "date_joined": user_data.date_joined,
                     "user_timezone": user_data.user_timezone,
                     "display_name": user_data.display_name,
+                    "discord_username": user_data.discord_username,
                 },
             },
             status=status.HTTP_200_OK,

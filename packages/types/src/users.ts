@@ -25,6 +25,8 @@ export enum EStartOfTheWeek {
 export interface IUserLite {
   avatar_url: string;
   display_name: string;
+  /** Discord handle only; Discord has no username-keyed profile URL to link to. */
+  discord_username?: string;
   email?: string;
   first_name: string;
   id: string;
@@ -177,7 +179,10 @@ export interface IUserProfileProjectSegregation {
     id: string;
     pending_issues: number;
   }[];
-  user_data: Pick<IUser, "avatar_url" | "cover_image_url" | "display_name" | "first_name" | "last_name"> & {
+  user_data: Pick<
+    IUser,
+    "avatar_url" | "cover_image_url" | "display_name" | "discord_username" | "first_name" | "last_name"
+  > & {
     date_joined: Date;
     user_timezone: string;
   };

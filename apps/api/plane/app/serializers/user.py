@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+# Python imports
+import re
+
 # Third party imports
 from rest_framework import serializers
 
@@ -10,6 +13,9 @@ from plane.db.models import Account, Profile, User, Workspace, WorkspaceMemberIn
 from plane.utils.url import contains_url
 
 from .base import BaseSerializer
+
+# Discord handles are 2-32 characters of lowercase letters, digits, "_" and ".".
+DISCORD_USERNAME_RE = re.compile(r"^[a-z0-9._]{2,32}$")
 
 
 class UserSerializer(BaseSerializer):
@@ -21,6 +27,23 @@ class UserSerializer(BaseSerializer):
     def validate_last_name(self, value):
         if contains_url(value):
             raise serializers.ValidationError("Last name cannot contain a URL.")
+        return value
+
+    def validate_display_name(self, value):
+        # Onboarding now writes the user's real name here, so it is user-controlled
+        # input on a field rendered all over the app.
+        if contains_url(value):
+            raise serializers.ValidationError("Display name cannot contain a URL.")
+        return value
+
+    def validate_discord_username(self, value):
+        # Empty clears the handle.
+        value = (value or "").strip()
+        if value and not DISCORD_USERNAME_RE.match(value):
+            raise serializers.ValidationError(
+                "Enter a valid Discord username: 2-32 characters, using lowercase "
+                "letters, numbers, underscores or periods."
+            )
         return value
 
     class Meta:
@@ -71,6 +94,7 @@ class UserMeSerializer(BaseSerializer):
             "cover_image_url",
             "date_joined",
             "display_name",
+            "discord_username",
             "email",
             "first_name",
             "last_name",
