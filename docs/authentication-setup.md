@@ -39,7 +39,15 @@ same `AuthRoot` component.
 
 ### 1. Create the OAuth client
 
-In the [Google Cloud console](https://console.cloud.google.com/apis/credentials),
+This step is **console-only — there is no CLI or API for it.** Do not spend time
+looking: the one programmatic path Google ever offered was the IAP OAuth Admin
+API (`gcloud alpha iap oauth-clients create`), which was permanently shut down on
+19 March 2026, and which could not set custom redirect URIs anyway because the
+clients it made were owned by IAP. Nothing replaced it — `gcloud services list`
+shows no OAuth-client-management API. The project here is `mousetrip`
+(number 847000914006).
+
+In the [Google Cloud console](https://console.cloud.google.com/apis/credentials?project=mousetrip),
 create an **OAuth 2.0 Client ID** of type _Web application_, and register this
 exact **authorised redirect URI**:
 
@@ -59,7 +67,17 @@ a client can hold several.
 
 **God Mode → Authentication → Google**: paste the client ID and secret, and turn
 the toggle on. The toggle is what sets `IS_GOOGLE_ENABLED`; filling the
-credentials alone leaves the button hidden.
+credentials alone leaves the button hidden. The page shows the callback URI it
+expects, which is the same one above — worth comparing against what you gave
+Google.
+
+**Do not write these straight into the database.** `GOOGLE_CLIENT_SECRET` is
+stored Fernet-encrypted with a key derived from `SECRET_KEY`
+(`license/utils/encryption.py`, `is_encrypted: True` in
+`utils/instance_config_variables/core.py`), so a plain `UPDATE` produces a row
+that looks right and fails to decrypt at sign-in time. `GOOGLE_CLIENT_ID` is
+plaintext, which makes the mistake easy to half-make. Go through God Mode, or
+through `encrypt_data()` in a Django shell.
 
 ### 3. Existing accounts link automatically
 
