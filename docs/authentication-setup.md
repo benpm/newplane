@@ -8,16 +8,22 @@ rebuild or a redeploy; the settings are read per request.
 
 ## Current state
 
-| Setting                                                                 | State                              | Effect                                             |
-| ----------------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------- |
-| `ENABLE_EMAIL_PASSWORD`                                                 | on                                 | Email + password sign-in works                     |
-| `ENABLE_MAGIC_LINK_LOGIN`                                               | on                                 | But magic codes are emailed, so they cannot arrive |
-| `IS_GOOGLE_ENABLED`                                                     | **off** (no row → env default `0`) | Google button hidden everywhere                    |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`                             | **empty**                          | —                                                  |
-| `EMAIL_HOST` / `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` / `EMAIL_FROM` | **empty**                          | No email is delivered at all                       |
+| Setting                                                                 | State                        | Effect                                            |
+| ----------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------- |
+| `ENABLE_SIGNUP`                                                         | `1`                          | Anyone with a link can create an account          |
+| `ENABLE_EMAIL_PASSWORD`                                                 | `1`                          | Email + password sign-in works — the only way in  |
+| `ENABLE_MAGIC_LINK_LOGIN`                                               | `0`                          | Off, and it would need email anyway               |
+| `IS_GOOGLE_ENABLED`                                                     | **no row → env default `0`** | Google button hidden everywhere                   |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`                             | **empty**                    | —                                                 |
+| `ENABLE_SMTP`                                                           | `0`                          | Flips to `1` on its own when the email form saves |
+| `EMAIL_HOST` / `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` / `EMAIL_FROM` | **empty**                    | No email is delivered at all                      |
+| `EMAIL_PORT` / `EMAIL_USE_TLS` / `EMAIL_USE_SSL`                        | `587` / `1` / `0`            | Already consistent; leave alone                   |
 
 Everyone on the instance has signed in by email and password. Google has never
 completed a sign-in here, and no invitation email has ever been delivered.
+
+Email and password is therefore the **only** working way in today: Google is off,
+and magic links are both off and dependent on the email that does not send.
 
 ---
 
@@ -92,6 +98,9 @@ built before that change.
 | `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | For Gmail this must be an **app password**, not the account password                   |
 | `EMAIL_FROM`                              | Must be an address the provider will let you send as, or mail is accepted then dropped |
 | `EMAIL_USE_TLS` / `EMAIL_USE_SSL`         | TLS on port 587, SSL on 465 — exactly one of the two                                   |
+
+Saving the form sets `ENABLE_SMTP` to `1` for you (`email-config-form.tsx`), so
+there is no separate switch to hunt for.
 
 ### Verify it
 
