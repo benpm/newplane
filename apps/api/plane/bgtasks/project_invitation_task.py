@@ -15,7 +15,7 @@ from django.template.loader import render_to_string
 
 # Module imports
 from plane.db.models import Project, ProjectMemberInvite, User
-from plane.license.utils.instance_value import get_email_configuration
+from plane.license.utils.instance_value import get_email_configuration, is_email_configured
 from plane.utils.email import generate_plain_text_from_html, get_email_logo_url
 from plane.utils.exception_logger import log_exception
 
@@ -57,6 +57,17 @@ def project_invitation(email, project_id, token, current_site, invitor):
             EMAIL_USE_SSL,
             EMAIL_FROM,
         ) = get_email_configuration()
+
+        # The rendered text is saved on the invite above, so an instance with no
+        # SMTP still has the invitation body for an admin to pass on by hand.
+        if not is_email_configured():
+            logging.getLogger("plane.worker").warning(
+                "SMTP is not configured, so the project invitation to %s was not "
+                "emailed. The invitation itself is valid: send the recipient the "
+                "link, or set up email under God Mode -> Email.",
+                email,
+            )
+            return
 
         connection = get_connection(
             host=EMAIL_HOST,

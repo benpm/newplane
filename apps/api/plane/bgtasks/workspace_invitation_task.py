@@ -14,7 +14,7 @@ from django.template.loader import render_to_string
 
 # Module imports
 from plane.db.models import User, Workspace, WorkspaceMemberInvite
-from plane.license.utils.instance_value import get_email_configuration
+from plane.license.utils.instance_value import get_email_configuration, is_email_configured
 from plane.utils.email import generate_plain_text_from_html, get_email_logo_url
 from plane.utils.exception_logger import log_exception
 
@@ -62,6 +62,18 @@ def workspace_invitation(email, workspace_id, token, current_site, inviter):
 
         workspace_member_invite.message = text_content
         workspace_member_invite.save()
+
+        # The rendered text is saved above before this returns, so an instance with
+        # no SMTP still has the invitation body on the row for an admin to copy by
+        # hand -- which is how invites actually get delivered here today.
+        if not is_email_configured():
+            logging.getLogger("plane.worker").warning(
+                "SMTP is not configured, so the invitation to %s was not emailed. "
+                "The invitation itself is valid: send the recipient the workspace "
+                "invite link, or set up email under God Mode -> Email.",
+                email,
+            )
+            return
 
         connection = get_connection(
             host=EMAIL_HOST,

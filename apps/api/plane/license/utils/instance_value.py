@@ -57,3 +57,17 @@ def get_email_configuration():
             },
         ]
     )
+
+
+def is_email_configured():
+    """
+    Whether this instance has enough SMTP settings to send anything at all.
+
+    EMAIL_HOST is the one value with no usable fallback: port, TLS and the from
+    address all default to something sensible, but with no host Django dials ""
+    and the OS refuses the connection. Callers check this so an unconfigured
+    instance can say "SMTP is not set up" instead of raising a bare
+    ConnectionRefusedError that reads like an outage.
+    """
+    email_host = get_email_configuration()[0]
+    return bool((email_host or "").strip())
