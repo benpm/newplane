@@ -1,28 +1,30 @@
 # Authentication and email setup
 
-How people get into this instance, and what is still switched off. Everything
-here is configured in **God Mode**
+How people get into this instance. Everything here is configured in **God Mode**
 (`https://plane.mousetrip.online/god-mode/`), which writes to the
 `instance_configurations` table — not to a `.env` file. Nothing here needs a
 rebuild or a redeploy; the settings are read per request.
 
+As of 2026-08-21 all of it is on: password, Google SSO and email. Magic-link
+login is the only thing still switched off, and only because nobody asked for it.
+
 ## Current state
 
-| Setting                                                                 | State                | Effect                                             |
-| ----------------------------------------------------------------------- | -------------------- | -------------------------------------------------- |
-| `ENABLE_SIGNUP`                                                         | `1`                  | Anyone with a link can create an account           |
-| `ENABLE_EMAIL_PASSWORD`                                                 | `1`                  | Email + password sign-in works                     |
-| `IS_GOOGLE_ENABLED`                                                     | `1` since 2026-08-21 | Google button shows on sign-in, sign-up, `/invite` |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`                             | set                  | Client owned by project `mousetrip`                |
-| `ENABLE_MAGIC_LINK_LOGIN`                                               | `0`                  | Off, and it would need email anyway                |
-| `ENABLE_SMTP`                                                           | `0`                  | Flips to `1` on its own when the email form saves  |
-| `EMAIL_HOST` / `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` / `EMAIL_FROM` | **empty**            | No email is delivered at all                       |
-| `EMAIL_PORT` / `EMAIL_USE_TLS` / `EMAIL_USE_SSL`                        | `587` / `1` / `0`    | Already consistent; leave alone                    |
+| Setting                                          | State                        | Effect                                             |
+| ------------------------------------------------ | ---------------------------- | -------------------------------------------------- |
+| `ENABLE_SIGNUP`                                  | `1`                          | Anyone with a link can create an account           |
+| `ENABLE_EMAIL_PASSWORD`                          | `1`                          | Email + password sign-in works                     |
+| `IS_GOOGLE_ENABLED`                              | `1` since 2026-08-21         | Google button shows on sign-in, sign-up, `/invite` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`      | set                          | Client owned by project `mousetrip`                |
+| `ENABLE_SMTP`                                    | `1` since 2026-08-21         | Resend; verified by a real send                    |
+| `EMAIL_HOST` / `EMAIL_HOST_USER`                 | `smtp.resend.com` / `resend` | The user is the literal word `resend`              |
+| `EMAIL_FROM`                                     | `noreply@mousetrip.online`   | Must stay on the Resend-verified domain            |
+| `EMAIL_PORT` / `EMAIL_USE_TLS` / `EMAIL_USE_SSL` | `587` / `1` / `0`            | TLS on 587; SSL would be 465                       |
+| `ENABLE_MAGIC_LINK_LOGIN`                        | `0`                          | Off; would work now that email does                |
 
-Email is still the gap, and it is worth being precise about the consequence:
-password reset goes over SMTP too (`bgtasks/forgot_password_task.py`), so a user
-who forgets their password has no self-service way back in. Google sign-in now
-gives them a second route, but only if they used a Google address.
+Worth knowing why email mattered beyond invitations: password reset goes over
+SMTP too (`bgtasks/forgot_password_task.py`). While it was unconfigured, a user
+who forgot their password had no self-service way back in at all.
 
 ---
 
@@ -136,18 +138,28 @@ authorised redirect URIs. `IS_GOOGLE_ENABLED` was set on production only.
 
 ## Email (SMTP)
 
-Nothing is delivered today: workspace and project invitations, magic-link codes,
-forgotten-password links and notification digests all go out over SMTP, and
-`EMAIL_HOST` is empty. Django dials host `""`, the OS refuses the connection, and
-the task gives up.
+Delivered through **Resend** since 2026-08-21, on the `mousetrip.online` domain.
+Workspace and project invitations, magic-link codes, forgotten-password links and
+notification digests all travel this path.
 
-Since the guard added alongside this document, that shows up in the worker log as
+Resend's DNS on `mousetrip.online` is the standard three records — DKIM at
+`resend._domainkey`, and SPF plus a return-path MX on the `send.` subdomain, which
+points at `amazonses.com` because Resend runs on SES underneath. The **apex** SPF
+does not mention Resend and does not need to: SPF authenticates the `send.`
+return-path, and DKIM covers alignment for the visible `From:` domain. Do not
+"fix" the apex record.
+
+Two settings are easy to get wrong. `EMAIL_HOST_USER` is the literal word
+`resend`, not an address; and `EMAIL_FROM` must stay on the verified domain, or
+Resend rejects the send.
+
+If SMTP is ever unconfigured again, the worker says so directly:
 
 ```
 SMTP is not configured, so the invitation to <address> was not emailed.
 ```
 
-rather than a `ConnectionRefusedError` traceback that reads like an outage. If
+That replaced a `ConnectionRefusedError` traceback that read like an outage. If
 you see the traceback instead of the warning, the worker is running an image
 built before that change.
 
@@ -178,12 +190,30 @@ docker compose exec api python manage.py test_email you@example.com
 A traceback here is an SMTP problem. Success plus a missing invitation is a Celery
 problem — check `docker compose logs bgworker`.
 
+Checking the DNS from this host needs an explicit resolver. The box's default
+resolver returns empty answers for these names, which looks exactly like "the
+records were never added":
+
+```bash
+dig +short @1.1.1.1 resend._domainkey.mousetrip.online TXT
+dig +short @1.1.1.1 send.mousetrip.online TXT
+```
+
+### Known issue: duplicate DMARC record
+
+`_dmarc.mousetrip.online` currently answers with **two** TXT records, one from
+Cloudflare's DMARC Management (carrying a `rua=` reporting address) and one bare
+`v=DMARC1; p=none;`. RFC 7489 §6.6.3 says a receiver finding more than one record
+must treat the domain as having **no** DMARC policy, so today there is neither a
+policy nor any reporting. Deleting the bare one restores both. At `p=none` this
+costs no deliverability, but it is silently doing nothing.
+
 ---
 
 ## Invitations without email
 
-Invitations do not depend on any of the above, which is why the instance has been
-usable without SMTP:
+These paths never depended on SMTP, which is how the instance stayed usable for
+the months it had none. They are still the better option for onboarding a group:
 
 - **[Reusable workspace invite links](./features.md#reusable-workspace-invite-links)** —
   Workspace Settings → Members. One link, any number of people, valid until
