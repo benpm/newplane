@@ -1,5 +1,71 @@
 # Changelog
 
+## 8/21/2026 — three things that looked like outages and were not
+
+A sweep of the production logs turned up three separate red signals. None of them
+was a service failing; all three were something misreporting, and each one was
+hiding whatever a real failure would have looked like.
+
+### Fixed
+
+- **The `space` container had reported unhealthy since the moment it first
+  started** — 19,466 consecutive failures, every one of them `curl: not found`.
+  Its `HEALTHCHECK` was copy-pasted from `Dockerfile.web` and `Dockerfile.admin`,
+  which end on an nginx image that ships curl and serves the SPA at `/`. This
+  image ends on `node:22-alpine` running `react-router-serve` under a `/spaces`
+  base path, so both halves of the probe were wrong: no curl, and `/` answers 404. It is now `wget -q --spider .../spaces/`, verified to exit 0 while serving
+  and 1 while not. Nothing used `condition: service_healthy`, so the service was
+  always fine — the cost was a permanently red light that would have hidden a
+  genuine space outage.
+
+- **Every invitation email died as `ConnectionRefusedError`.** The instance has
+  no SMTP, so Django dialled host `""` on port 587 and the OS refused it. The
+  traceback went to the exception logger, where it read like an outage rather
+  than a missing setting, and named neither the setting nor the fact that the
+  invitation itself was still valid. The invitation tasks now check
+  `is_email_configured()` and return with a warning naming the recipient.
+
+  The guard sits deliberately _after_ the rendered body is written to the invite
+  row: that saved text is how an admin passes an invitation on by hand when
+  there is no mail server, so checking any earlier would have removed the
+  workaround while appearing to improve things. A test pins the ordering.
+
+- **Work item creation no longer requires properties to be filled.** Category,
+  sub-category, assignee, start date, due date and frequency were all mandatory
+  unless the item happened to sit in a backlog or cancelled state — which blocks
+  the ordinary way a tracker gets used, since you rarely know a due date at the
+  moment you are still describing the problem. All six routed through
+  `useIssueFormValidation`, which already had the rule-clearing machinery and
+  only applied it to draft states; it now applies always.
+
+  The title stays required, because the API rejects a work item with no `name`
+  and dropping it in the form would turn a nudge into a 400. Custom
+  work-item-type properties an admin explicitly ticked as required also stay —
+  those run through `handlePropertyValuesValidation` and someone asked for them.
+
+### Added
+
+- **[Authentication setup](./docs/authentication-setup.md)** — what it takes to
+  turn on Google SSO and SMTP, both of which are currently off. Records the exact
+  Google redirect URI, why the Google button is hidden rather than broken, that
+  an existing password account links to Google by email with no migration, and
+  the `manage.py test_email` command that isolates an SMTP problem from a Celery
+  one.
+
+- **Feature documentation for reusable invite links, real names at onboarding,
+  and Discord handles** in [`docs/features.md`](./docs/features.md), including
+  the three load-bearing details of the invite-link design: redemption hangs off
+  `post_user_auth_workflow` so every provider is covered by one insertion point,
+  the token travels in the session so it survives the OAuth round trip, and the
+  public serializer is an allowlist that must never expose the token.
+
+### Not changed
+
+- **A Celery `KeyError` for `push_instance_metrics`** appears once in the worker
+  log at the moment of the 8/20 deploy. The task does not exist anywhere in the
+  codebase: it was a stale message left in RabbitMQ by older code, consumed once
+  and discarded. Nothing schedules it, so it cannot recur.
+
 ## 8/14/2026 — models and migrations agree again, and stay that way
 
 `makemigrations` had been reporting 35 pending operations for months. It was

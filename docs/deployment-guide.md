@@ -309,7 +309,10 @@ docker-compose up -d
 - `REDIS_URL` — Redis connection string
 - `CELERY_BROKER_URL` — RabbitMQ AMQP URL
 - `SECRET_KEY` — Django secret (min 50 chars, random)
-- `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` — SMTP credentials
+- `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` — SMTP credentials. These are only
+  _defaults_: the instance reads email settings from the `instance_configurations`
+  table first, so a value set in God Mode wins over the environment. Configure
+  email there — see [Authentication setup](./authentication-setup.md).
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` — S3 credentials
 - `ALLOWED_HOSTS` — Comma-separated domain list
 - `DEBUG=False` — Disable debug mode in production

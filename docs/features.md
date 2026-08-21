@@ -56,6 +56,81 @@ and username untouched), deactivate and reactivate accounts, and create named
 invite links that carry the invitee's name and need no SMTP. There is no
 delete — see the doc for why.
 
+### Reusable workspace invite links
+
+> Setup and troubleshooting: **[Authentication setup](./authentication-setup.md)**
+
+One link per workspace that any number of people can redeem, valid until an
+admin revokes it. Upstream invites are per-email and single-use — the row has a
+`unique_together` on `(email, workspace)` and acceptance deletes it — so there
+was no way to hand the same link to a group. This matters here because the
+instance has no SMTP, so an emailed invite never arrives anyway.
+
+Opening `/invite/<token>` names the workspace before the visitor has an account,
+then offers whatever sign-up methods the instance has enabled.
+
+- **Backend** — `db/models/workspace.py` (`WorkspaceInviteLink`),
+  `app/views/workspace/invite_link.py`, `app/serializers/workspace.py`,
+  `app/urls/workspace.py`, `authentication/utils/invite_link.py`
+- **Frontend** — `apps/web/app/(all)/invite/`,
+  `core/components/workspace/settings/invite-link.tsx`,
+  `core/services/workspace.service.ts`
+- **Migration** — `0192_workspaceinvitelink`
+
+Three things are load-bearing and easy to break:
+
+**Redemption hangs off `post_user_auth_workflow`.** Every provider — password,
+magic code, Google, LDAP — routes through that one callback and it receives
+`request`, so a single insertion point covers every sign-up path. Adding a new
+provider costs nothing; moving redemption into a specific provider would silently
+drop the others.
+
+**The token travels in the session, not the form.** Fetching the public link
+detail parks it there, so it survives the OAuth round trip exactly as `next_path`
+and `state` already do. Nothing needs to thread a token through four form layers.
+
+**The public serializer is an explicit allowlist and must never expose `token`.**
+The identical mistake on `WorkSpaceMemberInvitePublicSerializer` is pinned by
+`tests/unit/views/test_workspace_invite_disclosure.py`; the link equivalent is
+pinned the same way. A token in that payload would let any visitor join.
+
+A valid link also admits its holder when `ENABLE_SIGNUP` is `0` — the carve-out
+lives in `adapter/base.py`, because unlike an emailed invite there is no row
+keyed to the visitor's address to match on. The token _is_ the invitation, and
+grants nothing beyond membership of one workspace at one role.
+
+### Real name at onboarding
+
+Onboarding asks for first and last name and writes both to `display_name`.
+Previously it collected a single name into `first_name` only, and `display_name`
+silently defaulted to the email local-part in `User.save()` — so people appeared
+as `john.smith` in the activity feed, comments and @mentions while member tables
+rendered their real name. Google sign-ups arrive pre-populated.
+
+- **Frontend** — `core/components/onboarding/steps/profile/root.tsx`
+- **Backend** — `app/serializers/user.py` (`validate_display_name` rejects URLs,
+  since the field is now user-controlled and rendered app-wide)
+
+### Discord handles
+
+An optional handle on the user profile, set in profile settings and shown on the
+profile sidebar with a Discord icon; clicking copies it.
+
+- **Backend** — `db/models/user.py` (`discord_username`),
+  `app/serializers/user.py`, `app/views/workspace/user.py`
+- **Frontend** — `core/components/profile/sidebar.tsx`,
+  `core/components/settings/profile/content/pages/general/form.tsx`,
+  `packages/utils/src/validation.ts`
+- **Migration** — `0191_user_discord_username`
+
+The icon does **not** link out. Discord has no public profile URL keyed by
+username — `discord.com/users/<id>` needs the numeric snowflake, which the handle
+does not give you — so a link would be a guess that 404s.
+
+The sidebar reads a hand-rolled `user_data` dict in
+`app/views/workspace/user.py`, _not_ `UserLiteSerializer`. Adding a field to the
+serializer alone leaves the profile page showing nothing.
+
 ### Global Projects
 
 A project flagged `is_global` becomes visible instance-wide rather than only
