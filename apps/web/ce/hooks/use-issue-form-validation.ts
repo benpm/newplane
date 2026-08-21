@@ -1,42 +1,32 @@
-import { useEffect } from "react";
-import { useFormContext } from "react-hook-form";
-import type { TIssue } from "@plane/types";
-import { useProjectState } from "@/hooks/store/use-project-state";
-
 type FieldRules = Record<string, unknown>;
 
-export const useIssueFormValidation = (_projectId?: string | null) => {
-  const { watch, clearErrors } = useFormContext<TIssue>();
-  const { getStateById } = useProjectState();
-  const selectedStateId = watch("state_id");
-  const selectedState = selectedStateId ? getStateById(selectedStateId) : undefined;
-  // Skip mandatory field validation for draft (backlog) and cancelled states
-  const isDraftState = selectedState?.group === "backlog" || selectedState?.group === "cancelled";
-
-  useEffect(() => {
-    if (isDraftState) {
-      clearErrors(); // clear all errors when switching to draft
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDraftState]);
-
-  const getFieldRules = (originalRules: FieldRules): FieldRules => {
-    if (!isDraftState) return originalRules;
-    // Must explicitly set each key to undefined — returning {} doesn't override
-    // previously registered rules in RHF's internal field map (register() spreads
-    // new options onto the existing _f object, so omitted keys are NOT removed)
-    const cleared: FieldRules = {};
-    for (const key of Object.keys(originalRules)) {
-      cleared[key] = undefined;
-    }
-    return cleared;
-  };
-
-  // Returns rules for task category fields: skips validation when draft state or no categories exist
-  const getTaskCategoryFieldRules = (originalRules: FieldRules, categoriesExist: boolean): FieldRules => {
-    if (isDraftState || !categoriesExist) return getFieldRules(originalRules);
-    return originalRules;
-  };
-
-  return { isDraftState, getFieldRules, getTaskCategoryFieldRules };
+/**
+ * Work item properties are never mandatory.
+ *
+ * Category, sub-category, assignee, start date, due date and frequency used to be
+ * required unless the work item sat in a backlog or cancelled state. That blocked
+ * the most common way a tracker actually gets used -- jot the item down now, fill
+ * in the details once you know them -- so the requirement is gone for every field
+ * routed through this hook, in every state.
+ *
+ * Two things are deliberately still enforced elsewhere and are not affected here:
+ * the title, because the API rejects a work item with no name, and custom
+ * work-item-type properties an admin explicitly ticked as required, which run
+ * through handlePropertyValuesValidation in the modal form instead.
+ */
+const clearRules = (originalRules: FieldRules): FieldRules => {
+  // Each key must be explicitly set to undefined -- returning {} does not override
+  // rules already registered in RHF's internal field map, because register()
+  // spreads the new options onto the existing _f object and omitted keys survive.
+  const cleared: FieldRules = {};
+  for (const key of Object.keys(originalRules)) {
+    cleared[key] = undefined;
+  }
+  return cleared;
 };
+
+export const useIssueFormValidation = (_projectId?: string | null) => ({
+  isDraftState: false,
+  getFieldRules: clearRules,
+  getTaskCategoryFieldRules: (originalRules: FieldRules, _categoriesExist: boolean) => clearRules(originalRules),
+});
