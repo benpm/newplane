@@ -5,8 +5,8 @@ How people get into this instance. Everything here is configured in **God Mode**
 `instance_configurations` table — not to a `.env` file. Nothing here needs a
 rebuild or a redeploy; the settings are read per request.
 
-As of 2026-08-21 all of it is on: password, Google SSO and email. Magic-link
-login is the only thing still switched off, and only because nobody asked for it.
+Everything is on: password, Google SSO, email, and magic-link codes. Nothing here
+is left to configure.
 
 ## Current state
 
@@ -20,11 +20,31 @@ login is the only thing still switched off, and only because nobody asked for it
 | `EMAIL_HOST` / `EMAIL_HOST_USER`                 | `smtp.resend.com` / `resend` | The user is the literal word `resend`              |
 | `EMAIL_FROM`                                     | `noreply@mousetrip.online`   | Must stay on the Resend-verified domain            |
 | `EMAIL_PORT` / `EMAIL_USE_TLS` / `EMAIL_USE_SSL` | `587` / `1` / `0`            | TLS on 587; SSL would be 465                       |
-| `ENABLE_MAGIC_LINK_LOGIN`                        | `0`                          | Off; would work now that email does                |
+| `ENABLE_MAGIC_LINK_LOGIN`                        | `1` since 2026-08-22         | Emailed codes; changes what new sign-ups see       |
 
 Worth knowing why email mattered beyond invitations: password reset goes over
 SMTP too (`bgtasks/forgot_password_task.py`). While it was unconfigured, a user
 who forgot their password had no self-service way back in at all.
+
+### What turning magic links on actually changed
+
+`authentication/views/app/check.py` decides, per email address, whether the form
+asks for a password or a code. Enabling magic links moved two of those cases and
+left the main one alone:
+
+| Who                                                | Before                  | Now                      |
+| -------------------------------------------------- | ----------------------- | ------------------------ |
+| Existing user who set a password                   | password                | **password** — unchanged |
+| Existing user with `is_password_autoset`           | password they never had | **emailed code**         |
+| Any new address (sign-up, including via `/invite`) | choose a password       | **emailed code**         |
+
+The middle row was a real lockout: two accounts on this instance have
+`is_password_autoset=True`, meaning no usable password, and before this they had
+no way in at all. The third row is the one to be deliberate about — new people no
+longer pick a password during sign-up, they get a code and end up
+password-autoset themselves, and set a password later in profile settings if they
+want one. Both of the moved cases require SMTP, so this is only safe to leave on
+while email works.
 
 ---
 
