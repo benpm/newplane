@@ -135,9 +135,9 @@ def sync_github_wiki(github_sync_id):
         try:
             run_git(["clone", "--depth", "50", wiki_remote_url(github_sync), wiki_dir], cwd=tempfile.gettempdir())
         except GithubClientError as e:
-            github_sync.last_sync_status = f"wiki error: {e}"[:255]
-            github_sync.last_synced_at = timezone.now()
-            github_sync.save(update_fields=["last_sync_status", "last_synced_at"])
+            github_sync.wiki_sync_status = f"error: {e}"[:255]
+            github_sync.wiki_synced_at = timezone.now()
+            github_sync.save(update_fields=["wiki_sync_status", "wiki_synced_at"])
             log_exception(e)
             return
 
@@ -271,14 +271,14 @@ def sync_github_wiki(github_sync_id):
             run_git(["commit", "-m", "Sync from Plane"], cwd=wiki_dir)
             run_git(["push"], cwd=wiki_dir)
 
-        github_sync.last_synced_at = timezone.now()
-        github_sync.last_sync_status = (
-            f"wiki success: {pulled} pulled, {pushed} pushed, {created_pages} pages, {created_files} files"
+        github_sync.wiki_synced_at = timezone.now()
+        github_sync.wiki_sync_status = (
+            f"success: {pulled} pulled, {pushed} pushed, {created_pages} pages, {created_files} files"
         )[:255]
-        github_sync.save(update_fields=["last_synced_at", "last_sync_status"])
+        github_sync.save(update_fields=["wiki_synced_at", "wiki_sync_status"])
     except Exception as e:
-        github_sync.last_sync_status = f"wiki error: {e}"[:255]
-        github_sync.save(update_fields=["last_sync_status"])
+        github_sync.wiki_sync_status = f"error: {e}"[:255]
+        github_sync.save(update_fields=["wiki_sync_status"])
         log_exception(e)
     finally:
         shutil.rmtree(wiki_dir, ignore_errors=True)

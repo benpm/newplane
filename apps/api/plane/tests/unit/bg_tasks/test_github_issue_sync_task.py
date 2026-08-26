@@ -130,8 +130,10 @@ class TestGithubIssuePull:
             sync_github_issues_to_project(str(env["github_sync"].id))
 
         env["github_sync"].refresh_from_db()
-        assert env["github_sync"].issues_synced_at is not None
-        assert env["github_sync"].last_sync_status.startswith("success")
+        assert env["github_sync"].issues_cursor_at is not None
+        assert env["github_sync"].issue_sync_status.startswith("success")
+        # the wiki sync owns its own field and must not be spoken for
+        assert env["github_sync"].wiki_sync_status is None
 
 
 @pytest.mark.unit

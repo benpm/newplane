@@ -16,8 +16,10 @@ export type TProjectGithubSync = {
   repository_name: string;
   is_issue_sync_enabled: boolean;
   is_wiki_sync_enabled: boolean;
-  last_sync_status: string | null;
-  last_synced_at: string | null;
+  issue_sync_status: string | null;
+  issue_synced_at: string | null;
+  wiki_sync_status: string | null;
+  wiki_synced_at: string | null;
   created_at: string;
   updated_at: string;
 };

@@ -23,10 +23,18 @@ class ProjectGithubSync(ProjectBaseModel):
     repository_name = models.CharField(max_length=255)
     is_issue_sync_enabled = models.BooleanField(default=True)
     is_wiki_sync_enabled = models.BooleanField(default=False)
-    # poll cursor: passed as `since` to the GitHub issues API
-    issues_synced_at = models.DateTimeField(null=True, blank=True)
-    last_sync_status = models.CharField(max_length=255, null=True, blank=True)
-    last_synced_at = models.DateTimeField(null=True, blank=True)
+    # Poll cursor: passed as `since` to the GitHub issues API. Named `..._cursor_at`
+    # rather than `..._synced_at` precisely because it sits beside `issue_synced_at`
+    # below and means something entirely different -- one is a position in GitHub's
+    # change stream, the other is when a run last finished.
+    issues_cursor_at = models.DateTimeField(null=True, blank=True)
+    # Status is per sync type. Both syncs share a five-minute beat, so a single
+    # status field was simply whichever task finished last -- reliably the wiki,
+    # which clones and pushes -- leaving issue-sync failures invisible in the UI.
+    issue_sync_status = models.CharField(max_length=255, null=True, blank=True)
+    issue_synced_at = models.DateTimeField(null=True, blank=True)
+    wiki_sync_status = models.CharField(max_length=255, null=True, blank=True)
+    wiki_synced_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Project GitHub Sync"

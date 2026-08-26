@@ -105,7 +105,8 @@ class TestGithubWikiSync:
         page = Page.objects.get(github_wiki_link__wiki_slug="Home")
         assert page.description_html == "<p>initial home</p>"
         assert page.projects.filter(id=env["project"].id).exists()
-        assert env["github_sync"].last_sync_status.startswith("wiki success")
+        assert env["github_sync"].wiki_sync_status.startswith("success")
+        assert env["github_sync"].issue_sync_status is None
 
     def test_new_page_becomes_wiki_file_and_sidebar_regenerates(self, env):
         env["make_page"]("Release Notes")
@@ -198,7 +199,7 @@ class TestGithubWikiSync:
 
         run_sync(env)
 
-        assert env["github_sync"].last_sync_status.startswith("wiki error")
+        assert env["github_sync"].wiki_sync_status.startswith("error")
 
     def test_sync_recovers_when_conversion_was_unavailable(self, env, monkeypatch):
         """A push that could not convert must be retried, not read as a deletion.

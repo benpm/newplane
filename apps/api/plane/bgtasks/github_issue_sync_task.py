@@ -76,14 +76,16 @@ def sync_github_issues_to_project(github_sync_id):
         return
 
     started_at = timezone.now()
-    since = github_sync.issues_synced_at.isoformat() if github_sync.issues_synced_at else None
+    since = github_sync.issues_cursor_at.isoformat() if github_sync.issues_cursor_at else None
 
     try:
         gh_issues = fetch_issues(github_sync.repository_owner, github_sync.repository_name, since=since)
     except GithubClientError as e:
-        github_sync.last_sync_status = f"error: {e}"[:255]
-        github_sync.last_synced_at = started_at
-        github_sync.save(update_fields=["last_sync_status", "last_synced_at"])
+        github_sync.issue_sync_status = f"error: {e}"[:255]
+        github_sync.issue_synced_at = started_at
+        # the cursor deliberately does NOT advance: a failed fetch must not skip the
+        # window it never managed to read
+        github_sync.save(update_fields=["issue_sync_status", "issue_synced_at"])
         log_exception(e)
         return
 
@@ -150,10 +152,10 @@ def sync_github_issues_to_project(github_sync_id):
         except Exception as e:
             log_exception(e)
 
-    github_sync.issues_synced_at = started_at
-    github_sync.last_synced_at = started_at
-    github_sync.last_sync_status = f"success: {created} created, {updated} updated"
-    github_sync.save(update_fields=["issues_synced_at", "last_synced_at", "last_sync_status"])
+    github_sync.issues_cursor_at = started_at
+    github_sync.issue_synced_at = started_at
+    github_sync.issue_sync_status = f"success: {created} created, {updated} updated"
+    github_sync.save(update_fields=["issues_cursor_at", "issue_synced_at", "issue_sync_status"])
 
 
 @shared_task

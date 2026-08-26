@@ -15,6 +15,8 @@ import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { ToggleSwitch } from "@plane/ui";
 // services
 import { CEProjectGithubSyncService } from "@/plane-web/services/project-github-sync.service";
+// local components
+import { GithubSyncStatus } from "./sync-status";
 
 const githubSyncService = new CEProjectGithubSyncService();
 
@@ -93,11 +95,16 @@ export const GithubSyncSettingsRoot = observer(function GithubSyncSettingsRoot(p
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-13 font-medium text-primary">{githubSync.repository}</p>
-              <p className="text-11 text-tertiary mt-0.5">
-                {githubSync.last_synced_at
-                  ? `${t("project_settings.github_sync.last_synced")}: ${new Date(githubSync.last_synced_at).toLocaleString()} — ${githubSync.last_sync_status ?? ""}`
-                  : t("project_settings.github_sync.never_synced")}
-              </p>
+              <GithubSyncStatus
+                label={t("project_settings.github_sync.issue_status")}
+                status={githubSync.issue_sync_status}
+                syncedAt={githubSync.issue_synced_at}
+              />
+              <GithubSyncStatus
+                label={t("project_settings.github_sync.wiki_status")}
+                status={githubSync.wiki_sync_status}
+                syncedAt={githubSync.wiki_synced_at}
+              />
             </div>
             <div className="flex items-center gap-2">
               <Button
