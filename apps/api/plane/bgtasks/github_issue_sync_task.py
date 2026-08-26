@@ -28,16 +28,31 @@ def _plane_issue_is_done(issue):
 
 
 def _state_for(project, done):
-    """Pick the target state: first completed-group state when done, else the
-    project default (falling back to the first backlog/unstarted state)."""
+    """Pick the target state: first completed-group state when done, else a state
+    that is definitively *not* done.
+
+    The not-done branch cannot simply trust `project.default_state`. A project is
+    free to nominate any state as its default, including one in PLANE_DONE_GROUPS
+    -- and a project here really does default to "Cancelled". Honouring that put
+    every open GitHub issue into a state this module then read back as done, which
+    made `push_issue_state_to_github` disagree with `link.github_state` and close
+    the very issue that had just been imported as open. So the default is used only
+    when it is genuinely not-done, and otherwise ignored.
+    """
     from plane.db.models import State  # avoid circular imports
 
     states = State.objects.filter(project=project)
     if done:
         return states.filter(group="completed").order_by("sequence").first()
+
+    not_done = states.exclude(group__in=PLANE_DONE_GROUPS)
     if project.default_state_id:
-        return states.filter(pk=project.default_state_id).first()
-    return states.filter(group__in=["backlog", "unstarted"]).order_by("sequence").first()
+        default_state = not_done.filter(pk=project.default_state_id).first()
+        if default_state is not None:
+            return default_state
+    return not_done.filter(group__in=["unstarted", "backlog"]).order_by("sequence").first() or (
+        not_done.order_by("sequence").first()
+    )
 
 
 @shared_task
