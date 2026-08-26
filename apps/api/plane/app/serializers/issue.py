@@ -832,6 +832,11 @@ class IssueSerializer(DynamicBaseSerializer):
     attachment_count = serializers.IntegerField(read_only=True)
     link_count = serializers.IntegerField(read_only=True)
     total_logged_minutes = serializers.IntegerField(read_only=True)
+    # annotated by github_link_annotations(); absent when a view forgets to annotate,
+    # which read_only + allow_null makes harmless rather than a 500
+    github_issue_number = serializers.IntegerField(read_only=True, allow_null=True)
+    github_comment_count = serializers.IntegerField(read_only=True, allow_null=True)
+    github_repository = serializers.CharField(read_only=True, allow_null=True)
 
     class Meta:
         model = Issue
@@ -863,6 +868,9 @@ class IssueSerializer(DynamicBaseSerializer):
             "is_draft",
             "archived_at",
             "total_logged_minutes",
+            "github_issue_number",
+            "github_comment_count",
+            "github_repository",
             "main_task_category_id",
             "sub_task_category_id",
         ]
@@ -925,6 +933,9 @@ class IssueListDetailSerializer(serializers.Serializer):
             "attachment_count": instance.attachment_count,
             "link_count": instance.link_count,
             "total_logged_minutes": getattr(instance, "total_logged_minutes", None),
+            "github_issue_number": getattr(instance, "github_issue_number", None),
+            "github_comment_count": getattr(instance, "github_comment_count", None),
+            "github_repository": getattr(instance, "github_repository", None),
             "main_task_category_id": instance.main_task_category_id,
             "sub_task_category_id": instance.sub_task_category_id,
             "main_task_category_name": instance.main_task_category.name if instance.main_task_category else None,

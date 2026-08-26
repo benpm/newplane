@@ -25,8 +25,10 @@ class ProjectGithubSyncSerializer(BaseSerializer):
             "repository_name",
             "is_issue_sync_enabled",
             "is_wiki_sync_enabled",
-            "last_sync_status",
-            "last_synced_at",
+            "issue_sync_status",
+            "issue_synced_at",
+            "wiki_sync_status",
+            "wiki_synced_at",
             "created_at",
             "updated_at",
         ]

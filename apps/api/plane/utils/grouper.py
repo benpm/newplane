@@ -24,6 +24,8 @@ from plane.db.models import (
 )
 from typing import Optional, Dict, Tuple, Any, Union, List
 
+from plane.utils.github_issue_annotations import GITHUB_ISSUE_FIELDS, github_link_annotations
+
 
 def issue_queryset_grouper(
     queryset: QuerySet[Issue],
@@ -87,6 +89,8 @@ def issue_queryset_grouper(
             continue
         default_annotations[key] = expression
 
+    default_annotations.update(github_link_annotations())
+
     return queryset.annotate(**default_annotations)
 
 
@@ -133,6 +137,7 @@ def issue_on_results(
         "sub_task_category_id",
         "main_task_category_name",
         "sub_task_category_name",
+        *GITHUB_ISSUE_FIELDS,
     ]
 
     if group_by in FIELD_MAPPER:

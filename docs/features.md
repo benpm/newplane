@@ -219,22 +219,71 @@ god-mode.
 
 ### GitHub sync (issues and wiki)
 
-A project binds to one GitHub repo. Issues appear as Plane work items and
-close/reopen bidirectionally — `GithubIssueLink.github_state` records the
-last-observed remote state so echo updates converge instead of ping-ponging.
+A project binds to one GitHub repo. Everything except comments mirrors both
+ways.
+
+|                    | GitHub → Plane           | Plane → GitHub  |
+| ------------------ | ------------------------ | --------------- |
+| Create             | ✅                       | ✅ within ~30 s |
+| Close / reopen     | ✅                       | ✅ immediate    |
+| Title, description | ✅                       | ✅ ≤5 min       |
+| Comments           | count only, never synced |                 |
+| Labels, assignees  | not synced               |                 |
+
 Separately, Plane pages sync both ways with the repo wiki over GFM.
 
+**How it converges.** `GithubIssueLink.github_state` suppresses the state loop
+and `content_hash` the content loop. The rule worth internalising before
+touching any of it: **the hash decides _whether_ a side changed, the timestamp
+only gates and tie-breaks.** `Issue.updated_at` moves on every full save, so a
+priority change is indistinguishable from a description edit by timestamp
+alone — inferring an edit from it pushes stale text over a real GitHub one.
+Reading `updated_at <= content_synced_at` as proof the Plane side is
+_untouched_ is sound; reading the reverse as proof it _changed_ is not, so a
+byte comparison always follows. When both sides genuinely changed, the newer
+edit wins and the loser's title and body are overwritten wholesale.
+
+Markdown is the single interchange format — hashing GitHub-rendered HTML
+against live-converted markdown would never agree. Conversion goes through the
+live server, so a live outage stalls content sync rather than corrupting it.
+
+**Creation** has a fast path (a `post_save` signal, delayed 30 s because the
+work item is still half-built at `post_save`) and the five-minute sweep as its
+real guarantee — `bulk_create` never fires signals. Both call the same
+idempotent helper.
+
+**Deliberately not done:** deletions do not propagate (a Plane delete is
+recoverable, a GitHub one is not); drafts and archived items are never pushed;
+sub-items flatten to a `Sub-task of #N` line in the body, added on push and
+stripped on pull.
+
 - **Backend** — `db/models/github_sync.py`,
-  `app/views/project/github_sync.py`, `bgtasks/github_issue_sync_task.py`,
+  `app/views/project/github_sync.py`, `bgtasks/github_issue_sync_task.py`
+  (Celery surface only), `utils/github_issue_content.py` (hashing and conflict
+  resolution), `utils/github_issue_reconcile.py` (pull phases),
+  `utils/github_issue_create.py` (push-create),
+  `utils/github_issue_annotations.py` (badge data),
   `bgtasks/github_wiki_sync_task.py`, `db/signals/github_issue_push.py`,
-  `utils/github_client.py`, `utils/github_wiki.py`
-- **Frontend** — `ce/components/projects/settings/github-sync/`
+  `utils/github_client.py`, `utils/markdown_conversion.py`, `utils/github_wiki.py`
+- **Frontend** — `ce/components/projects/settings/github-sync/`,
+  `ce/components/issues/work-item-github-badge.tsx`
 - **Ops** — `scripts/plane token rotate` validates a new token (API
   reachable, `repo` scope, push access to every configured repo) _before_
   writing it to either env file
 
 Auth is instance-wide via `GITHUB_PERSONAL_ACCESS_TOKEN`; there are no
-per-project credentials. Both syncs run on Celery beat every five minutes.
+per-project credentials. Both syncs run on Celery beat every five minutes and
+report into their own status fields — they shared one until it became clear the
+wiki run was reliably erasing the issue run's result.
+
+**Adding a field to the badge payload** means touching all nine places that
+list issue fields explicitly: `utils/grouper.py`, `IssueSerializer`,
+`IssueListDetailSerializer`, `IssueDetailSerializer`, `ViewIssueListSerializer`,
+two lists in `views/issue/base.py`, `views/issue/sub_issue.py`, and
+`utils/porters/serializers/issue.py`. Miss one and the badge vanishes in
+exactly that view, silently. The badge is not shown in `apps/space/` (a separate
+codebase) or in non-layout renderers such as sub-issue lists, drafts, home
+recents, inbox and power-k.
 
 ### Page-link autocomplete
 

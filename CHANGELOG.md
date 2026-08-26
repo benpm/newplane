@@ -1,5 +1,57 @@
 # Changelog
 
+## 8/26/2026 — GitHub sync now goes both ways, and one bug that was aimed at your repo
+
+The GitHub integration only ever synced in one direction for creation: issues
+became work items, and completing a work item closed the issue. Anything created
+in Plane stayed in Plane — 16 of the 21 work items in the connected project had
+never existed on GitHub — and title and description were written once at import
+and never again.
+
+### Fixed
+
+- **Every open GitHub issue was being imported as done, and the sync was one save
+  away from closing all of them.** `_state_for(project, done=False)` returned
+  `project.default_state` without checking it, and the connected project nominates
+  "Cancelled" as its default — a state in `PLANE_DONE_GROUPS`. So all five linked
+  work items sat in Cancelled, and because the `post_save` signal fires on any save
+  of a linked item, Plane's done-ness read True while `link.github_state` read
+  "open". Editing a title in Plane would have closed five open GitHub issues. It had
+  not fired only because nobody had touched those items. The not-done target now
+  ignores a done-group default. The existing test asserted `group != "completed"`,
+  which passes for cancelled too — that is how it survived.
+- **The issue sync's status was invisible.** Both syncs wrote `last_sync_status` on
+  the same five-minute beat, and the wiki run — which clones, converts and pushes —
+  reliably finished last and erased it. The column read "wiki success: ..." while
+  the issue sync had completed 0.8s earlier. Now four fields, one pair each. A
+  failed fetch also no longer advances the poll cursor, so a window that was never
+  read cannot be skipped.
+- **`GithubIcon` rendered at ~83% and off-centre** — its path is drawn on a 0-20
+  grid inside a 24-unit viewBox.
+
+### Added
+
+- **Creating a work item in Plane creates a GitHub issue**, within about 30 seconds.
+  The delay is deliberate: at `post_save` the work item is half-built, and
+  `description_html` is rewritten asynchronously afterwards. The five-minute sweep
+  is the actual guarantee, since `bulk_create` never fires signals.
+- **Title and description sync both ways**, newest edit winning when both changed.
+  The design rule is that the hash decides _whether_ a side changed and the
+  timestamp only gates and tie-breaks — `updated_at` moves on every save, so
+  trusting it would push stale text over a real GitHub edit. There is a test for
+  exactly that.
+- **A GitHub badge on every work item**, in all five layouts and the peek view,
+  linking to the issue and counting the comments that live on GitHub. Comments are
+  not synced, so that count is the only sign from inside Plane that discussion is
+  happening elsewhere.
+
+### Not changed
+
+Deletions still do not propagate — a Plane delete is soft and recoverable, a GitHub
+one is neither. Drafts and archived items are never pushed. Comments, labels and
+assignees are still not synced. The badge does not appear in `apps/space/` or in
+non-layout renderers (sub-issue lists, drafts, home recents, inbox, power-k).
+
 ## 8/21/2026 — three things that looked like outages and were not
 
 A sweep of the production logs turned up three separate red signals. None of them

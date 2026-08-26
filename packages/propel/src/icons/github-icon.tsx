@@ -8,13 +8,15 @@ import * as React from "react";
 
 import type { ISvgIcons } from "./type";
 
+// The path geometry is drawn on a 0-20 grid, so the viewBox is 20 units. It was 24,
+// which rendered the glyph at ~83% size and off-centre against neighbouring icons.
 export function GithubIcon({ width = "24", height = "24", className, color }: ISvgIcons) {
   return (
     <svg
       width={width}
       height={height}
       className={className}
-      viewBox="0 0 24 24"
+      viewBox="0 0 20 20"
       fill="currentColor"
       xmlns="http://www.w3.org/2000/svg"
     >

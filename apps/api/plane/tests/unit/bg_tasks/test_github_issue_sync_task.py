@@ -17,19 +17,48 @@ from unittest.mock import patch
 
 import pytest
 
-from plane.bgtasks.github_issue_sync_task import push_issue_state_to_github, sync_github_issues_to_project
+from plane.bgtasks.github_issue_sync_task import (
+    PLANE_DONE_GROUPS,
+    push_issue_state_to_github,
+    sync_github_issues_to_project,
+)
 from plane.db.models import GithubIssueLink, Issue, ProjectGithubSync, State
+from plane.utils import github_issue_content
 from plane.tests.factories import ProjectFactory, UserFactory, WorkspaceFactory, WorkspaceMemberFactory
 
 
-def gh_issue(number, state="open", title=None, body_html="<p>from github</p>"):
+def gh_issue(number, state="open", title=None, body="from github", updated_at="2026-08-01T00:00:00Z"):
+    """GitHub's issues payload as this sync consumes it: raw markdown `body`, not
+    rendered `body_html`. Markdown is the interchange format in both directions so
+    the two sides can be compared by hashing."""
     return {
         "number": number,
         "state": state,
         "title": title or f"GH issue {number}",
-        "body_html": body_html,
-        "updated_at": "2026-08-01T00:00:00Z",
+        "body": body,
+        "comments": 0,
+        "updated_at": updated_at,
     }
+
+
+@pytest.fixture(autouse=True)
+def stub_live_conversion(monkeypatch):
+    """Deterministic stand-ins for the live server's markdown endpoints, patched on
+    github_issues because that is the namespace the callers resolve them in."""
+    monkeypatch.setattr(
+        github_issue_content,
+        "convert_markdown_to_formats",
+        lambda md, variant="rich": {
+            "description_html": f"<p>{md.strip()}</p>",
+            "description_json": {},
+            "description_binary": None,
+        },
+    )
+    monkeypatch.setattr(
+        github_issue_content,
+        "convert_html_to_markdown",
+        lambda html: (html or "").replace("<p>", "").replace("</p>", "").strip(),
+    )
 
 
 @pytest.fixture
@@ -63,10 +92,34 @@ class TestGithubIssuePull:
         issue = Issue.objects.get(project=env["project"], external_source="github", external_id="1")
         assert issue.name == "GH issue 1"
         assert issue.description_html == "<p>from github</p>"
-        assert issue.state.group != "completed"
+        # not merely "not completed": cancelled is a done group too, and asserting
+        # only against "completed" is what let the default-state bug below survive.
+        assert issue.state.group not in PLANE_DONE_GROUPS
         link = GithubIssueLink.objects.get(issue=issue)
         assert link.github_issue_number == 1
         assert link.github_state == "open"
+
+    def test_open_issue_is_not_imported_as_done_when_the_default_state_is(self, env):
+        """A project may nominate a done-group state as its default -- production
+        does exactly this with "Cancelled". An open GitHub issue must still land in
+        a not-done state, or the push path reads it back as done and closes the
+        issue it just imported."""
+        project = env["project"]
+        cancelled = State.objects.create(
+            project=project, name="Cancelled", group="cancelled", color="#333", sequence=3
+        )
+        project.default_state = cancelled
+        project.save(update_fields=["default_state"])
+
+        with patch("plane.utils.github_client.fetch_issues") as mock_fetch:
+            mock_fetch.return_value = [gh_issue(11)]
+            sync_github_issues_to_project(str(env["github_sync"].id))
+
+        issue = Issue.objects.get(project=project, external_id="11")
+        assert issue.state.group not in PLANE_DONE_GROUPS
+        # the done default is ignored entirely, not merely nudged
+        assert issue.state != cancelled
+        assert issue.state.name == "Backlog"  # lowest-sequence not-done state
 
     def test_closed_issue_lands_in_completed_state(self, env):
         with patch("plane.utils.github_client.fetch_issues") as mock_fetch:
@@ -102,8 +155,10 @@ class TestGithubIssuePull:
             sync_github_issues_to_project(str(env["github_sync"].id))
 
         env["github_sync"].refresh_from_db()
-        assert env["github_sync"].issues_synced_at is not None
-        assert env["github_sync"].last_sync_status.startswith("success")
+        assert env["github_sync"].issues_cursor_at is not None
+        assert env["github_sync"].issue_sync_status.startswith("success")
+        # the wiki sync owns its own field and must not be spoken for
+        assert env["github_sync"].wiki_sync_status is None
 
 
 @pytest.mark.unit

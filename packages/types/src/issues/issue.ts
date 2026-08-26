@@ -106,6 +106,13 @@ export type TIssue = TBaseIssue & {
   state__group?: TStateGroups | null;
   // CE extended data from worklog annotation
   total_logged_minutes?: number | null;
+  // CE extended data from the GitHub issue link annotation. Nullable and optional on
+  // purpose: MobX writes partial work items optimistically, so a freshly created one
+  // must render no badge rather than a broken one, and a project with no repo
+  // connected has none of these at all.
+  github_issue_number?: number | null;
+  github_comment_count?: number | null;
+  github_repository?: string | null;
   // CE extended data from task category annotation
   main_task_category_name?: string | null;
   sub_task_category_name?: string | null;

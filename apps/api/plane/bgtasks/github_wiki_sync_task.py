@@ -18,58 +18,27 @@ deleted wiki file leaves its page.
 """
 
 import base64
-import hashlib
 import shutil
 import tempfile
 from pathlib import Path
 
-import requests
 from celery import shared_task
-from django.conf import settings
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from plane.utils.exception_logger import log_exception
-from plane.utils.url import normalize_url_path
-
-
-def _hash(markdown):
-    return hashlib.sha256(markdown.encode("utf-8")).hexdigest()
-
-
-def convert_markdown_to_page_formats(markdown):
-    """markdown -> {description_html, description_json, description_binary(b64)} via live."""
-    if not settings.LIVE_URL:
-        return None
-    url = normalize_url_path(f"{settings.LIVE_URL}/convert-markdown/")
-    try:
-        response = requests.post(url, json={"markdown": markdown, "variant": "document"}, timeout=60)
-        if response.status_code == 200:
-            return response.json()
-    except requests.RequestException as e:
-        log_exception(e)
-    return None
-
-
-def convert_html_to_markdown(description_html):
-    """description_html -> markdown via live."""
-    if not settings.LIVE_URL:
-        return None
-    url = normalize_url_path(f"{settings.LIVE_URL}/convert-markdown/")
-    try:
-        response = requests.post(url, json={"description_html": description_html or "<p></p>"}, timeout=60)
-        if response.status_code == 200:
-            return response.json().get("markdown")
-    except requests.RequestException as e:
-        log_exception(e)
-    return None
+from plane.utils.markdown_conversion import (
+    content_hash,
+    convert_html_to_markdown,
+    convert_markdown_to_formats,
+)
 
 
 def _apply_pull(page, markdown, link):
     """Write wiki content into a page. The binary is replaced too, so open editors
     reload the new document; if live returned nothing, fall back to clearing the
     binary and letting live rebuild it from HTML on next open."""
-    formats = convert_markdown_to_page_formats(markdown)
+    formats = convert_markdown_to_formats(markdown, variant="document")
     if formats is None:
         return False
     page.description_html = formats.get("description_html") or "<p></p>"
@@ -77,7 +46,7 @@ def _apply_pull(page, markdown, link):
     binary = formats.get("description_binary")
     page.description_binary = base64.b64decode(binary) if binary else None
     page.save()
-    link.wiki_content_hash = _hash(markdown)
+    link.wiki_content_hash = content_hash(markdown)
     link.last_synced_at = timezone.now()  # after page.save(): page.updated_at <= last_synced_at
     link.save(update_fields=["wiki_content_hash", "last_synced_at"])
     return True
@@ -88,7 +57,7 @@ def _apply_push(page, wiki_dir, link):
     if markdown is None:
         return False
     (Path(wiki_dir) / f"{link.wiki_slug}.md").write_text(markdown, encoding="utf-8")
-    link.wiki_content_hash = _hash(markdown)
+    link.wiki_content_hash = content_hash(markdown)
     link.last_synced_at = timezone.now()
     link.save(update_fields=["wiki_content_hash", "last_synced_at"])
     return True
@@ -135,9 +104,9 @@ def sync_github_wiki(github_sync_id):
         try:
             run_git(["clone", "--depth", "50", wiki_remote_url(github_sync), wiki_dir], cwd=tempfile.gettempdir())
         except GithubClientError as e:
-            github_sync.last_sync_status = f"wiki error: {e}"[:255]
-            github_sync.last_synced_at = timezone.now()
-            github_sync.save(update_fields=["last_sync_status", "last_synced_at"])
+            github_sync.wiki_sync_status = f"error: {e}"[:255]
+            github_sync.wiki_synced_at = timezone.now()
+            github_sync.save(update_fields=["wiki_sync_status", "wiki_synced_at"])
             log_exception(e)
             return
 
@@ -184,7 +153,7 @@ def sync_github_wiki(github_sync_id):
                     pushed += 1
                 continue  # genuine wiki-side deletion: do not propagate
             markdown = wiki_files[slug]
-            wiki_changed = _hash(markdown) != link.wiki_content_hash
+            wiki_changed = content_hash(markdown) != link.wiki_content_hash
             page_changed = link.last_synced_at is None or page.updated_at > link.last_synced_at
 
             direction = None
@@ -271,14 +240,14 @@ def sync_github_wiki(github_sync_id):
             run_git(["commit", "-m", "Sync from Plane"], cwd=wiki_dir)
             run_git(["push"], cwd=wiki_dir)
 
-        github_sync.last_synced_at = timezone.now()
-        github_sync.last_sync_status = (
-            f"wiki success: {pulled} pulled, {pushed} pushed, {created_pages} pages, {created_files} files"
+        github_sync.wiki_synced_at = timezone.now()
+        github_sync.wiki_sync_status = (
+            f"success: {pulled} pulled, {pushed} pushed, {created_pages} pages, {created_files} files"
         )[:255]
-        github_sync.save(update_fields=["last_synced_at", "last_sync_status"])
+        github_sync.save(update_fields=["wiki_synced_at", "wiki_sync_status"])
     except Exception as e:
-        github_sync.last_sync_status = f"wiki error: {e}"[:255]
-        github_sync.save(update_fields=["last_sync_status"])
+        github_sync.wiki_sync_status = f"error: {e}"[:255]
+        github_sync.save(update_fields=["wiki_sync_status"])
         log_exception(e)
     finally:
         shutil.rmtree(wiki_dir, ignore_errors=True)

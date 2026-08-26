@@ -23,10 +23,18 @@ class ProjectGithubSync(ProjectBaseModel):
     repository_name = models.CharField(max_length=255)
     is_issue_sync_enabled = models.BooleanField(default=True)
     is_wiki_sync_enabled = models.BooleanField(default=False)
-    # poll cursor: passed as `since` to the GitHub issues API
-    issues_synced_at = models.DateTimeField(null=True, blank=True)
-    last_sync_status = models.CharField(max_length=255, null=True, blank=True)
-    last_synced_at = models.DateTimeField(null=True, blank=True)
+    # Poll cursor: passed as `since` to the GitHub issues API. Named `..._cursor_at`
+    # rather than `..._synced_at` precisely because it sits beside `issue_synced_at`
+    # below and means something entirely different -- one is a position in GitHub's
+    # change stream, the other is when a run last finished.
+    issues_cursor_at = models.DateTimeField(null=True, blank=True)
+    # Status is per sync type. Both syncs share a five-minute beat, so a single
+    # status field was simply whichever task finished last -- reliably the wiki,
+    # which clones and pushes -- leaving issue-sync failures invisible in the UI.
+    issue_sync_status = models.CharField(max_length=255, null=True, blank=True)
+    issue_synced_at = models.DateTimeField(null=True, blank=True)
+    wiki_sync_status = models.CharField(max_length=255, null=True, blank=True)
+    wiki_synced_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Project GitHub Sync"
@@ -56,6 +64,17 @@ class GithubIssueLink(ProjectBaseModel):
     loop suppressor for bidirectional close/reopen: a push only fires when Plane's
     done-ness disagrees with it, and applying a GitHub-originated change updates it
     before touching the Plane issue — so echo updates converge instead of ping-ponging.
+
+    `content_hash` and `content_synced_at` do the same job for title and description.
+    The hash is of the canonical form of the content last transferred, in whichever
+    direction; the timestamp is when that transfer happened. The division of labour
+    between them is the whole design and is easy to get wrong: **the hash decides
+    whether a side changed, the timestamp only gates and tie-breaks.** `Issue.updated_at`
+    moves on every full save — a priority change, an assignee change — so inferring a
+    content edit from it would push stale text over a genuine GitHub edit. Reading
+    `updated_at <= content_synced_at` as proof the Plane side is *untouched* is sound
+    (it can only ever be over-cautious); reading the reverse as proof it *changed* is
+    not, which is why a byte comparison always follows.
     """
 
     github_sync = models.ForeignKey("db.ProjectGithubSync", on_delete=models.CASCADE, related_name="issue_links")
@@ -66,6 +85,12 @@ class GithubIssueLink(ProjectBaseModel):
     github_issue_number = models.IntegerField()
     github_state = models.CharField(max_length=30, choices=GITHUB_ISSUE_STATE_CHOICES, default="open")
     github_updated_at = models.DateTimeField(null=True, blank=True)
+    content_hash = models.CharField(max_length=64, null=True, blank=True)
+    content_synced_at = models.DateTimeField(null=True, blank=True)
+    # Mirrored from the issue payload, which carries it for free -- no extra request.
+    # Comments are not synced, so this is what the UI badge counts as "discussion on
+    # GitHub you cannot see from here".
+    github_comment_count = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name = "GitHub Issue Link"
