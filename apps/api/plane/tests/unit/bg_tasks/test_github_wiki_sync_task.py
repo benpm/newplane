@@ -66,8 +66,12 @@ def env(db, tmp_path, monkeypatch):
     # Deterministic stand-ins for the live server conversion endpoints.
     monkeypatch.setattr(
         github_wiki_sync_task,
-        "convert_markdown_to_page_formats",
-        lambda md: {"description_html": f"<p>{md.strip()}</p>", "description_json": {}, "description_binary": None},
+        "convert_markdown_to_formats",
+        lambda md, variant="document": {
+            "description_html": f"<p>{md.strip()}</p>",
+            "description_json": {},
+            "description_binary": None,
+        },
     )
     monkeypatch.setattr(
         github_wiki_sync_task,
