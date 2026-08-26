@@ -31,6 +31,7 @@ import type { TSelectionHelper } from "@/hooks/use-multiple-select";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web components
 import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
+import { WorkItemGithubBadge } from "@/plane-web/components/issues/work-item-github-badge";
 import { IssueStats } from "@/plane-web/components/issues/issue-layouts/issue-stats";
 // types
 import { WithDisplayPropertiesHOC } from "../properties/with-display-properties-HOC";
@@ -249,6 +250,7 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
                       displayProperties={displayProperties}
                     />
                   )}
+                  <WorkItemGithubBadge issue={issue} />
                 </div>
               )}
 

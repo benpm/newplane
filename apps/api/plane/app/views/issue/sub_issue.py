@@ -27,6 +27,7 @@ from plane.bgtasks.issue_activities_task import issue_activity
 from plane.utils.timezone_converter import user_timezone_converter
 from collections import defaultdict
 from plane.utils.host import base_host
+from plane.utils.github_issue_annotations import GITHUB_ISSUE_FIELDS, github_link_annotations
 from plane.utils.order_queryset import order_issue_queryset
 
 
@@ -100,6 +101,7 @@ class SubIssuesEndpoint(BaseAPIView):
                 ),
             )
             .annotate(state_group=F("state__group"))
+            .annotate(**github_link_annotations())
             .order_by("-created_at")
         )
 
@@ -141,6 +143,7 @@ class SubIssuesEndpoint(BaseAPIView):
             "link_count",
             "is_draft",
             "archived_at",
+            *GITHUB_ISSUE_FIELDS,
         )
         datetime_fields = ["created_at", "updated_at"]
         sub_issues = user_timezone_converter(sub_issues, datetime_fields, request.user.user_timezone)

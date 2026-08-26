@@ -23,6 +23,7 @@ import useIssuePeekOverviewRedirection from "@/hooks/use-issue-peek-overview-red
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web imports
 import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
+import { WorkItemGithubBadge } from "@/plane-web/components/issues/work-item-github-badge";
 import { IssueStats } from "@/plane-web/components/issues/issue-layouts/issue-stats";
 // local imports
 import { WorkItemPreviewCard } from "../../preview-card";
@@ -159,6 +160,7 @@ export const IssueGanttSidebarBlock = observer(function IssueGanttSidebarBlock(p
             displayProperties={issuesFilter?.issueFilters?.displayProperties}
           />
         )}
+        <WorkItemGithubBadge issue={issueDetails} />
         <Tooltip tooltipContent={issueDetails?.name} isMobile={isMobile}>
           <span className="flex-grow truncate text-13 font-medium">{issueDetails?.name}</span>
         </Tooltip>

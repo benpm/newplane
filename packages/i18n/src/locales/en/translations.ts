@@ -571,6 +571,10 @@ export default {
   add_work_item: "Add work item",
   advanced_description_placeholder: "Press '/' for commands",
   create_work_item: "Create work item",
+  work_item_github: {
+    open: "Open {repository}#{number} on GitHub",
+    comments: "{count, plural, one{# comment} other{# comments}} on GitHub, not shown in Plane",
+  },
   attachments: "Attachments",
   declining: "Declining",
   declined: "Declined",

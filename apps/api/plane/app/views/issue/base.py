@@ -73,6 +73,7 @@ from plane.db.models import (
 )
 from plane.utils.filters import ComplexFilterBackend, IssueFilterSet
 from plane.utils.global_paginator import paginate
+from plane.utils.github_issue_annotations import GITHUB_ISSUE_FIELDS, github_link_annotations
 from plane.utils.grouper import (
     issue_group_values,
     issue_on_results,
@@ -145,6 +146,7 @@ class IssueListEndpoint(BaseAPIView):
                 .values("count")
             )
             .annotate(
+                **github_link_annotations(),
                 total_logged_minutes=Subquery(
                     IssueWorkLog.objects.filter(issue_id=OuterRef("id"))
                     .values("issue_id")
@@ -205,6 +207,7 @@ class IssueListEndpoint(BaseAPIView):
                 "archived_at",
                 "deleted_at",
                 "total_logged_minutes",
+                *GITHUB_ISSUE_FIELDS,
                 "frequency",
             )
             datetime_fields = ["created_at", "updated_at"]
@@ -265,6 +268,7 @@ class IssueViewSet(BaseViewSet):
                 )
             )
             .annotate(
+                **github_link_annotations(),
                 total_logged_minutes=Subquery(
                     IssueWorkLog.objects.filter(issue_id=OuterRef("id"))
                     .values("issue_id")
@@ -496,6 +500,7 @@ class IssueViewSet(BaseViewSet):
                     "archived_at",
                     "deleted_at",
                     "total_logged_minutes",
+                    *GITHUB_ISSUE_FIELDS,
                     "main_task_category_id",
                     "sub_task_category_id",
                     "frequency",
@@ -564,6 +569,7 @@ class IssueViewSet(BaseViewSet):
                 )
             )
             .annotate(
+                **github_link_annotations(),
                 total_logged_minutes=Subquery(
                     IssueWorkLog.objects.filter(issue_id=OuterRef("id"))
                     .values("issue_id")
@@ -998,6 +1004,7 @@ class IssuePaginatedViewSet(BaseViewSet):
                 )
             )
             .annotate(
+                **github_link_annotations(),
                 total_logged_minutes=Subquery(
                     IssueWorkLog.objects.filter(issue_id=OuterRef("id"))
                     .values("issue_id")
@@ -1051,6 +1058,7 @@ class IssuePaginatedViewSet(BaseViewSet):
             "attachment_count",
             "sub_issues_count",
             "total_logged_minutes",
+            *GITHUB_ISSUE_FIELDS,
             "frequency",
         ]
 
@@ -1180,6 +1188,7 @@ class IssueDetailEndpoint(BaseAPIView):
                 )
             )
             .annotate(
+                **github_link_annotations(),
                 total_logged_minutes=Subquery(
                     IssueWorkLog.objects.filter(issue_id=OuterRef("id"))
                     .values("issue_id")
