@@ -4,55 +4,55 @@
 
 """Bidirectional GitHub issue <-> Plane work item sync.
 
-Pull: GitHub issues become work items; GitHub-side close/reopen moves the linked work
-item between states. Runs from Celery beat every 5 minutes, cursored by `since`.
+Everything except comments mirrors both ways: issues and work items are created on
+both sides, and title, description and open/closed state converge.
 
-Push: completing/reopening a linked work item closes/reopens the GitHub issue. Fired
-from a post_save signal on Issue.
+One run does three phases, in this order for reasons that are not interchangeable:
 
-Loop suppression lives in GithubIssueLink.github_state: the pull path records the
-GitHub state before touching the Plane issue, and the push path only calls GitHub when
-Plane's done-ness disagrees with that recorded state — so echoes converge.
+  A  unlinked GitHub issues become work items, and are immediately content-filled
+  B  every live link reconciles state, then content
+  C  unlinked work items become GitHub issues, budget permitting
+
+A precedes B so a link created this run is populated this run. C is last so an issue
+created here cannot be seen by the fetch that already happened, which would otherwise
+look like an unlinked remote issue and be imported straight back.
+
+State pushes are immediate, fired by a post_save signal on Issue. Creation has a fast
+path on that same signal and this sweep as its backstop; content is reconciled only
+here, because doing it on the signal reintroduces the echo loop the hashes exist to
+prevent.
+
+Loop suppression: GithubIssueLink.github_state for state, GithubIssueLink.content_hash
+for content. See the model docstring -- the hash decides *whether* a side changed, the
+timestamp only gates and tie-breaks.
+
+The phases live in plane/utils/github_issue_reconcile.py and the content decisions in
+plane/utils/github_issue_content.py. This module stays the Celery surface: its task
+names are referenced by the beat schedule and by messages already queued in Redis, so
+they must not move.
 """
 
 from celery import shared_task
 from django.utils import timezone
 
 from plane.utils.exception_logger import log_exception
+from plane.utils.github_issue_content import (
+    CURSOR_OVERLAP,
+    PLANE_DONE_GROUPS,
+    PUSH_BUDGET_PER_RUN,
+    plane_issue_is_done,
+)
+from plane.utils.github_issue_create import create_github_issue_for, create_missing_github_issues
+from plane.utils.github_issue_reconcile import import_new_issues, reconcile_link, target_state_for
 
-PLANE_DONE_GROUPS = {"completed", "cancelled"}
-
-
-def _plane_issue_is_done(issue):
-    return issue.state is not None and issue.state.group in PLANE_DONE_GROUPS
-
-
-def _state_for(project, done):
-    """Pick the target state: first completed-group state when done, else a state
-    that is definitively *not* done.
-
-    The not-done branch cannot simply trust `project.default_state`. A project is
-    free to nominate any state as its default, including one in PLANE_DONE_GROUPS
-    -- and a project here really does default to "Cancelled". Honouring that put
-    every open GitHub issue into a state this module then read back as done, which
-    made `push_issue_state_to_github` disagree with `link.github_state` and close
-    the very issue that had just been imported as open. So the default is used only
-    when it is genuinely not-done, and otherwise ignored.
-    """
-    from plane.db.models import State  # avoid circular imports
-
-    states = State.objects.filter(project=project)
-    if done:
-        return states.filter(group="completed").order_by("sequence").first()
-
-    not_done = states.exclude(group__in=PLANE_DONE_GROUPS)
-    if project.default_state_id:
-        default_state = not_done.filter(pk=project.default_state_id).first()
-        if default_state is not None:
-            return default_state
-    return not_done.filter(group__in=["unstarted", "backlog"]).order_by("sequence").first() or (
-        not_done.order_by("sequence").first()
-    )
+__all__ = [
+    "PLANE_DONE_GROUPS",
+    "schedule_github_issue_syncs",
+    "sync_github_issues_to_project",
+    "push_issue_state_to_github",
+    "create_github_issue_for_work_item",
+    "target_state_for",
+]
 
 
 @shared_task
@@ -67,16 +67,17 @@ def schedule_github_issue_syncs():
 
 @shared_task
 def sync_github_issues_to_project(github_sync_id):
-    """Pull direction: upsert work items from the associated repo's issues."""
-    from plane.db.models import GithubIssueLink, Issue, ProjectGithubSync
-    from plane.utils.github_client import GITHUB_EXTERNAL_SOURCE, GithubClientError, fetch_issues
+    """One reconcile run for one project<->repo association."""
+    from plane.db.models import GithubIssueLink, ProjectGithubSync
+    from plane.utils.github_client import GithubClientError, fetch_issues
 
     github_sync = ProjectGithubSync.objects.filter(pk=github_sync_id).first()
     if github_sync is None or not github_sync.is_issue_sync_enabled:
         return
 
     started_at = timezone.now()
-    since = github_sync.issues_cursor_at.isoformat() if github_sync.issues_cursor_at else None
+    cursor = github_sync.issues_cursor_at
+    since = (cursor - CURSOR_OVERLAP).isoformat() if cursor else None
 
     try:
         gh_issues = fetch_issues(github_sync.repository_owner, github_sync.repository_name, since=since)
@@ -90,72 +91,58 @@ def sync_github_issues_to_project(github_sync_id):
         return
 
     project = github_sync.project
-    created = updated = 0
+    created = import_new_issues(github_sync, gh_issues, project)
 
-    for gh_issue in gh_issues:
+    by_number = {gh_issue["number"]: gh_issue for gh_issue in gh_issues}
+    budget = PUSH_BUDGET_PER_RUN
+    pulled = pushed = 0
+    links = GithubIssueLink.objects.filter(github_sync=github_sync).select_related("issue__state")
+    for link in links:
         try:
-            number = gh_issue["number"]
-            gh_state = gh_issue.get("state", "open")
-            title = (gh_issue.get("title") or f"GitHub issue #{number}")[:255]
-            body_html = gh_issue.get("body_html") or "<p></p>"
-            gh_updated_at = gh_issue.get("updated_at")
-
-            link = GithubIssueLink.objects.filter(github_sync=github_sync, github_issue_number=number).first()
-
-            if link is None:
-                # Re-link a work item imported earlier (or by another sync row) instead
-                # of duplicating it.
-                existing_issue = Issue.objects.filter(
-                    project=project,
-                    external_source=GITHUB_EXTERNAL_SOURCE,
-                    external_id=str(number),
-                ).first()
-
-                if existing_issue is None:
-                    issue = Issue.objects.create(
-                        project=project,
-                        name=title,
-                        description_html=body_html,
-                        state=_state_for(project, done=gh_state == "closed"),
-                        external_source=GITHUB_EXTERNAL_SOURCE,
-                        external_id=str(number),
-                    )
-                    created += 1
-                else:
-                    issue = existing_issue
-
-                GithubIssueLink.objects.create(
-                    github_sync=github_sync,
-                    project=project,
-                    issue=issue,
-                    github_issue_number=number,
-                    github_state=gh_state,
-                    github_updated_at=gh_updated_at,
-                )
-                continue
-
-            if link.github_state != gh_state:
-                # Record the observed GitHub state BEFORE touching the Plane issue so the
-                # push signal fired by issue.save() sees agreement and does nothing.
-                link.github_state = gh_state
-                link.github_updated_at = gh_updated_at
-                link.save(update_fields=["github_state", "github_updated_at"])
-
-                issue = link.issue
-                should_be_done = gh_state == "closed"
-                if _plane_issue_is_done(issue) != should_be_done:
-                    target_state = _state_for(project, done=should_be_done)
-                    if target_state is not None:
-                        issue.state = target_state
-                        issue.save(update_fields=["state"])
-                        updated += 1
+            one_pulled, one_pushed, spent = reconcile_link(
+                github_sync, link, by_number.get(link.github_issue_number), project, budget
+            )
+            pulled += one_pulled
+            pushed += one_pushed
+            budget -= spent
         except Exception as e:
             log_exception(e)
 
+    opened, capped = create_missing_github_issues(github_sync, project, budget)
+
     github_sync.issues_cursor_at = started_at
-    github_sync.issue_synced_at = started_at
-    github_sync.issue_sync_status = f"success: {created} created, {updated} updated"
+    github_sync.issue_synced_at = timezone.now()
+    status = f"success: {created} created, {pulled} pulled, {pushed} pushed, {opened} on github"
+    if capped:
+        # never truncate silently -- a capped run reads as a complete one otherwise
+        status += f" (capped at {PUSH_BUDGET_PER_RUN}, rest next run)"
+    github_sync.issue_sync_status = status[:255]
     github_sync.save(update_fields=["issues_cursor_at", "issue_synced_at", "issue_sync_status"])
+
+
+@shared_task
+def create_github_issue_for_work_item(issue_id):
+    """Fast path for creation, enqueued by the post_save signal with a short delay.
+
+    The sweep would get here within five minutes anyway; this exists so that creating
+    a work item visibly creates a GitHub issue. Idempotent, so racing the sweep is
+    safe.
+    """
+    from plane.db.models import Issue, ProjectGithubSync
+    from plane.utils.github_client import GithubClientError
+
+    issue = Issue.objects.filter(pk=issue_id, is_draft=False, archived_at__isnull=True).first()
+    if issue is None:
+        return
+    github_sync = ProjectGithubSync.objects.filter(
+        project_id=issue.project_id, is_issue_sync_enabled=True
+    ).first()
+    if github_sync is None:
+        return
+    try:
+        create_github_issue_for(github_sync, issue)
+    except GithubClientError as e:
+        log_exception(e)  # the next sweep retries
 
 
 @shared_task
@@ -172,7 +159,7 @@ def push_issue_state_to_github(issue_id):
     if link is None or not link.github_sync.is_issue_sync_enabled:
         return
 
-    done = _plane_issue_is_done(link.issue)
+    done = plane_issue_is_done(link.issue)
     target_gh_state = "closed" if done else "open"
     if link.github_state == target_gh_state:
         return  # states agree — nothing to push (this is the echo suppression)

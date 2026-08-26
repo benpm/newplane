@@ -23,17 +23,42 @@ from plane.bgtasks.github_issue_sync_task import (
     sync_github_issues_to_project,
 )
 from plane.db.models import GithubIssueLink, Issue, ProjectGithubSync, State
+from plane.utils import github_issue_content
 from plane.tests.factories import ProjectFactory, UserFactory, WorkspaceFactory, WorkspaceMemberFactory
 
 
-def gh_issue(number, state="open", title=None, body_html="<p>from github</p>"):
+def gh_issue(number, state="open", title=None, body="from github", updated_at="2026-08-01T00:00:00Z"):
+    """GitHub's issues payload as this sync consumes it: raw markdown `body`, not
+    rendered `body_html`. Markdown is the interchange format in both directions so
+    the two sides can be compared by hashing."""
     return {
         "number": number,
         "state": state,
         "title": title or f"GH issue {number}",
-        "body_html": body_html,
-        "updated_at": "2026-08-01T00:00:00Z",
+        "body": body,
+        "comments": 0,
+        "updated_at": updated_at,
     }
+
+
+@pytest.fixture(autouse=True)
+def stub_live_conversion(monkeypatch):
+    """Deterministic stand-ins for the live server's markdown endpoints, patched on
+    github_issues because that is the namespace the callers resolve them in."""
+    monkeypatch.setattr(
+        github_issue_content,
+        "convert_markdown_to_formats",
+        lambda md, variant="rich": {
+            "description_html": f"<p>{md.strip()}</p>",
+            "description_json": {},
+            "description_binary": None,
+        },
+    )
+    monkeypatch.setattr(
+        github_issue_content,
+        "convert_html_to_markdown",
+        lambda html: (html or "").replace("<p>", "").replace("</p>", "").strip(),
+    )
 
 
 @pytest.fixture
