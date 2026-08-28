@@ -75,6 +75,38 @@ docker-compose -f docker-compose.dev.yml up -d
 - Result: Prod server deploys exact tagged version
 - See: [Deployment Workflow - Production](./deployment/deployment-workflow.md#strategy-2-release-based-deploy-gitlab-package-registry)
 
+### 4. **Direct rebuild on the host** (this instance)
+
+The production stack here runs from this checkout via `docker-compose.yml`
+(project `plane`), so a deploy is a rebuild in place rather than a CI artifact.
+
+```bash
+git pull --ff-only
+docker compose -p plane build api worker beat-worker web
+docker compose -p plane up -d api worker beat-worker web
+```
+
+**Build all three backend images, not just `api`.** `api`, `worker` and
+`beat-worker` each have their own `build:` block, so Compose produces three
+separate images — `plane-api`, `plane-worker`, `plane-beat-worker` — from the same
+`apps/api/Dockerfile.api`. Building only `api` and then running `up -d worker`
+recreates the worker container from its **stale** image.
+
+That failure is silent and reads as healthy: every pre-existing Celery task keeps
+running, and only newly-added tasks fail, with
+`Received unregistered task of type '...'` buried in the worker log. It cost real
+time on 2026-08-26, when the GitHub sync's new `create_github_issue_for_work_item`
+task was discarded while everything else looked fine.
+
+Confirm before declaring a deploy done:
+
+```bash
+docker images --format '{{.Repository}}\t{{.CreatedSince}}' | grep -E '^plane-(api|worker|beat-worker|web)\b'
+```
+
+All four ages should match. Migrations need no separate step — the api entrypoint
+runs `manage.py migrate --noinput` on start.
+
 ---
 
 ## Rollback

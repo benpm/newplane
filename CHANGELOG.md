@@ -1,5 +1,52 @@
 # Changelog
 
+## 8/26/2026 — two-way GitHub sync deployed
+
+The work below shipped to production and was verified end to end. Both sides now
+reconcile exactly: **21 GitHub issues ↔ 21 linked work items** (24 in Plane, 3
+archived), and repeat sync runs report `0 created, 0 pulled, 0 pushed, 0 on
+github` while making zero `gh` calls and zero markdown conversions — which is the
+real proof the content gate is closed, rather than the hashes merely agreeing.
+
+### What the backfill actually did
+
+13 issues created on GitHub, not the 16 the plan predicted. The dry run showed
+three of the candidates were hand-made twins of issues that already existed:
+they were created in Plane on **2026-07-14**, and the sync imported GitHub's own
+copies on **2026-08-13**, leaving two rows for one task. Pushing them would have
+cloned that duplication onto GitHub, where issues cannot be deleted.
+
+Instead each original's description was folded into its imported counterpart
+under a `Merged from MOUSE-nn` heading and the original archived, so nothing was
+lost and the pairs can be sorted out by hand later. Two other candidates with
+similar-looking titles — `Design tileset for Laboratory levels` and
+`Sphere mapping vertex shader` — were left alone as genuinely separate tasks.
+
+Verified live: a work item created in Plane produced GitHub issue **#22** on its
+own; marking it done closed that issue; a GitHub issue created remotely arrived
+as a work item; five existing issues pulled their content in; the three merged
+bodies pushed out with images and checklists intact.
+
+### Fixed during rollout
+
+- **The worker and beat images were left on stale code.** `api`, `worker` and
+  `beat-worker` each have their own `build:` block, so Compose builds three
+  separate images from one Dockerfile. Rebuilding only `api` and running
+  `up -d worker` recreated the workers from 5-day-old images. Every existing task
+  kept working and the stack looked healthy — only the newly-added
+  `create_github_issue_for_work_item` failed, with `Received unregistered task`
+  buried in the log. The five-minute sweep caught the discarded work on its next
+  pass, which is exactly what that backstop is for. Now documented in
+  [the deployment guide](./docs/deployment-guide.md).
+
+### Correction
+
+The 8/21 entry below says the stray `push_instance_metrics` Celery `KeyError`
+"cannot recur". It does — once per worker restart, including this deploy. The
+task exists nowhere in the codebase and beat keeps no persistent schedule, so it
+is a durable message left in RabbitMQ by older code being redelivered and
+discarded. Harmless, but it is not gone.
+
 ## 8/26/2026 — GitHub sync now goes both ways, and one bug that was aimed at your repo
 
 The GitHub integration only ever synced in one direction for creation: issues
