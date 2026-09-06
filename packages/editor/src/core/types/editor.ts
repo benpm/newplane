@@ -31,6 +31,7 @@ import type {
   TFileHandler,
   TMentionHandler,
   TPageLinkHandler,
+  TIssueLinkHandler,
   TRealtimeConfig,
   TServerHandler,
   TUserDetails,
@@ -178,6 +179,7 @@ export type IEditorProps = {
   isTouchDevice?: boolean;
   mentionHandler: TMentionHandler;
   pageLinkHandler?: TPageLinkHandler;
+  issueLinkHandler?: TIssueLinkHandler;
   onAssetChange?: (assets: TEditorAsset[]) => void;
   onEditorFocus?: () => void;
   onChange?: (json: object, html: string, { isMigrationUpdate }?: { isMigrationUpdate?: boolean }) => void;

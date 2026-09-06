@@ -7,7 +7,8 @@
 import { forwardRef } from "react";
 // plane imports
 import { RichTextEditorWithRef } from "@plane/editor";
-import type { EditorRefApi, IRichTextEditorProps, TFileHandler } from "@plane/editor";
+import type { EditorRefApi, IRichTextEditorProps, TFileHandler, TIssueLinkSuggestion } from "@plane/editor";
+import { WorkItemsIcon } from "@plane/propel/icons";
 import type { MakeOptional, TSearchEntityRequestPayload, TSearchResponse } from "@plane/types";
 import { cn } from "@plane/utils";
 // components
@@ -96,6 +97,35 @@ export const RichTextEditor = forwardRef(function RichTextEditor(
           display_name: getUserDetails(id)?.display_name ?? "",
         }),
       }}
+      issueLinkHandler={
+        editable && projectId
+          ? {
+              searchCallback: async (query) => {
+                const res = await props.searchMentionCallback({
+                  count: 10,
+                  query_type: ["issue"],
+                  query,
+                  project_id: projectId,
+                });
+                const items: TIssueLinkSuggestion[] = (res?.issue ?? []).map((foundIssue) => ({
+                  id: foundIssue.id ?? "",
+                  entity_identifier: foundIssue.id ?? "",
+                  entity_name: "issue" as const,
+                  title: foundIssue.name || "Untitled",
+                  subTitle:
+                    foundIssue.project__identifier && foundIssue.sequence_id
+                      ? `${foundIssue.project__identifier}-${foundIssue.sequence_id}`
+                      : undefined,
+                  icon: <WorkItemsIcon className="size-3.5 text-tertiary" />,
+                  redirect_uri: `/${workspaceSlug}/projects/${projectId}/issues/${foundIssue.id}`,
+                  sequence_id: foundIssue.sequence_id,
+                  project_identifier: foundIssue.project__identifier,
+                }));
+                return items.length > 0 ? [{ key: "issues", title: "Issues", items }] : [];
+              },
+            }
+          : undefined
+      }
       extendedEditorProps={{}}
       {...rest}
       containerClassName={cn("relative pl-3 pb-3", containerClassName)}

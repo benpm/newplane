@@ -330,6 +330,14 @@ mode) whereas mention nodes have no Markdown representation.
 Editors without a `searchCallback` (work-item descriptions, comments)
 contribute the plugin as a no-op.
 
+### Issue-link autocomplete
+
+Typing `#` opens the mentions dropdown to search workspace issues and inserts a
+**plain link mark** linking to the issue (represented as `#<sequence_id>`). This ensures the link survives GFM serialization and round-trips correctly.
+
+- `packages/editor/src/core/extensions/issue-link/`, wired in
+  `packages/editor/src/core/extensions/extensions.ts`
+
 ### God-mode menu RBAC
 
 Instance admins are scoped to a granted subset of god-mode menus. Enforcement

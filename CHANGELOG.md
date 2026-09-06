@@ -1,5 +1,12 @@
 # Changelog
 
+## 9/6/2026 — Markdown Editor hashtag autocomplete for issue linking
+
+- Added autocomplete for issue links in description, document, and comment editors, triggered by typing `#` in the middle of a line.
+- Dynamically queries and filters issues from the active workspace/project as you type.
+- Inserts a plain link mark referencing the sequence ID (e.g. `#13`) to ensure perfect compatibility and round-trip support under GitHub Flavored Markdown (GFM).
+- Integrated across Document, RichText, and Lite/Comment editors with full TypeScript safety.
+
 ## 9/3/2026 — Discord multi-server integration & bot commands
 
 - Integrated Discord support allowing multiple Discord servers per project.

@@ -9,7 +9,8 @@ import React, { useState } from "react";
 import type { EIssueCommentAccessSpecifier } from "@plane/constants";
 // plane imports
 import { LiteTextEditorWithRef } from "@plane/editor";
-import type { EditorRefApi, ILiteTextEditorProps, TFileHandler } from "@plane/editor";
+import type { EditorRefApi, ILiteTextEditorProps, TFileHandler, TIssueLinkSuggestion } from "@plane/editor";
+import { WorkItemsIcon } from "@plane/propel/icons";
 import { useTranslation } from "@plane/i18n";
 import type { MakeOptional } from "@plane/types";
 import { cn, isCommentEmpty } from "@plane/utils";
@@ -162,6 +163,36 @@ export const LiteTextEditor = React.forwardRef(function LiteTextEditor(
                 display_name: getUserDetails(id)?.display_name ?? "",
               }),
             }}
+            issueLinkHandler={
+              editable && projectId
+                ? {
+                    searchCallback: async (query) => {
+                      const res = await workspaceService.searchEntity(workspaceSlug, {
+                        count: 10,
+                        query_type: ["issue"],
+                        query,
+                        project_id: projectId,
+                        issue_id,
+                      });
+                      const items: TIssueLinkSuggestion[] = (res?.issue ?? []).map((foundIssue) => ({
+                        id: foundIssue.id ?? "",
+                        entity_identifier: foundIssue.id ?? "",
+                        entity_name: "issue" as const,
+                        title: foundIssue.name || "Untitled",
+                        subTitle:
+                          foundIssue.project__identifier && foundIssue.sequence_id
+                            ? `${foundIssue.project__identifier}-${foundIssue.sequence_id}`
+                            : undefined,
+                        icon: <WorkItemsIcon className="size-3.5 text-tertiary" />,
+                        redirect_uri: `/${workspaceSlug}/projects/${projectId}/issues/${foundIssue.id}`,
+                        sequence_id: foundIssue.sequence_id,
+                        project_identifier: foundIssue.project__identifier,
+                      }));
+                      return items.length > 0 ? [{ key: "issues", title: "Issues", items }] : [];
+                    },
+                  }
+                : undefined
+            }
             placeholder={placeholder}
             showPlaceholderOnEmpty={showPlaceholderOnEmpty}
             containerClassName={cn(containerClassName, "relative", {

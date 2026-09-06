@@ -18,11 +18,12 @@ import type {
   TFileHandler,
   TMentionSection,
   TPageLinkSuggestion,
+  TIssueLinkSuggestion,
   TRealtimeConfig,
   TServerHandler,
 } from "@plane/editor";
 import { useTranslation } from "@plane/i18n";
-import { PageIcon } from "@plane/propel/icons";
+import { PageIcon, WorkItemsIcon } from "@plane/propel/icons";
 import type { TSearchEntityRequestPayload, TSearchResponse, TWebhookConnectionQueryParams } from "@plane/types";
 import { ERowVariant, Row } from "@plane/ui";
 import { cn, generateRandomColor, hslToHex } from "@plane/utils";
@@ -130,6 +131,27 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
       return items.length > 0 ? [{ key: "pages", title: "Pages", items }] : [];
     },
     [handlers, pageId, projectId, workspaceSlug]
+  );
+
+  // # issue-link autocomplete: search issues and offer them as link targets
+  const searchIssuesCallback = useCallback(
+    async (query: string): Promise<TMentionSection[]> => {
+      const res = await handlers.fetchEntity({ count: 10, query_type: ["issue"], query });
+      const items: TIssueLinkSuggestion[] = (res?.issue ?? [])
+        .map((foundIssue) => ({
+          id: foundIssue.id ?? "",
+          entity_identifier: foundIssue.id ?? "",
+          entity_name: "issue",
+          title: foundIssue.name || "Untitled",
+          subTitle: foundIssue.project__identifier && foundIssue.sequence_id ? `${foundIssue.project__identifier}-${foundIssue.sequence_id}` : undefined,
+          icon: <WorkItemsIcon className="size-3.5 text-tertiary" />,
+          redirect_uri: `/${workspaceSlug}/projects/${projectId}/issues/${foundIssue.id}`,
+          sequence_id: foundIssue.sequence_id,
+          project_identifier: foundIssue.project__identifier,
+        }));
+      return items.length > 0 ? [{ key: "issues", title: "Issues", items }] : [];
+    },
+    [handlers, projectId, workspaceSlug]
   );
   // editor flaggings
   const { document: documentEditorExtensions } = useEditorFlagging({
@@ -311,6 +333,9 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
             }}
             pageLinkHandler={{
               searchCallback: searchPagesCallback,
+            }}
+            issueLinkHandler={{
+              searchCallback: searchIssuesCallback,
             }}
             updatePageProperties={updatePageProperties}
             realtimeConfig={realtimeConfig}

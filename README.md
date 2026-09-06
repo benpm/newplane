@@ -13,6 +13,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notab
 - Automated site rebuild via GitHub Actions on repository push
 - Guest & unauthenticated read-only access to project tasks and pages
 - Discord multi-server integration for notifications, work item updates, and bot commands
+- Markdown editor issue-linking `#` autocomplete suggestion list
 
 ## Quick Links
 

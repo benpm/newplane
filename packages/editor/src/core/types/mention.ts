@@ -40,3 +40,16 @@ export type TPageLinkSuggestion = TMentionSuggestion & {
 export type TPageLinkHandler = {
   searchCallback?: (query: string) => Promise<TMentionSection[]>;
 };
+
+// Issue-link autocomplete (# trigger). Items must be TIssueLinkSuggestion — i.e. carry a
+// redirect_uri, sequence_id, and project_identifier — since the picked entry is inserted as a plain link mark.
+export type TIssueLinkSuggestion = TMentionSuggestion & {
+  /** app-relative URL of the target issue */
+  redirect_uri: string;
+  sequence_id: string | number;
+  project_identifier: string;
+};
+
+export type TIssueLinkHandler = {
+  searchCallback?: (query: string) => Promise<TMentionSection[]>;
+};

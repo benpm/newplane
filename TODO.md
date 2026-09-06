@@ -13,7 +13,7 @@
 ## Page / Task Markdown Editor
 For the markdown editor in tasks and pages.
 
-- [ ] Typing `#` in the middle of the line should pull up a list search for issues to link to. Text with `#13` should link to issue 13, for instance.
+- [x] Typing `#` in the middle of the line should pull up a list search for issues to link to. Text with `#13` should link to issue 13, for instance.
 - [ ] The padding amount between list items in suggestion lists like when autocompleting in the text editor should be smaller, and configurable. Add to docs how to configure it. The number of items in the list should also be configurable, and documented.
 - [ ] Add a button in the toolbar for adding links. This should open a modal with a search box to search for issues or pages to link to. The modal should have a list of recently viewed issues, and a search box to search for issues by title or ID. The search results should be displayed in a list, and clicking on an issue should insert a link to that issue in the editor.
 
