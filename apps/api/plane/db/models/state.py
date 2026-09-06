@@ -27,7 +27,7 @@ DEFAULT_STATES = [
         "color": "#60646C",
         "sequence": 10000,
         "group": StateGroup.BACKLOG.value,
-        "default": False,
+        "default": True,
         "is_system": True,
     },
     {
@@ -35,7 +35,7 @@ DEFAULT_STATES = [
         "color": "#60646C",
         "sequence": 20000,
         "group": StateGroup.UNSTARTED.value,
-        "default": True,
+        "default": False,
         "is_system": True,
     },
     {

@@ -150,12 +150,22 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     issue: { getIssueById },
   } = useIssueDetail();
   const { fetchCycles } = useProjectIssueProperties();
-  const { getStateById } = useProjectState();
+  const { getStateById, getProjectStates } = useProjectState();
   const { fetchCategories } = useTaskCategory();
 
   // form info
+  const initialProjectId = defaultProjectId || data?.project_id;
+  const initialProjectStates = initialProjectId ? getProjectStates(initialProjectId) : undefined;
+  const initialDefaultState =
+    initialProjectStates?.find((s) => s.default) ?? initialProjectStates?.find((s) => s.group === "backlog");
+
   const methods = useForm<TIssue>({
-    defaultValues: { ...DEFAULT_WORK_ITEM_FORM_VALUES, project_id: defaultProjectId, ...data },
+    defaultValues: {
+      ...DEFAULT_WORK_ITEM_FORM_VALUES,
+      ...(initialDefaultState?.id ? { state_id: initialDefaultState.id } : {}),
+      project_id: defaultProjectId,
+      ...data,
+    },
     reValidateMode: "onChange",
   });
   const {
@@ -229,6 +239,17 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     if (issueTypeIdOnProjectChange) setValue("type_id", issueTypeIdOnProjectChange, { shouldValidate: true });
   }, [data, projectId]);
 
+  // Set default state_id (Backlog) if not set on creation
+  useEffect(() => {
+    if (projectId && !watch("state_id") && !data?.id) {
+      const currentStates = getProjectStates(projectId);
+      const defaultState = currentStates?.find((s) => s.default) ?? currentStates?.find((s) => s.group === "backlog");
+      if (defaultState?.id) {
+        setValue("state_id", defaultState.id, { shouldValidate: true });
+      }
+    }
+  }, [projectId, data?.id]);
+
   useEffect(() => {
     if (workItemTemplateId && editorRef.current) {
       handleTemplateChange({
@@ -260,13 +281,22 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     )
       return;
 
+    const currentStates = projectId ? getProjectStates(projectId) : undefined;
+    const defaultStateId =
+      currentStates?.find((s) => s.default)?.id ?? currentStates?.find((s) => s.group === "backlog")?.id;
+
+    const resolvedFormData = {
+      ...formData,
+      ...(!formData.state_id && defaultStateId ? { state_id: defaultStateId } : {}),
+    };
+
     const submitData = !data?.id
-      ? formData
+      ? resolvedFormData
       : {
-          ...getChangedIssuefields(formData, dirtyFields as { [key: string]: boolean | undefined }),
+          ...getChangedIssuefields(resolvedFormData, dirtyFields as { [key: string]: boolean | undefined }),
           project_id: getValues<"project_id">("project_id"),
           id: data.id,
-          description_html: formData.description_html ?? "<p></p>",
+          description_html: resolvedFormData.description_html ?? "<p></p>",
           type_id: getValues<"type_id">("type_id"),
         };
 

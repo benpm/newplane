@@ -26,11 +26,16 @@ vi.mock("@plane/i18n", () => ({
 }));
 
 describe("useDraftStateTransition", () => {
-  it("returns no missing fields if the new state group is backlog or cancelled", () => {
+  it("returns no missing fields regardless of state transition", () => {
     const { validateTransition } = useDraftStateTransition();
     const issue = {} as unknown as TIssue;
 
     expect(validateTransition(issue, "backlog-id")).toEqual({
+      missingFieldKeys: [],
+      missingFieldLabels: [],
+    });
+
+    expect(validateTransition(issue, "started-id")).toEqual({
       missingFieldKeys: [],
       missingFieldLabels: [],
     });
@@ -41,31 +46,11 @@ describe("useDraftStateTransition", () => {
     });
   });
 
-  it("checks for assignee and frequency but NOT start_date or target_date in non-backlog/cancelled states", () => {
+  it("does not require assignee or frequency when moving to any state", () => {
     const { validateTransition } = useDraftStateTransition();
     const issue = {
       assignee_ids: [],
       frequency: null,
-      start_date: null,
-      target_date: null,
-    } as unknown as TIssue;
-
-    const result = validateTransition(issue, "started-id");
-
-    // It should require assignee_ids and frequency
-    expect(result.missingFieldKeys).toContain("assignee_ids");
-    expect(result.missingFieldKeys).toContain("frequency");
-
-    // It should NOT require start_date or target_date
-    expect(result.missingFieldKeys).not.toContain("start_date");
-    expect(result.missingFieldKeys).not.toContain("target_date");
-  });
-
-  it("returns no missing fields if assignee and frequency are set, even if dates are missing", () => {
-    const { validateTransition } = useDraftStateTransition();
-    const issue = {
-      assignee_ids: ["member-1"],
-      frequency: "daily",
       start_date: null,
       target_date: null,
     } as unknown as TIssue;

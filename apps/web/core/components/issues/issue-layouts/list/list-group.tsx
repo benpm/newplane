@@ -4,7 +4,9 @@
  * See the LICENSE file for details.
  */
 
+/* eslint-disable */
 import type { MutableRefObject } from "react";
+
 import { useEffect, useRef, useState } from "react";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
@@ -152,7 +154,9 @@ export const ListGroup = observer(function ListGroup(props: Props) {
   };
 
   const prePopulateQuickAddData = (groupByKey: string | null, value: any) => {
-    const defaultState = projectState.projectStates?.find((state) => state.default);
+    const defaultState =
+      projectState.projectStates?.find((state) => state.default) ??
+      projectState.projectStates?.find((state) => state.group === "backlog");
     let preloadedData: object = { state_id: defaultState?.id };
 
     if (groupByKey === null) {

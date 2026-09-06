@@ -105,8 +105,9 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
       <Controller
         control={control}
         name="state_id"
+        rules={{ required: t("state_is_required") }}
         render={({ field: { value, onChange } }) => (
-          <div className="h-7">
+          <div className={cn("h-7 rounded-sm", errors.state_id && "outline outline-1 outline-danger-strong")}>
             <StateDropdown
               value={value}
               onChange={(stateId) => {
@@ -121,6 +122,7 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
           </div>
         )}
       />
+
       <Controller
         control={control}
         name="priority"

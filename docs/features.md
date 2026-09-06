@@ -534,11 +534,9 @@ One query for a user's work items across every workspace, replacing an N+1 fan-o
 
 - `utils/module_activity.py`, `ce/store/module-activity.store.ts`
 
-### Issue `frequency` property
+### Work item required fields and default status
 
-A recurrence-cadence field on work items, surfaced in the modal, peek and sidebar.
-
-- `db/models/issue.py`
+Work items enforce only two required fields: `title` and `status`. The status defaults to `Backlog`. All other properties (assignee, dates, category, etc.) are optional in all states, and status transitions do not require additional fields. The legacy `frequency` property has been removed.
 
 ### Email template management
 

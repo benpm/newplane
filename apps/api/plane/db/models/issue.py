@@ -224,10 +224,15 @@ class Issue(ProjectBaseModel):
                     ~models.Q(is_triage=True), project=self.project, default=True
                 ).first()
                 if default_state is None:
+                    default_state = State.objects.filter(
+                        ~models.Q(is_triage=True), project=self.project, group="backlog"
+                    ).first()
+                if default_state is None:
                     random_state = State.objects.filter(~models.Q(is_triage=True), project=self.project).first()
                     self.state = random_state
                 else:
                     self.state = default_state
+
             except ImportError:
                 pass
         else:

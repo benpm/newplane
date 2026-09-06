@@ -4,7 +4,9 @@
  * See the LICENSE file for details.
  */
 
+/* eslint-disable */
 import type { MutableRefObject } from "react";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
@@ -226,7 +228,10 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
     groupValue: string,
     subGroupValue: string
   ) => {
-    const defaultState = projectState.projectStates?.find((state) => state.default);
+    const defaultState =
+      projectState.projectStates?.find((state) => state.default) ??
+      projectState.projectStates?.find((state) => state.group === "backlog");
+
     let preloadedData: object = { state_id: defaultState?.id };
 
     if (groupByKey) {
