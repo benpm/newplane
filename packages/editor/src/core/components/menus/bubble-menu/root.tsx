@@ -10,9 +10,12 @@ import { BubbleMenu, useEditorState } from "@tiptap/react";
 import type { BubbleMenuProps } from "@tiptap/react";
 import type { FC } from "react";
 import { useEffect, useState, useRef } from "react";
+import { Search } from "lucide-react";
 // plane utils
 import { cn } from "@plane/utils";
 // components
+import { LinkSearchModal } from "@/components/links/link-search-modal";
+import type { TLinkSearchHandler } from "@/types";
 import type { EditorMenuItem } from "@/components/menus";
 import {
   BackgroundColorItem,
@@ -71,12 +74,14 @@ type Props = {
   editor: Editor;
   extendedEditorProps: IEditorPropsExtended;
   flaggedExtensions: TExtensions[];
+  linkSearchHandler?: TLinkSearchHandler;
 };
 
 export function EditorBubbleMenu(props: Props) {
-  const { editor } = props;
+  const { editor, linkSearchHandler } = props;
   // states
   const [isSelecting, setIsSelecting] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   // refs
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -188,48 +193,64 @@ export function EditorBubbleMenu(props: Props) {
   }, [editor]);
 
   return (
-    <BubbleMenu {...bubbleMenuProps}>
-      {!isSelecting && (
-        <div
-          ref={menuRef}
-          className="flex py-2 divide-x divide-subtle-1 rounded-lg border border-subtle bg-surface-1 shadow-raised-200 overflow-x-scroll horizontal-scrollbar scrollbar-xs"
-        >
-          <div className="px-2">
-            <BubbleMenuNodeSelector editor={editor} />
-          </div>
-          {!editorState.code && (
+    <>
+      <BubbleMenu {...bubbleMenuProps}>
+        {!isSelecting && (
+          <div
+            ref={menuRef}
+            className="flex py-2 divide-x divide-subtle-1 rounded-lg border border-subtle bg-surface-1 shadow-raised-200 overflow-x-scroll horizontal-scrollbar scrollbar-xs"
+          >
             <div className="px-2">
-              <BubbleMenuLinkSelector editor={editor} />
+              <BubbleMenuNodeSelector editor={editor} />
             </div>
-          )}
-          {!editorState.code && (
-            <div className="px-2">
-              <BubbleMenuColorSelector editor={editor} editorState={editorState} />
+            {!editorState.code && (
+              <div className="px-2 flex items-center gap-1.5">
+                <BubbleMenuLinkSelector editor={editor} />
+                <button
+                  type="button"
+                  className="h-7 flex items-center gap-1 px-1.5 text-13 font-medium text-tertiary hover:bg-layer-1 active:bg-layer-1 rounded-sm whitespace-nowrap transition-colors"
+                  onClick={() => setIsSearchModalOpen(true)}
+                  title="Search issues or pages to link"
+                >
+                  <Search className="size-3.5" />
+                </button>
+              </div>
+            )}
+            {!editorState.code && (
+              <div className="px-2">
+                <BubbleMenuColorSelector editor={editor} editorState={editorState} />
+              </div>
+            )}
+            <div className="flex gap-0.5 px-2">
+              {basicFormattingOptions.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={(e) => {
+                    item.command();
+                    e.stopPropagation();
+                  }}
+                  className={cn(
+                    "size-7 grid place-items-center rounded-sm text-tertiary hover:bg-layer-1 active:bg-layer-1 transition-colors",
+                    {
+                      "bg-layer-1 text-primary": editorState[item.key],
+                    }
+                  )}
+                >
+                  <item.icon className="size-4" />
+                </button>
+              ))}
             </div>
-          )}
-          <div className="flex gap-0.5 px-2">
-            {basicFormattingOptions.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={(e) => {
-                  item.command();
-                  e.stopPropagation();
-                }}
-                className={cn(
-                  "size-7 grid place-items-center rounded-sm text-tertiary hover:bg-layer-1 active:bg-layer-1 transition-colors",
-                  {
-                    "bg-layer-1 text-primary": editorState[item.key],
-                  }
-                )}
-              >
-                <item.icon className="size-4" />
-              </button>
-            ))}
+            <TextAlignmentSelector editor={editor} editorState={editorState} />
           </div>
-          <TextAlignmentSelector editor={editor} editorState={editorState} />
-        </div>
-      )}
-    </BubbleMenu>
+        )}
+      </BubbleMenu>
+      <LinkSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        editor={editor}
+        linkSearchHandler={linkSearchHandler}
+      />
+    </>
   );
 }

@@ -53,3 +53,18 @@ export type TIssueLinkSuggestion = TMentionSuggestion & {
 export type TIssueLinkHandler = {
   searchCallback?: (query: string) => Promise<TMentionSection[]>;
 };
+
+// Advanced link search modal handler types.
+export type TLinkSearchItem = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  redirect_uri: string;
+  type: "issue" | "page";
+};
+
+export type TLinkSearchHandler = {
+  searchIssues?: (query: string) => Promise<TLinkSearchItem[]>;
+  searchPages?: (query: string) => Promise<TLinkSearchItem[]>;
+  fetchRecentIssues?: () => Promise<TLinkSearchItem[]>;
+};

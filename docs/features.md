@@ -363,6 +363,19 @@ const editorProps = {
 }
 ```
 
+### Advanced Search & Link Toolbar Modal
+
+Clicking the **Search** icon next to the link button in the text formatting bubble toolbar opens an interactive search dialog. This modal allows users to search for issues (by title or ID) and pages across the workspace.
+
+#### Key features:
+- **Recently Viewed Issues**: Direct visibility into your recently visited issues loaded from the user's workspace history.
+- **Unified Search**: Search across workspace issues and pages with a debounced input.
+- **Smart Insertion**:
+  - If there is selected text, the selected issue/page link is applied directly to the selection.
+  - If no selection exists, the issue/page's title is inserted as a formatted link anchor.
+
+- `packages/editor/src/core/components/links/link-search-modal.tsx`, integrated in `packages/editor/src/core/components/menus/bubble-menu/root.tsx`
+
 ### God-mode menu RBAC
 
 Instance admins are scoped to a granted subset of god-mode menus. Enforcement

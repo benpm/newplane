@@ -7,3 +7,4 @@
 export * from "./link-edit-view";
 export * from "./link-preview";
 export * from "./link-view";
+export * from "./link-search-modal";

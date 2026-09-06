@@ -1,5 +1,13 @@
 # Changelog
 
+## 9/6/2026 — Advanced Search & Link toolbar modal for Issues and Pages
+
+- Added an advanced "Search & Link" button with a Search icon in the formatting bubble toolbar menu.
+- Opens a beautiful HeadlessUI-based modal with a debounced search input to query workspace issues or pages to link.
+- Features a list of the user's recently viewed workspace issues directly within the modal.
+- If text is selected in the editor, applies the chosen issue/page link directly onto the selection. If no selection exists, inserts the chosen item's title as a linked anchor tag.
+- Fully wired with custom API-backed search and recent-visit data loaders for complete, accurate workspace results across page editor, document description, rich-text, and comment editors.
+
 ## 9/6/2026 — Markdown Editor autocomplete list item padding and count limit customization
 
 - Configured a smaller default padding (`0.2rem`) between list items in all autocomplete suggestion lists to improve visual scanability.

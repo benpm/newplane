@@ -14,6 +14,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notab
 - Guest & unauthenticated read-only access to project tasks and pages
 - Discord multi-server integration for notifications, work item updates, and bot commands
 - Markdown editor issue-linking `#` autocomplete suggestion list
+- Advanced "Search & Link" toolbar button and modal for issues and pages with recently viewed issues list
 
 ## Quick Links
 

@@ -55,6 +55,7 @@ function RichTextEditor(props: IRichTextEditorProps) {
               editor={editor}
               extendedEditorProps={extendedEditorProps}
               flaggedExtensions={flaggedExtensions}
+              linkSearchHandler={props.linkSearchHandler}
             />
           )}
           <BlockMenu

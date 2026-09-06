@@ -19,6 +19,7 @@ import type {
   IEditorPropsExtended,
   TAIHandler,
   TDisplayConfig,
+  TLinkSearchHandler,
 } from "@/types";
 
 type Props = {
@@ -39,6 +40,7 @@ type Props = {
   tabIndex?: number;
   provider?: HocuspocusProvider;
   state?: TCollabValue["state"];
+  linkSearchHandler?: TLinkSearchHandler;
 };
 
 export function PageRenderer(props: Props) {
@@ -58,6 +60,7 @@ export function PageRenderer(props: Props) {
     titleEditor,
     provider,
     state,
+    linkSearchHandler,
   } = props;
   return (
     <div
@@ -105,6 +108,7 @@ export function PageRenderer(props: Props) {
                     disabledExtensions={disabledExtensions}
                     extendedEditorProps={extendedEditorProps}
                     flaggedExtensions={flaggedExtensions}
+                    linkSearchHandler={linkSearchHandler}
                   />
                 )}
                 <BlockMenu

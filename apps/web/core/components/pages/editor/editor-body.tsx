@@ -43,8 +43,11 @@ import { EditorAIMenu } from "@/plane-web/components/pages";
 import type { TExtendedEditorExtensionsConfig } from "@/plane-web/hooks/pages";
 import type { EPageStoreType } from "@/plane-web/hooks/store";
 import { useEditorFlagging } from "@/plane-web/hooks/use-editor-flagging";
+import { WorkspaceService } from "@/services/workspace.service";
 // store
 import type { TPageInstance } from "@/store/pages/base-page";
+
+const workspaceService = new WorkspaceService();
 // local imports
 import { PageContentLoader } from "../loaders/page-content-loader";
 import { PageEditorHeaderRoot } from "./header";
@@ -137,22 +140,77 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
   const searchIssuesCallback = useCallback(
     async (query: string): Promise<TMentionSection[]> => {
       const res = await handlers.fetchEntity({ count: 10, query_type: ["issue"], query });
-      const items: TIssueLinkSuggestion[] = (res?.issue ?? [])
-        .map((foundIssue) => ({
-          id: foundIssue.id ?? "",
-          entity_identifier: foundIssue.id ?? "",
-          entity_name: "issue",
-          title: foundIssue.name || "Untitled",
-          subTitle: foundIssue.project__identifier && foundIssue.sequence_id ? `${foundIssue.project__identifier}-${foundIssue.sequence_id}` : undefined,
-          icon: <WorkItemsIcon className="size-3.5 text-tertiary" />,
-          redirect_uri: `/${workspaceSlug}/projects/${projectId}/issues/${foundIssue.id}`,
-          sequence_id: foundIssue.sequence_id,
-          project_identifier: foundIssue.project__identifier,
-        }));
+      const items: TIssueLinkSuggestion[] = (res?.issue ?? []).map((foundIssue) => ({
+        id: foundIssue.id ?? "",
+        entity_identifier: foundIssue.id ?? "",
+        entity_name: "issue",
+        title: foundIssue.name || "Untitled",
+        subTitle:
+          foundIssue.project__identifier && foundIssue.sequence_id
+            ? `${foundIssue.project__identifier}-${foundIssue.sequence_id}`
+            : undefined,
+        icon: <WorkItemsIcon className="size-3.5 text-tertiary" />,
+        redirect_uri: `/${workspaceSlug}/projects/${projectId}/issues/${foundIssue.id}`,
+        sequence_id: foundIssue.sequence_id,
+        project_identifier: foundIssue.project__identifier,
+      }));
       return items.length > 0 ? [{ key: "issues", title: "Issues", items }] : [];
     },
     [handlers, projectId, workspaceSlug]
   );
+
+  // Advanced link search handler for the toolbar/bubble-menu search modal
+  const linkSearchHandler = useMemo(
+    () => ({
+      fetchRecentIssues: async () => {
+        if (!workspaceSlug) return [];
+        try {
+          const res = await workspaceService.fetchWorkspaceRecents(workspaceSlug.toString(), "issue");
+          return res.map((r: any) => ({
+            id: r.entity_data?.id ?? "",
+            title: r.entity_data?.name || "Untitled",
+            subtitle:
+              r.entity_data?.project_identifier && r.entity_data?.sequence_id
+                ? `${r.entity_data?.project_identifier}-${r.entity_data?.sequence_id}`
+                : undefined,
+            redirect_uri: `/${workspaceSlug}/projects/${r.entity_data?.project_id}/issues/${r.entity_data?.id}`,
+            type: "issue" as const,
+          }));
+        } catch {
+          return [];
+        }
+      },
+      searchIssues: async (query: string) => {
+        try {
+          const res = await handlers.fetchEntity({ count: 10, query_type: ["issue"], query });
+          return (res?.issue ?? []).map((r) => ({
+            id: r.id ?? "",
+            title: r.name || "Untitled",
+            subtitle: r.project__identifier && r.sequence_id ? `${r.project__identifier}-${r.sequence_id}` : undefined,
+            redirect_uri: `/${workspaceSlug}/projects/${projectId}/issues/${r.id}`,
+            type: "issue" as const,
+          }));
+        } catch {
+          return [];
+        }
+      },
+      searchPages: async (query: string) => {
+        try {
+          const res = await handlers.fetchEntity({ count: 10, query_type: ["page"], query });
+          return (res?.page ?? []).map((r) => ({
+            id: r.id ?? "",
+            title: r.name || "Untitled",
+            redirect_uri: `/${workspaceSlug}/projects/${projectId}/pages/${r.id}`,
+            type: "page" as const,
+          }));
+        } catch {
+          return [];
+        }
+      },
+    }),
+    [handlers, projectId, workspaceSlug]
+  );
+
   // editor flaggings
   const { document: documentEditorExtensions } = useEditorFlagging({
     workspaceSlug,
@@ -337,6 +395,7 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
             issueLinkHandler={{
               searchCallback: searchIssuesCallback,
             }}
+            linkSearchHandler={linkSearchHandler}
             updatePageProperties={updatePageProperties}
             realtimeConfig={realtimeConfig}
             serverHandler={serverHandler}

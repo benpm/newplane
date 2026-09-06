@@ -198,6 +198,72 @@ export const LiteTextEditor = React.forwardRef(function LiteTextEditor(
             containerClassName={cn(containerClassName, "relative", {
               "p-2": !editable,
             })}
+            linkSearchHandler={
+              editable && projectId
+                ? {
+                    fetchRecentIssues: async () => {
+                      if (!workspaceSlug) return [];
+                      try {
+                        const res = await workspaceService.fetchWorkspaceRecents(workspaceSlug.toString(), "issue");
+                        return res.map((r: any) => ({
+                          id: r.entity_data?.id ?? "",
+                          title: r.entity_data?.name || "Untitled",
+                          subtitle:
+                            r.entity_data?.project_identifier && r.entity_data?.sequence_id
+                              ? `${r.entity_data?.project_identifier}-${r.entity_data?.sequence_id}`
+                              : undefined,
+                          redirect_uri: `/${workspaceSlug}/projects/${r.entity_data?.project_id}/issues/${r.entity_data?.id}`,
+                          type: "issue" as const,
+                        }));
+                      } catch {
+                        return [];
+                      }
+                    },
+                    searchIssues: async (query: string) => {
+                      try {
+                        const res = await workspaceService.searchEntity(workspaceSlug, {
+                          count: 10,
+                          query_type: ["issue"],
+                          query,
+                          project_id: projectId,
+                          issue_id,
+                        });
+                        return (res?.issue ?? []).map((r) => ({
+                          id: r.id ?? "",
+                          title: r.name || "Untitled",
+                          subtitle:
+                            r.project__identifier && r.sequence_id
+                              ? `${r.project__identifier}-${r.sequence_id}`
+                              : undefined,
+                          redirect_uri: `/${workspaceSlug}/projects/${projectId}/issues/${r.id}`,
+                          type: "issue" as const,
+                        }));
+                      } catch {
+                        return [];
+                      }
+                    },
+                    searchPages: async (query: string) => {
+                      try {
+                        const res = await workspaceService.searchEntity(workspaceSlug, {
+                          count: 10,
+                          query_type: ["page"],
+                          query,
+                          project_id: projectId,
+                          issue_id,
+                        });
+                        return (res?.page ?? []).map((r) => ({
+                          id: r.id ?? "",
+                          title: r.name || "Untitled",
+                          redirect_uri: `/${workspaceSlug}/projects/${projectId}/pages/${r.id}`,
+                          type: "page" as const,
+                        }));
+                      } catch {
+                        return [];
+                      }
+                    },
+                  }
+                : undefined
+            }
             extendedEditorProps={{}}
             editorClassName={editorClassName}
             {...rest}
