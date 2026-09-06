@@ -10,9 +10,11 @@ import packageJson from "package.json";
 
 export function PlaneVersionNumber() {
   const { t } = useTranslation();
+  const commitHash = process.env.VITE_GIT_COMMIT_HASH;
   return (
     <span>
       {t("version")}: v{packageJson.version}
+      {commitHash ? ` (${commitHash})` : ""}
     </span>
   );
 }

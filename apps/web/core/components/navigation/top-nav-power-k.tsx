@@ -22,12 +22,14 @@ import { useUser } from "@/hooks/store/user";
 import { useAppRouter } from "@/hooks/use-app-router";
 import { useExpandableSearch } from "@/hooks/use-expandable-search";
 import { generateCreativeIdentifier } from "./project-dynamic-identifier.helper";
+import packageJson from "package.json";
 
 export const TopNavPowerK = observer(() => {
   // router
   const router = useAppRouter();
   const params = useParams();
   const { projectId: routerProjectId, workItem: workItemIdentifier } = params;
+  const commitHash = process.env.VITE_GIT_COMMIT_HASH;
 
   // states
   const [searchTerm, setSearchTerm] = useState("");
@@ -68,7 +70,8 @@ export const TopNavPowerK = observer(() => {
   const projectId: string | string[] | undefined | null = routerProjectId ?? workItemDetails?.project_id;
 
   const { getProjectById, currentProjectDetails } = useProject();
-  const currentProject = (typeof projectId === "string" ? getProjectById(projectId) : undefined) ?? currentProjectDetails;
+  const currentProject =
+    (typeof projectId === "string" ? getProjectById(projectId) : undefined) ?? currentProjectDetails;
 
   const [identifier, setIdentifier] = useState<string>(() =>
     generateCreativeIdentifier(
@@ -139,7 +142,7 @@ export const TopNavPowerK = observer(() => {
     return () => {
       setTopNavInputRef(null);
     };
-  }, [setTopNavInputRef]);
+  }, [inputRef, setTopNavInputRef]);
 
   const handleClear = () => {
     setSearchTerm("");
@@ -150,7 +153,7 @@ export const TopNavPowerK = observer(() => {
   const handleCommandSelect = useCallback(
     (command: TPowerKCommandConfig) => {
       if (command.type === "action") {
-        command.action(context);
+        void command.action(context);
         // Always close on command selection
         context.closePalette();
       } else if (command.type === "change-page") {
@@ -166,7 +169,7 @@ export const TopNavPowerK = observer(() => {
   const handlePageDataSelection = useCallback(
     (data: unknown) => {
       if (context.activeCommand?.type === "change-page") {
-        context.activeCommand.onSelect(data, context);
+        void context.activeCommand.onSelect(data, context);
       }
       // Always close on page data selection
       context.closePalette();
@@ -241,7 +244,7 @@ export const TopNavPowerK = observer(() => {
         return;
       }
     },
-    [searchTerm, activePage, context, shouldShowContextBasedActions, setActivePage, closePanel]
+    [searchTerm, activePage, context, shouldShowContextBasedActions, setActivePage, closePanel, containerRef, isOpen]
   );
 
   return (
@@ -251,15 +254,13 @@ export const TopNavPowerK = observer(() => {
           "w-[554px]": isOpen,
         })}
       >
-        <div
+        <label
           className={cn(
-            "flex items-center w-full h-7 p-2 rounded-lg bg-layer-2 border border-subtle-1 transition-colors duration-200",
+            "flex items-center w-full h-7 p-2 rounded-lg bg-layer-2 border border-subtle-1 transition-colors duration-200 cursor-text",
             {
               "bg-layer-1": isOpen,
             }
           )}
-          onClick={() => inputRef.current?.focus()}
-          role="button"
         >
           <SearchIcon className="shrink-0 size-3.5 text-placeholder mr-2" />
           <input
@@ -281,14 +282,33 @@ export const TopNavPowerK = observer(() => {
               <CloseIcon className="size-3.5 text-placeholder hover:text-primary" />
             </button>
           )}
-        </div>
-        <span
-          className="absolute left-full ml-2 text-[11px] text-tertiary select-none pointer-events-none font-mono shrink-0 whitespace-nowrap max-w-[64ch] overflow-hidden truncate transition-opacity duration-300"
-          title={identifier}
-          aria-label="Project Identifier"
+        </label>
+        <div
+          className={cn(
+            "absolute left-full ml-2 flex items-center gap-1.5 text-[11px] text-tertiary font-mono select-none pointer-events-none shrink-0 whitespace-nowrap transition-opacity duration-300",
+            {
+              "opacity-0": isOpen,
+            }
+          )}
         >
-          {identifier}
-        </span>
+          <span
+            className="font-medium text-secondary"
+            title={`Plane v${packageJson.version}${commitHash ? ` (${commitHash})` : ""}`}
+            aria-label="Plane Version and Commit"
+          >
+            v{packageJson.version}
+            {commitHash && ` (${commitHash})`}
+          </span>
+          {identifier && (
+            <span
+              className="max-w-[48ch] overflow-hidden truncate opacity-80"
+              title={identifier}
+              aria-label="Project Identifier"
+            >
+              · {identifier}
+            </span>
+          )}
+        </div>
       </div>
       <div
         className={cn(

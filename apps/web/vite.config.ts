@@ -4,6 +4,9 @@ import { reactRouter } from "@react-router/dev/vite";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
+import fs from "node:fs";
+import { execSync } from "node:child_process";
+
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 const viteEnv = Object.keys(process.env)
@@ -12,6 +15,32 @@ const viteEnv = Object.keys(process.env)
     a[k] = process.env[k] ?? "";
     return a;
   }, {});
+
+let commitHash = process.env.VITE_GIT_COMMIT_HASH || "";
+if (!commitHash) {
+  try {
+    commitHash = execSync("git rev-parse --short HEAD", {
+      cwd: path.resolve(__dirname, "../.."),
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+  } catch {
+    // fallback
+  }
+}
+if (!commitHash) {
+  try {
+    const commitFile = path.resolve(__dirname, "commit.json");
+    if (fs.existsSync(commitFile)) {
+      const commitData = JSON.parse(fs.readFileSync(commitFile, "utf-8"));
+      commitHash = commitData.commitHash || "";
+    }
+  } catch {
+    // fallback
+  }
+}
+viteEnv.VITE_GIT_COMMIT_HASH = commitHash;
 
 export default defineConfig(() => ({
   define: {

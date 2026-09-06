@@ -6,6 +6,7 @@ services:
       dockerfile: ./apps/web/Dockerfile.web
       args:
         DOCKER_BUILDKIT: 1
+        VITE_GIT_COMMIT_HASH: ${GIT_COMMIT_HASH:-}
     restart: always
     depends_on:
       - api
