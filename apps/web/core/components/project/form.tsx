@@ -18,7 +18,7 @@ import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import { EFileAssetType } from "@plane/types";
 import type { IProject, IWorkspace } from "@plane/types";
-import { CustomSelect, Input, TextArea } from "@plane/ui";
+import { CustomSelect, Input, TextArea, ToggleSwitch } from "@plane/ui";
 import { renderFormattedDate } from "@plane/utils";
 import { CoverImage } from "@/components/common/cover-image";
 import { ImagePickerPopover } from "@/components/core/image-picker-popover";
@@ -171,6 +171,7 @@ export function ProjectDetailsForm(props: IProjectDetailsForm) {
 
       logo_props: formData.logo_props,
       timezone: formData.timezone,
+      email_on_assignment: formData.email_on_assignment,
     };
 
     // Handle cover image changes
@@ -443,6 +444,21 @@ export function ProjectDetailsForm(props: IProjectDetailsForm) {
               )}
             />
             {errors.timezone && <span className="text-11 text-danger-primary">{errors.timezone.message}</span>}
+          </div>
+          <div className="flex items-center justify-between col-span-1 sm:col-span-2 py-3 border-t border-subtle">
+            <div className="flex flex-col gap-0.5">
+              <h4 className="text-13 font-medium">{t("project_settings.general.email_on_assignment")}</h4>
+              <p className="text-11 text-placeholder">
+                {t("project_settings.general.email_on_assignment_description")}
+              </p>
+            </div>
+            <Controller
+              name="email_on_assignment"
+              control={control}
+              render={({ field: { value, onChange } }) => (
+                <ToggleSwitch value={Boolean(value)} onChange={(val) => onChange(val)} size="sm" disabled={!isAdmin} />
+              )}
+            />
           </div>
         </div>
         <div className="flex items-center justify-between py-2">

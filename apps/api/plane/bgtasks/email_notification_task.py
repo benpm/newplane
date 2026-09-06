@@ -117,12 +117,23 @@ def create_payload(notification_data):
                         else None
                     )
 
-                if not data.get("actor_id", {}).get("activity_time", False):
-                    data[actor_id]["activity_time"] = str(
-                        datetime.fromisoformat(issue_activity.get("activity_time").rstrip("Z")).strftime(
-                            "%Y-%m-%d %H:%M:%S"
+                if not data.get(actor_id, {}).get("activity_time", False):
+                    act_time = issue_activity.get("activity_time")
+                    if act_time:
+                        try:
+                            data[actor_id]["activity_time"] = str(
+                                datetime.fromisoformat(str(act_time).rstrip("Z")).strftime(
+                                    "%Y-%m-%d %H:%M:%S"
+                                )
+                            )
+                        except Exception:
+                            data[actor_id]["activity_time"] = str(
+                                timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+                            )
+                    else:
+                        data[actor_id]["activity_time"] = str(
+                            timezone.now().strftime("%Y-%m-%d %H:%M:%S")
                         )
-                    )
 
     return data
 

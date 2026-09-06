@@ -107,6 +107,7 @@ class UserNotificationPreference(BaseModel):
     mention = models.BooleanField(default=True)
     issue_completed = models.BooleanField(default=True)
     worklog_reminder = models.BooleanField(default=True)
+    task_assigned = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "UserNotificationPreference"

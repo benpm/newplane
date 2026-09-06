@@ -51,6 +51,19 @@ Work items have their project slug prefix hidden across cards, headers, and moda
 
 - **Frontend** — `apps/web/ce/components/issues/issue-details/issue-identifier.tsx`, `apps/web/core/components/issues/issue-detail/identifier-text.tsx`, `apps/web/core/components/issues/issue-layouts/properties/all-properties.tsx`, `apps/web/core/components/issues/issue-layouts/kanban/block.tsx`
 
+### Home page mouse greeting & Board navigation with user filter
+
+Replaces the weather information and greeting on the logged-in home page with a large mouse emoji (`🐭`) and a count of assigned tasks for the current user. Clicking the text navigates directly to the user's default project (the first public project they have joined) in Board (Kanban) view with an assignee filter applied. Displays `no projects :(` if no public joined project exists. Directly above the board, a clear notification banner indicates that the view is filtered to their assigned work items and provides a one-click button to turn off the filter to see all tasks.
+
+- **Frontend** — `apps/web/core/components/home/user-greetings.tsx`, `apps/web/core/components/user/user-greetings.tsx`, `apps/web/core/components/issues/issue-layouts/roots/project-layout-root.tsx`
+
+### Task assignment email notifications
+
+Sends email notifications when a user is assigned to a work item. The feature is disabled by default and can be enabled per-user in user profile notification settings (`task_assigned`) or project-wide by project admins in project settings (`email_on_assignment`).
+
+- **Backend** — `apps/api/plane/db/models/notification.py`, `apps/api/plane/db/models/project.py`, `apps/api/plane/bgtasks/notification_task.py`, `apps/api/plane/bgtasks/email_notification_task.py`, `apps/api/plane/db/migrations/0197_add_task_assignment_email_options.py`
+- **Frontend** — `apps/web/core/components/settings/profile/content/pages/notifications/email-notification-form.tsx`, `apps/web/core/components/project/form.tsx`, `packages/types/src/users.ts`, `packages/types/src/project/projects.ts`, `packages/i18n/src/locales/en/translations.ts`
+
 ### Instance dashboard
 
 > Full documentation: **[Instance Dashboard](./instance-dashboard.md)**

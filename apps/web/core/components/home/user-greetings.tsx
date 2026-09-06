@@ -4,59 +4,73 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
+import { observer } from "mobx-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import useSWR from "swr";
 // plane types
-import { useTranslation } from "@plane/i18n";
 import type { IUser } from "@plane/types";
-// plane ui
 // hooks
-import { useCurrentTime } from "@/hooks/use-current-time";
+import { useProject } from "@/hooks/store/use-project";
+// services
+import { UserService } from "@/services/user.service";
+
+const userService = new UserService();
 
 export interface IUserGreetingsView {
   user: IUser;
 }
 
-export function UserGreetingsView(props: IUserGreetingsView) {
+export const UserGreetingsView = observer(function UserGreetingsView(props: IUserGreetingsView) {
   const { user } = props;
-  // current time hook
-  const { currentTime } = useCurrentTime();
-  // store hooks
-  const { t } = useTranslation();
+  const { workspaceSlug } = useParams();
+  const { joinedProjectIds, getProjectById, getPartialProjectById, loader } = useProject();
 
-  const hour = new Intl.DateTimeFormat("en-US", {
-    hour12: false,
-    hour: "numeric",
-  }).format(currentTime);
+  const isProjectsLoading = loader === "init-loader";
 
-  const date = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-  }).format(currentTime);
+  // First public project associated with user (joined)
+  const joinedPublicProjects = (joinedProjectIds || [])
+    .map((id) => getProjectById(id) || getPartialProjectById(id))
+    .filter((p) => Boolean(p && p.network === 2 && !p.archived_at));
 
-  const weekDay = new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-  }).format(currentTime);
+  const defaultProject = joinedPublicProjects[0];
 
-  const timeString = new Intl.DateTimeFormat("en-US", {
-    timeZone: user?.user_timezone,
-    hour12: false, // Use 24-hour format
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(currentTime);
+  const { data: userStats, isLoading: isStatsLoading } = useSWR(
+    workspaceSlug && user?.id ? `USER_STATS_${workspaceSlug}_${user.id}` : null,
+    () => userService.getUserProfileData(workspaceSlug.toString(), user.id),
+    { revalidateIfStale: false, revalidateOnFocus: true }
+  );
 
-  const greeting = parseInt(hour, 10) < 12 ? "morning" : parseInt(hour, 10) < 18 ? "afternoon" : "evening";
+  const { data: segregationData } = useSWR(
+    workspaceSlug && user?.id ? `USER_PROJECT_SEGREGATION_${workspaceSlug}_${user.id}` : null,
+    () => userService.getUserProfileProjectsSegregation(workspaceSlug.toString(), user.id),
+    { revalidateIfStale: false, revalidateOnFocus: true }
+  );
+
+  const projectStats = defaultProject
+    ? segregationData?.project_data?.find((p) => p.id === defaultProject.id)
+    : undefined;
+
+  const assignedCount =
+    projectStats !== undefined ? projectStats.assigned_issues : segregationData ? 0 : (userStats?.assigned_issues ?? 0);
 
   return (
-    <div className="flex flex-col items-center my-6">
-      <h2 className="text-20 font-semibold text-center">
-        {t("good")} {t(greeting)}, {user?.first_name} {user?.last_name}
-      </h2>
-      <h5 className="flex items-center gap-2 font-medium text-placeholder">
-        <div>{greeting === "morning" ? "🌤️" : greeting === "afternoon" ? "🌥️" : "🌙️"}</div>
-        <div>
-          {weekDay}, {date} {timeString}
-        </div>
-      </h5>
+    <div className="flex flex-col items-center justify-center my-6 select-none">
+      <div className="text-7xl sm:text-8xl mb-2 transition-transform duration-200 hover:scale-105">🐭</div>
+      {isProjectsLoading ? (
+        <span className="text-sm font-medium text-placeholder animate-pulse">Loading...</span>
+      ) : !defaultProject ? (
+        <span className="text-sm font-medium text-placeholder">no projects :(</span>
+      ) : (
+        <Link
+          href={`/${workspaceSlug}/projects/${defaultProject.id}/issues/?layout=kanban&user_filter=true`}
+          className="text-sm font-medium text-secondary hover:text-primary transition-colors underline-offset-4 hover:underline cursor-pointer"
+        >
+          {isStatsLoading && !userStats && !segregationData
+            ? "..."
+            : `${assignedCount} assigned ${assignedCount === 1 ? "task" : "tasks"}`}
+        </Link>
+      )}
     </div>
   );
-}
+});

@@ -24,6 +24,9 @@ For the markdown editor in tasks and pages.
 - [x] The github link icon in the top right of each work item is cut off. Only a quarter of it is visible. (Fixed with `GitHub_Invertocat_White.png`)
 - [x] Hide work item slug entirely and replace with `#<id>` (e.g., `#32` instead of `MOUSE-32`), styled smaller and dimmer.
 - [x] Hide buttons for adding tags and due dates when they are empty for that work item in Board view.
+- [x] Remove Frequency entirely and make title and status the only required fields (defaulting to Backlog).
+- [x] Add option to email users when assigned a task (disabled by default, with profile and project toggles).
+- [x] Replace weather and greeting on home page with big mouse emoji and clickable assigned tasks count leading to default public project Board view with filter banner.
 
 - [x] Make a constantly changing identifier string made of words related to the current project. Should relate to your task somewhat, but cant be more than 64 characters. be very creative, use numbers and symbols and emojis too. Draw the string right next to the search box.
 - [x] When user is creating their account, instead of showing the screen for creating a project / workspace, show existing projects that user can join. _Do not allow normal users to create Workspace or Project._

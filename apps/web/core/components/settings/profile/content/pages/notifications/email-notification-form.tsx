@@ -163,6 +163,26 @@ export const NotificationsProfileSettingsForm = observer(function NotificationsP
         }
       />
       <SettingsControlItem
+        title={t("task_assigned")}
+        description={t("task_assigned_description")}
+        control={
+          <Controller
+            control={control}
+            name="task_assigned"
+            render={({ field: { value, onChange } }) => (
+              <ToggleSwitch
+                value={value ?? false}
+                onChange={(newValue) => {
+                  onChange(newValue);
+                  void handleSettingChange("task_assigned", newValue);
+                }}
+                size="sm"
+              />
+            )}
+          />
+        }
+      />
+      <SettingsControlItem
         title={t("worklog.reminder_toggle")}
         description={t("worklog.reminder_toggle_description")}
         control={

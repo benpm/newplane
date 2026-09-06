@@ -1,6 +1,23 @@
 # Changelog
 
-## 9/6/2026 — GitHub Pages Instance Dashboard Deployment via GitHub Actions
+## 9/6/2026 — Home page mouse greeting & assigned task Board navigation with filter banner
+
+- Replaced the weather info and greeting text on the home page with a large mouse emoji (`🐭`) and the user's assigned tasks count.
+- Made the assigned tasks count clickable to navigate directly to the first public project the user is associated with in Board (Kanban) view.
+- Displays `no projects :(` when the user is not associated with any public project.
+- Sets the user assignee filter on the Board view and renders a clear notification banner indicating the active filter with a 1-click "Turn off filter" action to view all work items.
+
+## 9/6/2026 — Task assignment email notifications (opt-in)
+
+- Added an option to email users when they are assigned a task (disabled by default).
+- Added user-level preference `task_assigned` under profile email notification settings.
+- Added project-level preference `email_on_assignment` under project general settings.
+- Dispatched assignment email notifications in background worker tasks respecting user and project preferences.
+
+## 9/6/2026 — Required fields simplification & Frequency removal
+
+- Made work item fields optional with only title and status required (defaulting to Backlog).
+- Removed required Frequency constraints when transitioning issues between states.
 
 - Added automated GitHub Actions deployment to GitHub Pages (`https://benpm.github.io/newplane/`) in `.github/workflows/rebuild-site.yml`.
 - Created standalone dashboard builder `scripts/build-pages.mjs` that packages an operational Plane Instance Dashboard with service health, system counts, storage metrics, and searchable inventories of workspaces, projects, and users.

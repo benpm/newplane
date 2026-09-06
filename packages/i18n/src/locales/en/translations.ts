@@ -296,6 +296,11 @@ export default {
   comments_description: "Notify me when someone leaves a comment on the work item",
   mentions: "Mentions",
   mentions_description: "Notify me only when someone mentions me in the comments or description",
+  task_assigned: "Task assignments",
+  task_assigned_description: "Notify me when I am assigned to a work item",
+  "project_settings.general.email_on_assignment": "Email assignees on task assignment",
+  "project_settings.general.email_on_assignment_description":
+    "Send an email notification to assignees when they are assigned a work item.",
   old_password: "Old password",
   general_settings: "General settings",
   sign_out: "Sign out",

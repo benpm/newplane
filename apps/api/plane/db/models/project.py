@@ -101,6 +101,7 @@ class Project(BaseModel):
     is_global = models.BooleanField(default=False, verbose_name="Is Global Project")
     # When true, users new to the instance or to this workspace are enrolled as project Members automatically.
     auto_add_new_users = models.BooleanField(default=False)
+    email_on_assignment = models.BooleanField(default=False)
     cover_image = models.TextField(blank=True, null=True)
     cover_image_asset = models.ForeignKey(
         "db.FileAsset",

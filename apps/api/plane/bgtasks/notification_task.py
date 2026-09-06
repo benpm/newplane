@@ -343,6 +343,16 @@ def notifications(
                         send_email = True
                     elif issue_activity.get("field") == "comment" and preference.comment:
                         send_email = True
+                    elif issue_activity.get("field") == "assignees":
+                        if str(subscriber) == str(issue_activity.get("new_identifier")):
+                            send_email = preference.task_assigned or project.email_on_assignment
+                        elif preference.property_change:
+                            send_email = True
+                    elif issue_activity.get("verb") == "created":
+                        if subscriber in issue_assignees and issue.created_by_id != subscriber:
+                            send_email = preference.task_assigned or project.email_on_assignment
+                        elif preference.property_change:
+                            send_email = True
                     elif preference.property_change:
                         send_email = True
                     else:
