@@ -54,8 +54,11 @@ export const PageNavigationPaneRoot = observer(function PageNavigationPaneRoot(p
   const navigationPaneQueryParam = searchParams.get(
     PAGE_NAVIGATION_PANE_TABS_QUERY_PARAM
   ) as TPageNavigationPaneTab | null;
-  const activeTab: TPageNavigationPaneTab = navigationPaneQueryParam || "outline";
-  const selectedIndex = PAGE_NAVIGATION_PANE_TAB_KEYS.indexOf(activeTab);
+  const activeTab: TPageNavigationPaneTab =
+    navigationPaneQueryParam && PAGE_NAVIGATION_PANE_TAB_KEYS.includes(navigationPaneQueryParam)
+      ? navigationPaneQueryParam
+      : "outline";
+  const selectedIndex = Math.max(0, PAGE_NAVIGATION_PANE_TAB_KEYS.indexOf(activeTab));
 
   // Check if any extension is currently active based on query parameters
   const ActiveExtension = extensions.find((extension) => {

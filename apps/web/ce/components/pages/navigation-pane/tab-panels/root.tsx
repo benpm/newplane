@@ -4,16 +4,22 @@
  * See the LICENSE file for details.
  */
 
-// store
 import type { TPageInstance } from "@/store/pages/base-page";
 // local imports
 import type { TPageNavigationPaneTab } from "..";
+import { PageNavigationPaneSubpagesTabPanel } from "./subpages";
 
 export type TPageNavigationPaneAdditionalTabPanelsRootProps = {
   activeTab: TPageNavigationPaneTab;
   page: TPageInstance;
 };
 
-export function PageNavigationPaneAdditionalTabPanelsRoot(_props: TPageNavigationPaneAdditionalTabPanelsRootProps) {
+export function PageNavigationPaneAdditionalTabPanelsRoot(props: TPageNavigationPaneAdditionalTabPanelsRootProps) {
+  const { activeTab, page } = props;
+
+  if (activeTab === "subpages") {
+    return <PageNavigationPaneSubpagesTabPanel page={page} />;
+  }
+
   return null;
 }

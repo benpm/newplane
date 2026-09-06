@@ -49,6 +49,7 @@ from .. import BaseViewSet
 from plane.db.models import UserFavorite
 from plane.utils.filters import ComplexFilterBackend
 from plane.utils.filters import IssueFilterSet
+from plane.utils.github_issue_annotations import github_link_annotations
 
 
 class WorkspaceViewViewSet(BaseViewSet):
@@ -180,6 +181,7 @@ class WorkspaceViewIssuesViewSet(BaseViewSet):
     def apply_annotations(self, issues):
         return (
             issues.select_related("main_task_category", "sub_task_category")
+            .annotate(**github_link_annotations())
             .annotate(
                 cycle_id=Subquery(
                     CycleIssue.objects.filter(issue=OuterRef("id"), deleted_at__isnull=True).values("cycle_id")[:1]
@@ -275,7 +277,7 @@ class WorkspaceViewIssuesViewSet(BaseViewSet):
 
         # Base query for the counts
         total_issue_count_queryset = copy.deepcopy(issue_queryset)
-        total_issue_count_queryset = total_issue_count_queryset.only("id")
+        total_issue_count_queryset = total_issue_count_queryset.select_related(None).only("id")
 
         # Apply annotations to the issue queryset
         issue_queryset = self.apply_annotations(issue_queryset)

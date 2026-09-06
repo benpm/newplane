@@ -4,19 +4,24 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { observer } from "mobx-react";
 import { useTranslation } from "@plane/i18n";
 import { ChevronDownIcon } from "@plane/propel/icons";
-import type { TRecentActivityFilterKeys } from "@plane/types";
 import { CustomMenu } from "@plane/ui";
 import { cn } from "@plane/utils";
 
+export type TFilterOption = {
+  name: string;
+  icon?: React.ReactNode;
+  label?: string;
+  i18n_key?: string;
+};
+
 export type TFiltersDropdown = {
   className?: string;
-  activeFilter: TRecentActivityFilterKeys;
-  setActiveFilter: (filter: TRecentActivityFilterKeys) => void;
-  filters: { name: TRecentActivityFilterKeys; icon?: React.ReactNode; i18n_key: string }[];
+  activeFilter: string;
+  setActiveFilter: (filter: string) => void;
+  filters: TFilterOption[];
 };
 
 export const FiltersDropdown = observer(function FiltersDropdown(props: TFiltersDropdown) {
@@ -32,20 +37,24 @@ export const FiltersDropdown = observer(function FiltersDropdown(props: TFilters
           setActiveFilter(filter.name);
         }}
       >
-        <div className="truncate font-medium text-11 capitalize">{t(filter.i18n_key)}</div>
+        {filter.icon && <div className="flex-shrink-0">{filter.icon}</div>}
+        <div className="truncate font-medium text-11">
+          {filter.label || (filter.i18n_key ? t(filter.i18n_key) : filter.name)}
+        </div>
       </CustomMenu.MenuItem>
     ));
   }
 
-  const title = activeFilter ? filters?.find((filter) => filter.name === activeFilter)?.i18n_key : "";
+  const activeItem = filters?.find((filter) => filter.name === activeFilter);
+  const title = activeItem?.label || (activeItem?.i18n_key ? t(activeItem.i18n_key) : activeFilter || "");
   return (
     <CustomMenu
       maxHeight={"md"}
       className={cn("flex justify-center text-11 text-secondary w-fit", className)}
       placement="bottom-start"
       customButton={
-        <button className="flex hover:bg-layer-transparent-hover px-2 py-1 rounded-sm gap-1 capitalize border border-subtle">
-          <span className="font-medium text-13 my-auto">{t(title || "")}</span>
+        <button className="flex hover:bg-layer-transparent-hover px-2 py-1 rounded-sm gap-1 border border-subtle">
+          <span className="font-medium text-13 my-auto">{title}</span>
           <ChevronDownIcon className={cn("size-3 my-auto text-tertiary hover:text-secondary duration-300")} />
         </button>
       }

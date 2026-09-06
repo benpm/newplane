@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-export type TPageNavigationPaneTab = "outline" | "info" | "assets";
+export type TPageNavigationPaneTab = "outline" | "info" | "assets" | "subpages";
 
 export const PAGE_NAVIGATION_PANE_TABS_LIST: Record<
   TPageNavigationPaneTab,
@@ -25,6 +25,10 @@ export const PAGE_NAVIGATION_PANE_TABS_LIST: Record<
     key: "assets",
     i18n_label: "page_navigation_pane.tabs.assets.label",
   },
+  subpages: {
+    key: "subpages",
+    i18n_label: "page_navigation_pane.tabs.subpages.label",
+  },
 };
 
 export const ORDERED_PAGE_NAVIGATION_TABS_LIST: {
@@ -34,4 +38,5 @@ export const ORDERED_PAGE_NAVIGATION_TABS_LIST: {
   PAGE_NAVIGATION_PANE_TABS_LIST.outline,
   PAGE_NAVIGATION_PANE_TABS_LIST.info,
   PAGE_NAVIGATION_PANE_TABS_LIST.assets,
+  PAGE_NAVIGATION_PANE_TABS_LIST.subpages,
 ];

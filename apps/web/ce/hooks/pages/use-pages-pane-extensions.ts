@@ -30,16 +30,18 @@ export const usePagesPaneExtensions = (_params: TPageExtensionHookParams) => {
   const searchParams = useSearchParams();
 
   // Generic navigation pane logic - hook manages feature-specific routing
-  const navigationPaneQueryParam = searchParams.get(
-    PAGE_NAVIGATION_PANE_TABS_QUERY_PARAM
-  ) as TPageNavigationPaneTab | null;
+  const navigationPaneQueryParam = searchParams.get(PAGE_NAVIGATION_PANE_TABS_QUERY_PARAM);
 
   const isNavigationPaneOpen =
-    !!navigationPaneQueryParam && PAGE_NAVIGATION_PANE_TAB_KEYS.includes(navigationPaneQueryParam);
+    navigationPaneQueryParam === null
+      ? true
+      : navigationPaneQueryParam !== "closed" &&
+        PAGE_NAVIGATION_PANE_TAB_KEYS.includes(navigationPaneQueryParam as TPageNavigationPaneTab);
 
   const handleOpenNavigationPane = useCallback(() => {
     const updatedRoute = updateQueryParams({
       paramsToAdd: { [PAGE_NAVIGATION_PANE_TABS_QUERY_PARAM]: "outline" },
+      paramsToRemove: [PAGE_NAVIGATION_PANE_VERSION_QUERY_PARAM],
     });
     router.push(updatedRoute);
   }, [router, updateQueryParams]);
@@ -53,7 +55,8 @@ export const usePagesPaneExtensions = (_params: TPageExtensionHookParams) => {
 
   const handleCloseNavigationPane = useCallback(() => {
     const updatedRoute = updateQueryParams({
-      paramsToRemove: [PAGE_NAVIGATION_PANE_TABS_QUERY_PARAM, PAGE_NAVIGATION_PANE_VERSION_QUERY_PARAM],
+      paramsToAdd: { [PAGE_NAVIGATION_PANE_TABS_QUERY_PARAM]: "closed" },
+      paramsToRemove: [PAGE_NAVIGATION_PANE_VERSION_QUERY_PARAM],
     });
     router.push(updatedRoute);
   }, [router, updateQueryParams]);

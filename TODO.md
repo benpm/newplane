@@ -27,6 +27,8 @@ For the markdown editor in tasks and pages.
 - [x] Remove Frequency entirely and make title and status the only required fields (defaulting to Backlog).
 - [x] Add option to email users when assigned a task (disabled by default, with profile and project toggles).
 - [x] Replace weather and greeting on home page with big mouse emoji and clickable assigned tasks count leading to default public project Board view with filter banner.
+- [x] Replace work item slug on home page with clickable GitHub issue link, add configurable filter (unassigned, assigned, finished, recent), and make mouse emoji much bigger.
+- [x] Page editor right sidebar: add 4th tab "Subpages" showing subpages of that page, and make the right sidebar open by default.
 
 - [x] Make a constantly changing identifier string made of words related to the current project. Should relate to your task somewhat, but cant be more than 64 characters. be very creative, use numbers and symbols and emojis too. Draw the string right next to the search box.
 - [x] When user is creating their account, instead of showing the screen for creating a project / workspace, show existing projects that user can join. _Do not allow normal users to create Workspace or Project._

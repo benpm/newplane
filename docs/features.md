@@ -57,6 +57,20 @@ Replaces the weather information and greeting on the logged-in home page with a 
 
 - **Frontend** — `apps/web/core/components/home/user-greetings.tsx`, `apps/web/core/components/user/user-greetings.tsx`, `apps/web/core/components/issues/issue-layouts/roots/project-layout-root.tsx`
 
+### Home page work item GitHub issue links & configurable filters
+
+Work items listed on the home page display a clickable GitHub issue pill (`#<number>` with the GitHub logo) linking directly to the upstream GitHub issue (or `#<sequence_id>` without the project slug prefix if unlinked). The list supports configurable filtering between "Unassigned" (sorted by `-created_at`), "Assigned to me" (sorted by `-updated_at`), "Finished" (completed items sorted by `-completed_at`), and "Recent" visits, persisting the user's preference in `localStorage`.
+
+- **Backend** — `apps/api/plane/app/serializers/workspace.py`, `apps/api/plane/app/views/view/base.py`
+- **Frontend** — `apps/web/core/components/home/widgets/recents/index.tsx`, `apps/web/core/components/home/widgets/recents/issue.tsx`, `apps/web/core/components/home/widgets/recents/filters.tsx`
+
+### Page editor Subpages tab & default-open navigation sidebar
+
+The page editor right sidebar includes a fourth tab: "Subpages". This tab displays all child subpages of the current page, showing page title, icon, subpage count badges, and a button to create new subpages. The right sidebar defaults to open unless explicitly closed by the user (persisted with URL query param `navigation_pane=closed`).
+
+- **Frontend** — `apps/web/ce/components/pages/navigation-pane/tab-panels/subpages.tsx`, `apps/web/ce/components/pages/navigation-pane/tab-panels/root.tsx`, `apps/web/ce/components/pages/navigation-pane/index.ts`, `apps/web/ce/hooks/pages/use-pages-pane-extensions.ts`, `apps/web/core/components/pages/navigation-pane/root.tsx`
+- **i18n** — `packages/i18n/src/locales/en/translations.ts`
+
 ### Task assignment email notifications
 
 Sends email notifications when a user is assigned to a work item. The feature is disabled by default and can be enabled per-user in user profile notification settings (`task_assigned`) or project-wide by project admins in project settings (`email_on_assignment`).

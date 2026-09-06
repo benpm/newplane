@@ -1,5 +1,13 @@
 # Changelog
 
+## 9/7/2026 — Page editor Subpages tab & Home page GitHub issue links with configurable filter
+
+- Replaced project slug prefix (`PROJECT-ITEM_NUMBER`) on the home page with clickable GitHub issue number pill (`#<num>`) linking directly to the corresponding GitHub issue.
+- Added configurable filter on the home page work items widget ("Unassigned", "Assigned to me", "Finished", "Recent") with persistence in localStorage and completion timestamps.
+- Made the home page mouse emoji much bigger (`text-9xl` to `text-[12rem]`).
+- Added a 4th tab "Subpages" to the right navigation sidebar in the page editor, displaying subpages of the current page with counts and creation action.
+- Made the page editor right sidebar open by default.
+
 ## 9/6/2026 — Home page mouse greeting & assigned task Board navigation with filter banner
 
 - Replaced the weather info and greeting text on the home page with a large mouse emoji (`🐭`) and the user's assigned tasks count.

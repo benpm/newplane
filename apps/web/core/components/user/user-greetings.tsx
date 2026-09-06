@@ -56,7 +56,9 @@ export const UserGreetingsView = observer(function UserGreetingsView(props: IUse
 
   return (
     <div className="flex flex-col items-center justify-center my-6 select-none">
-      <div className="text-7xl sm:text-8xl mb-2 transition-transform duration-200 hover:scale-105">🐭</div>
+      <div className="text-9xl sm:text-[10rem] md:text-[12rem] leading-none mb-3 transition-transform duration-200 hover:scale-105">
+        🐭
+      </div>
       {isProjectsLoading ? (
         <span className="text-sm font-medium text-placeholder animate-pulse">Loading...</span>
       ) : !defaultProject ? (

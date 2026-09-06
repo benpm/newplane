@@ -227,6 +227,9 @@ class WorkspaceUserLinkSerializer(BaseSerializer):
 class IssueRecentVisitSerializer(serializers.ModelSerializer):
     project_identifier = serializers.SerializerMethodField()
     assignees = serializers.SerializerMethodField()
+    github_issue_number = serializers.SerializerMethodField()
+    github_repository = serializers.SerializerMethodField()
+    github_comment_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Issue
@@ -240,6 +243,10 @@ class IssueRecentVisitSerializer(serializers.ModelSerializer):
             "sequence_id",
             "project_id",
             "project_identifier",
+            "completed_at",
+            "github_issue_number",
+            "github_repository",
+            "github_comment_count",
         ]
 
     def get_project_identifier(self, obj):
@@ -248,6 +255,20 @@ class IssueRecentVisitSerializer(serializers.ModelSerializer):
 
     def get_assignees(self, obj):
         return list(obj.assignees.filter(issue_assignee__deleted_at__isnull=True).values_list("id", flat=True))
+
+    def get_github_issue_number(self, obj):
+        link = obj.github_link.filter(deleted_at__isnull=True).first()
+        return link.github_issue_number if link else None
+
+    def get_github_repository(self, obj):
+        link = obj.github_link.filter(deleted_at__isnull=True).select_related("github_sync").first()
+        if link and link.github_sync and link.github_sync.is_issue_sync_enabled:
+            return f"{link.github_sync.repository_owner}/{link.github_sync.repository_name}"
+        return None
+
+    def get_github_comment_count(self, obj):
+        link = obj.github_link.filter(deleted_at__isnull=True).first()
+        return link.github_comment_count if link else 0
 
 
 class ProjectRecentVisitSerializer(serializers.ModelSerializer):

@@ -3409,6 +3409,14 @@ export default {
           description: "Add images to see them here.",
         },
       },
+      subpages: {
+        label: "Subpages",
+        add_subpage_button: "Add subpage",
+        empty_state: {
+          title: "No subpages",
+          description: "Subpages created under this page will appear here.",
+        },
+      },
     },
     open_button: "Open navigation pane",
     close_button: "Close navigation pane",
