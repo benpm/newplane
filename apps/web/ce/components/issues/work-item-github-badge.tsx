@@ -7,9 +7,10 @@
 import { observer } from "mobx-react";
 // plane imports
 import { useTranslation } from "@plane/i18n";
-import { GithubIcon } from "@plane/propel/icons";
 import type { TIssue } from "@plane/types";
 import { Tooltip } from "@plane/propel/tooltip";
+// assets
+import GitHubInvertocatWhite from "@/app/assets/logos/GitHub_Invertocat_White.png?url";
 // hooks
 import { usePlatformOS } from "@/hooks/use-platform-os";
 
@@ -59,7 +60,7 @@ export const WorkItemGithubBadge: React.FC<Props> = observer((props) => {
         className={`flex flex-shrink-0 items-center gap-1 text-tertiary hover:text-primary ${className ?? ""}`}
         aria-label={tooltip}
       >
-        <GithubIcon width="12" height="12" color="currentColor" className="flex-shrink-0" />
+        <img src={GitHubInvertocatWhite} alt="GitHub" className="h-3 w-3 flex-shrink-0 object-contain" />
         {commentCount > 0 && <span className="text-caption-sm-regular">{commentCount}</span>}
       </a>
     </Tooltip>

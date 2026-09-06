@@ -63,4 +63,5 @@ hooks/.logs/
 session-state/latest.md
 session-state/archive/
 settings.local.json
+worktrees/
 

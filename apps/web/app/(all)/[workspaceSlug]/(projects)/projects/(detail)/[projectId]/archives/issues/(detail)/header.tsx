@@ -62,13 +62,7 @@ export const ProjectArchivedIssueDetailsHeader = observer(function ProjectArchiv
           />
           <Breadcrumbs.Item
             component={
-              <BreadcrumbLink
-                label={
-                  currentProjectDetails && issueDetails
-                    ? `${currentProjectDetails.identifier}-${issueDetails.sequence_id}`
-                    : ""
-                }
-              />
+              <BreadcrumbLink label={currentProjectDetails && issueDetails ? `#${issueDetails.sequence_id}` : ""} />
             }
           />
         </Breadcrumbs>

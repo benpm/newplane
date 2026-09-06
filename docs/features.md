@@ -44,6 +44,12 @@ A dynamic, constantly updating identifier string rendered next to the top search
 
 - **Frontend** — `apps/web/core/components/navigation/top-nav-power-k.tsx`, `apps/web/core/components/navigation/project-dynamic-identifier.helper.ts`
 
+### Work item identifier formatting and Board view cleanup
+
+Work items have their project slug prefix hidden across cards, headers, and modals, displaying as `#<sequence_id>` (e.g., `#32` instead of `MOUSE-32`) styled with smaller (`text-10`) and dimmer (`text-placeholder`, `font-normal`) typography. In Board view (Kanban), cards hide the buttons for adding tags and due dates when those fields are empty for that work item, reducing visual clutter.
+
+- **Frontend** — `apps/web/ce/components/issues/issue-details/issue-identifier.tsx`, `apps/web/core/components/issues/issue-detail/identifier-text.tsx`, `apps/web/core/components/issues/issue-layouts/properties/all-properties.tsx`, `apps/web/core/components/issues/issue-layouts/kanban/block.tsx`
+
 ### Instance dashboard
 
 > Full documentation: **[Instance Dashboard](./instance-dashboard.md)**
@@ -298,7 +304,7 @@ stripped on pull.
   `bgtasks/github_wiki_sync_task.py`, `db/signals/github_issue_push.py`,
   `utils/github_client.py`, `utils/markdown_conversion.py`, `utils/github_wiki.py`
 - **Frontend** — `ce/components/projects/settings/github-sync/`,
-  `ce/components/issues/work-item-github-badge.tsx`
+  `ce/components/issues/work-item-github-badge.tsx` (using official `GitHub_Invertocat_White.png` asset)
 - **Ops** — `scripts/plane token rotate` validates a new token (API
   reachable, `repo` scope, push access to every configured repo) _before_
   writing it to either env file
@@ -343,7 +349,9 @@ Typing `#` opens the mentions dropdown to search workspace issues and inserts a
 The padding between list items and the maximum number of items shown in autocomplete suggestion lists (e.g. for members, pages, issues) are fully configurable:
 
 #### 1. Customizing padding (CSS variables)
+
 By default, the vertical padding between suggestion list items is set to a compact `0.2rem`. This can be customized by defining the `--editor-suggestion-padding-y` CSS variable in your application's global stylesheets:
+
 ```css
 :root {
   /* Customize vertical padding between autocomplete items */
@@ -352,15 +360,17 @@ By default, the vertical padding between suggestion list items is set to a compa
 ```
 
 #### 2. Customizing max items in the list (HTML data attributes)
+
 The maximum number of matching items displayed in the autocomplete suggestion list defaults to `10`. This can be configured dynamically by setting the `data-suggestion-max-items` attribute on the ProseMirror editor container element.
 
 For example, when defining the editor's options:
+
 ```typescript
 const editorProps = {
   attributes: {
     "data-suggestion-max-items": "5", // show at most 5 items per section
-  }
-}
+  },
+};
 ```
 
 ### Advanced Search & Link Toolbar Modal
@@ -368,6 +378,7 @@ const editorProps = {
 Clicking the **Search** icon next to the link button in the text formatting bubble toolbar opens an interactive search dialog. This modal allows users to search for issues (by title or ID) and pages across the workspace.
 
 #### Key features:
+
 - **Recently Viewed Issues**: Direct visibility into your recently visited issues loaded from the user's workspace history.
 - **Unified Search**: Search across workspace issues and pages with a debounced input.
 - **Smart Insertion**:

@@ -100,7 +100,7 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
 
   return (
     <>
-      <div className="relative">
+      <div className="relative flex items-center gap-1.5">
         {issue.project_id && (
           <IssueIdentifier
             issueId={issue.id}

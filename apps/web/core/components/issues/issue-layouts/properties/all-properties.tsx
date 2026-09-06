@@ -64,7 +64,7 @@ export interface IIssueProperties {
 }
 
 export const IssueProperties = observer(function IssueProperties(props: IIssueProperties) {
-  const { issue, updateIssue, displayProperties, isReadOnly, className, isEpic = false } = props;
+  const { issue, updateIssue, displayProperties, isReadOnly, className, isEpic = false, activeLayout } = props;
   // i18n
   const { t } = useTranslation();
   // due date reason modal state
@@ -316,7 +316,7 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
       <WithDisplayPropertiesHOC
         displayProperties={displayProperties}
         displayPropertyKey="due_date"
-        shouldRenderProperty={() => !isDateRangeEnabled}
+        shouldRenderProperty={() => !isDateRangeEnabled && (activeLayout !== "Kanban" || Boolean(issue?.target_date))}
       >
         <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
           <DateDropdown
@@ -505,7 +505,13 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
       <WorkItemLayoutAdditionalProperties displayProperties={displayProperties} issue={issue} />
 
       {/* label */}
-      <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="labels">
+      <WithDisplayPropertiesHOC
+        displayProperties={displayProperties}
+        displayPropertyKey="labels"
+        shouldRenderProperty={() =>
+          activeLayout !== "Kanban" || Boolean(issue?.label_ids && issue.label_ids.length > 0)
+        }
+      >
         <IssuePropertyLabels
           projectId={issue?.project_id || null}
           value={issue?.label_ids || []}

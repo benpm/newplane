@@ -1,5 +1,11 @@
 # Changelog
 
+## 9/6/2026 — Work item GitHub badge icon, identifier formatting & Board view cleanup
+
+- Replaced the work item GitHub badge icon with official `GitHub_Invertocat_White.png` asset, ensuring the full Invertocat icon is displayed without cutoff.
+- Hid work item project slug prefix across views and modals, formatting identifiers as `#<sequence_id>` (e.g., `#32` instead of `MOUSE-32`) with smaller (`text-10`) and dimmer (`text-placeholder`, `font-normal`) styling.
+- Cleaned up Board view (Kanban) cards by hiding the buttons for adding tags and due dates when those fields are empty for the work item.
+
 ## 9/6/2026 — Advanced Search & Link toolbar modal for Issues and Pages
 
 - Added an advanced "Search & Link" button with a Search icon in the formatting bubble toolbar menu.
@@ -49,6 +55,7 @@
 ## 9/3/2026 — dynamic project identifier next to search box
 
 Added a dynamic, constantly changing identifier string next to the search box in the top navigation bar.
+
 - Extracts keywords from the active project (name and identifier) and task (title and identifier).
 - Composes a creative identifier containing numbers, symbols, and emojis, capped at 64 characters.
 - Continuously cycles every 3.5 seconds and immediately updates upon navigating between projects or tasks.

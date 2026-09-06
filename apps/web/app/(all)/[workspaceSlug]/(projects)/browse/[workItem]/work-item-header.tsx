@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import React from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane ui
@@ -51,11 +50,7 @@ export const WorkItemDetailsHeader = observer(function WorkItemDetailsHeader() {
             }
           />
           <Breadcrumbs.Item
-            component={
-              <BreadcrumbLink
-                label={projectDetails && issueDetails ? `${projectDetails.identifier}-${issueDetails.sequence_id}` : ""}
-              />
-            }
+            component={<BreadcrumbLink label={projectDetails && issueDetails ? `#${issueDetails.sequence_id}` : ""} />}
           />
         </Breadcrumbs>
       </Header.LeftItem>
