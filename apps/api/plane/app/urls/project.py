@@ -26,10 +26,24 @@ from plane.app.views import (
     ProjectFieldPermissionViewSet,
     ProjectCopyView,
     ProjectCopyStatusView,
+    JoinableProjectsEndpoint,
+    JoinProjectEndpoint,
+    ProjectDiscordIntegrationViewSet,
+    ProjectDiscordCommandEndpoint,
 )
 
 
 urlpatterns = [
+    path(
+        "users/me/joinable-projects/",
+        JoinableProjectsEndpoint.as_view(),
+        name="user-joinable-projects",
+    ),
+    path(
+        "users/me/joinable-projects/<uuid:project_id>/join/",
+        JoinProjectEndpoint.as_view(),
+        name="user-join-project",
+    ),
     path(
         "workspaces/<str:slug>/projects/",
         ProjectViewSet.as_view({"get": "list", "post": "create"}),
@@ -176,5 +190,20 @@ urlpatterns = [
         "workspaces/<str:slug>/projects/<uuid:project_id>/copy-status/<uuid:job_id>/",
         ProjectCopyStatusView.as_view(),
         name="project-copy-status",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/discord/",
+        ProjectDiscordIntegrationViewSet.as_view({"get": "list", "post": "create"}),
+        name="project-discord-integrations",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/discord/<uuid:pk>/",
+        ProjectDiscordIntegrationViewSet.as_view({"patch": "partial_update", "delete": "destroy"}),
+        name="project-discord-integration-detail",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/discord/command/",
+        ProjectDiscordCommandEndpoint.as_view(),
+        name="project-discord-command",
     ),
 ]

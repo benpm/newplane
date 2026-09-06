@@ -1,5 +1,36 @@
 # Changelog
 
+## 9/3/2026 — Discord multi-server integration & bot commands
+
+- Integrated Discord support allowing multiple Discord servers per project.
+- Customizable notifications for work item creation, updates, and completion.
+- Added command handling (`/create`, `/update`, `/complete`, `/status`, `/help`) to create, update, or complete work items directly.
+- Added management endpoints at `/api/workspaces/<slug>/projects/<project_id>/discord/` and `/command/`.
+
+## 9/3/2026 — guest and unauthenticated read-only view for project tasks and pages
+
+- Allows anyone, including unauthenticated guests, to view project tasks and pages without logging in.
+- Enforces strict read-only permissions: mutations (creating, updating, deleting tasks or pages) remain denied for guests and unauthenticated visitors.
+- Updated authentication wrapper to prevent forced redirects on public task and page paths.
+
+## 9/3/2026 — GitHub Actions automated site rebuild
+
+- Added `.github/workflows/rebuild-site.yml` to automatically rebuild the site, applications, and typecheck when changes are pushed to repository branches (`main`, `master`, `preview`, `canary`).
+- Verifies client build output artifacts upon build completion.
+
+## 9/3/2026 — account creation project list & workspace/project creation restriction
+
+- Onboarding now presents existing public projects for newly registered users to join instead of prompting workspace or project creation.
+- Normal users are restricted from creating workspaces and projects; workspace creation is reserved for instance admins and project creation for workspace administrators.
+- Added `/api/users/me/joinable-projects/` and `/api/users/me/joinable-projects/<project_id>/join/` endpoints.
+
+## 9/3/2026 — dynamic project identifier next to search box
+
+Added a dynamic, constantly changing identifier string next to the search box in the top navigation bar.
+- Extracts keywords from the active project (name and identifier) and task (title and identifier).
+- Composes a creative identifier containing numbers, symbols, and emojis, capped at 64 characters.
+- Continuously cycles every 3.5 seconds and immediately updates upon navigating between projects or tasks.
+
 ## 8/26/2026 — two-way GitHub sync deployed
 
 The work below shipped to production and was verified end to end. Both sides now

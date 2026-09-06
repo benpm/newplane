@@ -8,6 +8,11 @@ See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notab
 
 - Extensive synchronization with a git repo that can be associated with a specific project.
 - Page relationships
+- Dynamic project identifier string rendered next to the search box
+- Onboarding project join list & normal user creation restrictions
+- Automated site rebuild via GitHub Actions on repository push
+- Guest & unauthenticated read-only access to project tasks and pages
+- Discord multi-server integration for notifications, work item updates, and bot commands
 
 ## Quick Links
 

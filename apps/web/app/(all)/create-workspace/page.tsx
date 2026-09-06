@@ -8,6 +8,7 @@ import { useState } from "react";
 import { observer } from "mobx-react";
 import { LogOut } from "lucide-react";
 import Link from "next/link";
+import useSWR from "swr";
 // plane imports
 import { useTranslation } from "@plane/i18n";
 import { Button, getButtonStyling } from "@plane/propel/button";
@@ -23,6 +24,9 @@ import { useInstance } from "@/hooks/store/use-instance";
 import { useAppRouter } from "@/hooks/use-app-router";
 // wrappers
 import { AuthenticationWrapper } from "@/lib/wrappers/authentication-wrapper";
+import { UserService } from "@/services/user.service";
+
+const userService = new UserService();
 
 const CreateWorkspacePage = observer(function CreateWorkspacePage() {
   const { t } = useTranslation();
@@ -32,6 +36,8 @@ const CreateWorkspacePage = observer(function CreateWorkspacePage() {
   const { config } = useInstance();
   const { data: currentUser, signOut } = useUser();
   const { updateUserProfile } = useUserProfile();
+  const { data: adminStatus } = useSWR("INSTANCE_ADMIN_STATUS", () => userService.currentUserInstanceAdminStatus());
+  const isInstanceAdmin = adminStatus?.is_instance_admin ?? false;
   // states
   const [defaultValues, setDefaultValues] = useState<Pick<IWorkspace, "name" | "slug" | "organization_size">>({
     name: "",
@@ -39,7 +45,7 @@ const CreateWorkspacePage = observer(function CreateWorkspacePage() {
     organization_size: "",
   });
   // derived values
-  const isWorkspaceCreationDisabled = config?.is_workspace_creation_disabled ?? false;
+  const isWorkspaceCreationDisabled = (config?.is_workspace_creation_disabled ?? false) || !isInstanceAdmin;
 
   // methods
   const getMailtoHref = () => {

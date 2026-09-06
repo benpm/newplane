@@ -197,4 +197,41 @@ export class ProjectService extends APIService {
         throw error?.response?.data;
       });
   }
+
+  async getJoinableProjects(): Promise<
+    {
+      id: string;
+      name: string;
+      identifier: string;
+      description: string;
+      emoji?: string;
+      icon_prop?: Record<string, unknown>;
+      is_member: boolean;
+      workspace: {
+        id: string;
+        name: string;
+        slug: string;
+        logo_url?: string;
+      };
+    }[]
+  > {
+    return this.get("/api/users/me/joinable-projects/")
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async joinProject(projectId: string): Promise<{
+    message: string;
+    workspace_slug: string;
+    project_id: string;
+    project_identifier: string;
+  }> {
+    return this.post(`/api/users/me/joinable-projects/${projectId}/join/`, {})
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
 }

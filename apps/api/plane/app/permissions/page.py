@@ -25,7 +25,14 @@ class ProjectPagePermission(BasePermission):
         """
         Check basic project-level permissions before checking object-level permissions.
         """
-        if request.user.is_anonymous:
+        if not request.user or request.user.is_anonymous:
+            if request.method in SAFE_METHODS:
+                project_id = view.kwargs.get("project_id")
+                page_id = view.kwargs.get("page_id")
+                if page_id:
+                    page = Page.objects.filter(id=page_id, workspace__slug=view.kwargs.get("slug")).first()
+                    return bool(page and page.access == Page.PUBLIC_ACCESS)
+                return True
             return False
 
         user_id = request.user.id

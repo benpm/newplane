@@ -11,6 +11,7 @@ from django.contrib.postgres.aggregates import ArrayAgg
 from django.contrib.postgres.fields import ArrayField
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import (
+    BooleanField,
     Count,
     Exists,
     F,
@@ -31,6 +32,7 @@ from django.views.decorators.gzip import gzip_page
 # Third Party imports
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 
 # Module imports
 from plane.app.permissions import ROLE, allow_permission
@@ -51,6 +53,7 @@ from plane.bgtasks.issue_activities_task import issue_activity
 from plane.bgtasks.issue_description_version_task import issue_description_version_task
 from plane.bgtasks.recent_visited_task import recent_visited_task
 from plane.bgtasks.webhook_task import model_activity
+from plane.bgtasks.discord_task import send_discord_notification_task
 from plane.db.models import (
     CycleIssue,
     FileAsset,
@@ -218,6 +221,7 @@ class IssueListEndpoint(BaseAPIView):
 class IssueViewSet(BaseViewSet):
     model = Issue
     webhook_event = "issue"
+    permission_classes = [AllowAny]
     search_fields = ["name"]
     filter_backends = (ComplexFilterBackend,)
     filterset_class = IssueFilterSet
@@ -323,15 +327,18 @@ class IssueViewSet(BaseViewSet):
         # issue queryset
         issue_queryset = issue_queryset_grouper(queryset=issue_queryset, group_by=group_by, sub_group_by=sub_group_by)
 
-        recent_visited_task.delay(
-            slug=slug,
-            project_id=project_id,
-            entity_name="project",
-            entity_identifier=project_id,
-            user_id=request.user.id,
-        )
+        if request.user and request.user.is_authenticated:
+            recent_visited_task.delay(
+                slug=slug,
+                project_id=project_id,
+                entity_name="project",
+                entity_identifier=project_id,
+                user_id=request.user.id,
+            )
         if (
-            ProjectMember.objects.filter(
+            request.user
+            and request.user.is_authenticated
+            and ProjectMember.objects.filter(
                 workspace__slug=slug,
                 project_id=project_id,
                 member=request.user,
@@ -526,6 +533,7 @@ class IssueViewSet(BaseViewSet):
                 user_id=request.user.id,
                 is_creating=True,
             )
+            send_discord_notification_task.delay("created", str(serializer.data["id"]))
             return Response(issue, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -625,13 +633,17 @@ class IssueViewSet(BaseViewSet):
                 )
             )
             .annotate(
-                is_subscribed=Exists(
-                    IssueSubscriber.objects.filter(
-                        workspace__slug=slug,
-                        project_id=project_id,
-                        issue_id=OuterRef("pk"),
-                        subscriber=request.user,
+                is_subscribed=(
+                    Exists(
+                        IssueSubscriber.objects.filter(
+                            workspace__slug=slug,
+                            project_id=project_id,
+                            issue_id=OuterRef("pk"),
+                            subscriber=request.user,
+                        )
                     )
+                    if request.user and request.user.is_authenticated
+                    else Value(False, output_field=BooleanField())
                 )
             )
         ).first()
@@ -647,7 +659,9 @@ class IssueViewSet(BaseViewSet):
         """
 
         if (
-            ProjectMember.objects.filter(
+            request.user
+            and request.user.is_authenticated
+            and ProjectMember.objects.filter(
                 workspace__slug=slug,
                 project_id=project_id,
                 member=request.user,
@@ -662,13 +676,14 @@ class IssueViewSet(BaseViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        recent_visited_task.delay(
-            slug=slug,
-            entity_name="issue",
-            entity_identifier=pk,
-            user_id=request.user.id,
-            project_id=project_id,
-        )
+        if request.user and request.user.is_authenticated:
+            recent_visited_task.delay(
+                slug=slug,
+                entity_name="issue",
+                entity_identifier=pk,
+                user_id=request.user.id,
+                project_id=project_id,
+            )
 
         serializer = IssueDetailSerializer(issue, expand=self.expand)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -834,6 +849,8 @@ class IssueViewSet(BaseViewSet):
                     issue_id=str(serializer.data.get("id", None)),
                     user_id=request.user.id,
                 )
+                event = "completed" if issue.state and issue.state.group == "completed" else "updated"
+                send_discord_notification_task.delay(event, str(issue.id))
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

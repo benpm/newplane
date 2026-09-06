@@ -202,13 +202,13 @@ export class InstanceWorkspaceService extends APIService {
   async bulkRemoveMembers(
     members: Array<{ workspace_slug: string; email: string }>
   ): Promise<IWorkspaceBulkRemoveResponse> {
-    return this.post<IWorkspaceBulkRemoveResponse>("/api/instances/workspaces/bulk-remove-members/", {
+    return this.post("/api/instances/workspaces/bulk-remove-members/", {
       members,
     })
       .then((response) => response?.data as IWorkspaceBulkRemoveResponse)
       .catch((error: unknown) => {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const errorData = (error as Record<string, unknown>)?.response?.data;
+        const errorData = (error as { response?: { data?: unknown } })?.response?.data;
         throw errorData;
       });
   }
@@ -255,11 +255,11 @@ export class InstanceWorkspaceService extends APIService {
 
   async exportProjects(workspaceSlugs?: string[]): Promise<IWorkspaceProjectExportResponse> {
     const params = workspaceSlugs?.length ? `?workspace_slugs=${encodeURIComponent(workspaceSlugs.join(","))}` : "";
-    return this.get<IWorkspaceProjectExportResponse>(`/api/instances/bulk-export-projects/${params}`)
+    return this.get(`/api/instances/bulk-export-projects/${params}`)
       .then((response) => response?.data as IWorkspaceProjectExportResponse)
       .catch((error: unknown) => {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const errorData = (error as Record<string, unknown>)?.response?.data;
+        const errorData = (error as { response?: { data?: unknown } })?.response?.data;
         throw errorData;
       });
   }

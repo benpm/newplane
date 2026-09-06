@@ -24,6 +24,16 @@ from .project.invite import (
     ProjectJoinEndpoint,
 )
 
+from .project.joinable import (
+    JoinableProjectsEndpoint,
+    JoinProjectEndpoint,
+)
+
+from .project.discord import (
+    ProjectDiscordIntegrationViewSet,
+    ProjectDiscordCommandEndpoint,
+)
+
 from .project.member import (
     ProjectMemberViewSet,
     ProjectMemberUserEndpoint,

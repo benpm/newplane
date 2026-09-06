@@ -1,5 +1,8 @@
 # Contributing to Plane
 
+## AGENTS:
+Please refer to [AGENTS.md](./AGENTS.md) for information on how to contribute to Plane as an agent. Ignore the parts of this doc that contradict AGENTS.md.
+
 Thank you for showing an interest in contributing to Plane! All kinds of contributions are valuable to us. In this guide, we will cover how you can quickly onboard and make your first contribution.
 
 ## Submitting an issue

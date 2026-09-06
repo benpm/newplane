@@ -6,4 +6,5 @@
 
 export * from "./create";
 export * from "./join-invites";
+export * from "./join-projects";
 export * from "./root";

@@ -5,12 +5,13 @@
  */
 
 import { useEffect, useState } from "react";
+import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
+import { Button } from "@plane/propel/button";
 import { EModalPosition, EModalWidth, ModalCore } from "@plane/ui";
 import { getAssetIdFromUrl, checkURLValidity } from "@plane/utils";
-// plane ui
-// helpers
 // hooks
 import useKeypress from "@/hooks/use-keypress";
+import { useUserPermissions } from "@/hooks/store/user/user-permissions";
 // plane web components
 import { CreateProjectForm } from "@/plane-web/components/projects/create/root";
 // plane web types
@@ -36,6 +37,13 @@ enum EProjectCreationSteps {
 
 export function CreateProjectModal(props: Props) {
   const { isOpen, onClose, setToFavorite = false, workspaceSlug, data, templateId } = props;
+  const { allowPermissions } = useUserPermissions();
+  const isWorkspaceAdmin = allowPermissions(
+    [EUserPermissions.ADMIN],
+    EUserPermissionsLevel.WORKSPACE,
+    workspaceSlug
+  );
+
   // states
   const [currentStep, setCurrentStep] = useState<EProjectCreationSteps>(EProjectCreationSteps.CREATE_PROJECT);
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
@@ -67,19 +75,33 @@ export function CreateProjectModal(props: Props) {
 
   return (
     <ModalCore isOpen={isOpen} position={EModalPosition.TOP} width={EModalWidth.XXXXL}>
-      {currentStep === EProjectCreationSteps.CREATE_PROJECT && (
-        <CreateProjectForm
-          setToFavorite={setToFavorite}
-          workspaceSlug={workspaceSlug}
-          onClose={onClose}
-          updateCoverImageStatus={handleCoverImageStatusUpdate}
-          handleNextStep={handleNextStep}
-          data={data}
-          templateId={templateId}
-        />
-      )}
-      {currentStep === EProjectCreationSteps.FEATURE_SELECTION && (
-        <ProjectFeatureUpdate projectId={createdProjectId} workspaceSlug={workspaceSlug} onClose={onClose} />
+      {!isWorkspaceAdmin ? (
+        <div className="flex flex-col items-center justify-center p-8 text-center gap-4">
+          <div className="text-16 font-medium text-primary">Project Creation Restricted</div>
+          <p className="text-13 text-secondary max-w-sm">
+            Normal users are not permitted to create projects. Only workspace administrators can create new projects.
+          </p>
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      ) : (
+        <>
+          {currentStep === EProjectCreationSteps.CREATE_PROJECT && (
+            <CreateProjectForm
+              setToFavorite={setToFavorite}
+              workspaceSlug={workspaceSlug}
+              onClose={onClose}
+              updateCoverImageStatus={handleCoverImageStatusUpdate}
+              handleNextStep={handleNextStep}
+              data={data}
+              templateId={templateId}
+            />
+          )}
+          {currentStep === EProjectCreationSteps.FEATURE_SELECTION && (
+            <ProjectFeatureUpdate projectId={createdProjectId} workspaceSlug={workspaceSlug} onClose={onClose} />
+          )}
+        </>
       )}
     </ModalCore>
   );

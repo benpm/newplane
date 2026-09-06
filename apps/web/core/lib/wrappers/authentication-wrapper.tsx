@@ -135,6 +135,12 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
         return <></>;
       }
     } else {
+      const isPublicTaskOrPage =
+        pathname &&
+        (pathname.includes("/issues") || pathname.includes("/pages") || pathname.includes("/browse"));
+      if (isPublicTaskOrPage) {
+        return <>{children}</>;
+      }
       router.push(`/${pathname ? `?next_path=${pathname}` : ``}`);
       return <></>;
     }

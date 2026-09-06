@@ -20,14 +20,32 @@ def allow_permission(allowed_roles, level="PROJECT", creator=False, model=None, 
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(instance, request, *args, **kwargs):
+            # If user is anonymous, allow safe read operations on public projects
+            if not request.user or request.user.is_anonymous:
+                if request.method in ["GET", "HEAD", "OPTIONS"]:
+                    project_id = kwargs.get("project_id")
+                    if project_id:
+                        from plane.db.models import Project
+                        from plane.db.models.project import ProjectNetwork
+                        if Project.objects.filter(
+                            id=project_id,
+                            network=ProjectNetwork.PUBLIC.value,
+                            workspace__slug=kwargs.get("slug"),
+                        ).exists():
+                            return view_func(instance, request, *args, **kwargs)
+                return Response(
+                    {"error": "You don't have the required permissions."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
             # Check for creator if required
-            if creator and model:
+            if creator and model and request.user.is_authenticated:
                 obj = model.objects.filter(id=kwargs["pk"], created_by=request.user).exists()
                 if obj:
                     return view_func(instance, request, *args, **kwargs)
 
             # Check for assignee if required
-            if assignee:
+            if assignee and request.user.is_authenticated:
                 from plane.db.models import IssueAssignee
                 is_assignee = IssueAssignee.objects.filter(
                     issue_id=kwargs["pk"],

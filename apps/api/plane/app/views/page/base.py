@@ -82,6 +82,16 @@ class PageViewSet(BaseViewSet):
     search_fields = ["name"]
 
     def get_queryset(self):
+        if self.request.user.is_anonymous:
+            return self.filter_queryset(
+                super()
+                .get_queryset()
+                .filter(workspace__slug=self.kwargs.get("slug"))
+                .filter(projects__id=self.kwargs.get("project_id"), access=Page.PUBLIC_ACCESS)
+                .prefetch_related("projects")
+                .select_related("workspace", "owned_by")
+                .order_by(self.request.GET.get("order_by", "-created_at"))
+            )
         subquery = UserFavorite.objects.filter(
             user=self.request.user,
             entity_type="page",
@@ -326,7 +336,8 @@ class PageViewSet(BaseViewSet):
         queryset = self.get_queryset().filter(parent__isnull=True)
         project = Project.objects.get(pk=project_id)
         if (
-            ProjectMember.objects.filter(
+            request.user.is_authenticated
+            and ProjectMember.objects.filter(
                 workspace__slug=slug,
                 project_id=project_id,
                 member=request.user,
@@ -344,7 +355,8 @@ class PageViewSet(BaseViewSet):
         queryset = self.get_queryset().filter(parent_id=page_id)
         project = Project.objects.get(pk=project_id)
         if (
-            ProjectMember.objects.filter(
+            request.user.is_authenticated
+            and ProjectMember.objects.filter(
                 workspace__slug=slug,
                 project_id=project_id,
                 member=request.user,

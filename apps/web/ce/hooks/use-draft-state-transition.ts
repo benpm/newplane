@@ -29,14 +29,6 @@ export const useDraftStateTransition = () => {
       missingFieldKeys.push("assignee_ids");
       missingFieldLabels.push(t("issue.add.assignee"));
     }
-    if (!issue.start_date) {
-      missingFieldKeys.push("start_date");
-      missingFieldLabels.push(t("common.order_by.start_date"));
-    }
-    if (!issue.target_date) {
-      missingFieldKeys.push("target_date");
-      missingFieldLabels.push(t("issue.add.due_date"));
-    }
     if (!issue.frequency) {
       missingFieldKeys.push("frequency");
       missingFieldLabels.push(t("common.frequency"));

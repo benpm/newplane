@@ -1,21 +1,35 @@
-# Todo
+# Newplane TODO
 
-<!-- AGENT:
-    work on these tasks when asked to. Make sure to build and test everything in a separate dev environment before deploying to production. Make sure to thoroughly test your changes before moving on to the next task. One task, one commit.
+> ## **Instructions**
+> - Work on these tasks when asked to
+> - Build and test everything in a separate dev environment before deploying to production
+> - Thoroughly test your changes before moving on to the next task. One task, one commit.
+> - When a task is completed, mark it as done and move it to `CHANGELOG.md`, then update docs and `README.md`
+> - See `CHANGELOG.md` for a list of changes and new features. Cut and paste finished tasks there. Before getting started here, remove completed tasks, and add them to the changelog.
+> - *Before starting on a task*, make sure there is enough information to complete it. If not, ask for clarification before starting. If it's done already, mark it as done and copy it to CHANGELOG.md.
 
-    when a task is completed, mark it as done and copy them to CHANGELOG.md, and make sure to update docs and README.md
-     -->
+---
 
-**newplane** is a fork of plane with additional features, including extensive synchronization with a git repo that can be associated with a specific project.
+## Page / Task Markdown Editor
+For the markdown editor in tasks and pages.
 
-See [./CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features.
+- [ ] Typing `#` in the middle of the line should pull up a list search for issues to link to. Text with `#13` should link to issue 13, for instance.
+- [ ] The padding amount between list items in suggestion lists like when autocompleting in the text editor should be smaller, and configurable. Add to docs how to configure it. The number of items in the list should also be configurable, and documented.
+- [ ] Add a button in the toolbar for adding links. This should open a modal with a search box to search for issues or pages to link to. The modal should have a list of recently viewed issues, and a search box to search for issues by title or ID. The search results should be displayed in a list, and clicking on an issue should insert a link to that issue in the editor.
 
-- [ ] Allow guests to view the project without logging in, but not able to edit
-- [ ] Discord integration for notifications and updates for when new work items are created, updated, or completed. Should be customizable. Allow commands for various actions, such as creating a new work item, updating an existing one, or marking a work item as complete. Allow for multiple Discord servers to be integrated with the same project.
-- [ ] Integrate GitHub Actions to automatically rebuild the site when changes are pushed to the repository.
-- [ ] Enable Google SSO for authentication, allowing users to log in with their Google accounts. This should create an account with the associated email address if one does not already exist, and allow for linking to an existing account if the email address is already associated with a different account. Make sure to write tests and handle edge cases, such as when a user tries to log in with a Google account that is already associated with a different account.
+## *Miscellaneous*
+- [ ] The github link icon in the top right of each work item is cut off. Only a quarter of it is visible.
+
+- [x] Make a constantly changing identifier string made of words related to the current project. Should relate to your task somewhat, but cant be more than 64 characters. be very creative, use numbers and symbols and emojis too. Draw the string right next to the search box.
+- [x] When user is creating their account, instead of showing the screen for creating a project / workspace, show existing projects that user can join. *Do not allow normal users to create Workspace or Project.*
+- [x] Allow anyone including new guests to view the project tasks and pages without logging in, but not able to edit.
+- [x] Discord integration for notifications and updates for when new work items are created, updated, or completed. Should be customizable. Allow commands for various actions, such as creating a new work item, updating an existing one, or marking a work item as complete. Allow for multiple Discord servers to be integrated with the same project.
+- [x] Integrate GitHub Actions to automatically rebuild the site when changes are pushed to the repository.
+- [x] Enable Google SSO for authentication, allowing users to log in with their Google accounts. This should create an account with the associated email address if one does not already exist, and allow for linking to an existing account if the email address is already associated with a different account. Make sure to write tests and handle edge cases, such as when a user tries to log in with a Google account that is already associated with a different account.
 
 ## Dev-site hardening (2026-08-05)
+
+<!-- AGENT: Move these to CHANGELOG.md after testing -->
 
 Work queued from testing this branch on the dev site. One task, one commit.
 
@@ -50,6 +64,8 @@ Re-check with:
 SELECT relname, n_live_tup FROM pg_stat_user_tables
 WHERE n_live_tup > 0 ORDER BY n_live_tup DESC;
 ```
+
+<!-- AGENT: Move these to CHANGELOG.md after testing -->
 
 - [ ] Continue bug-hunting where in-use features meet fork-modified code. Done:
       pages, invitations. Not yet examined: issue activities, notifications and

@@ -26,7 +26,7 @@ class ProjectBasePermission(BasePermission):
             return WorkspaceMember.objects.filter(
                 workspace__slug=view.workspace_slug,
                 member=request.user,
-                role__in=[ROLE.ADMIN.value, ROLE.MEMBER.value],
+                role=ROLE.ADMIN.value,
                 is_active=True,
             ).exists()
 
@@ -68,7 +68,7 @@ class ProjectMemberPermission(BasePermission):
             return WorkspaceMember.objects.filter(
                 workspace__slug=view.workspace_slug,
                 member=request.user,
-                role__in=[ROLE.ADMIN.value, ROLE.MEMBER.value],
+                role=ROLE.ADMIN.value,
                 is_active=True,
             ).exists()
 

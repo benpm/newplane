@@ -50,6 +50,7 @@ from plane.bgtasks.event_tracking_task import track_event
 from plane.utils.url import contains_url
 from plane.utils.analytics_events import WORKSPACE_CREATED, WORKSPACE_DELETED
 from plane.utils.csv_utils import sanitize_csv_row
+from plane.utils.instance_admin import is_instance_admin
 
 
 class WorkSpaceViewSet(BaseViewSet):
@@ -91,9 +92,9 @@ class WorkSpaceViewSet(BaseViewSet):
                 ]
             )
 
-            if DISABLE_WORKSPACE_CREATION == "1":
+            if DISABLE_WORKSPACE_CREATION == "1" and not is_instance_admin(request.user):
                 return Response(
-                    {"error": "Workspace creation is not allowed"},
+                    {"error": "Normal users are not allowed to create workspaces"},
                     status=status.HTTP_403_FORBIDDEN,
                 )
 

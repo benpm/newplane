@@ -17,9 +17,11 @@ import { ProjectsAppPowerKCommandsList } from "@/components/power-k/ui/modal/com
 import { PowerKModalFooter } from "@/components/power-k/ui/modal/footer";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { usePowerK } from "@/hooks/store/use-power-k";
+import { useProject } from "@/hooks/store/use-project";
 import { useUser } from "@/hooks/store/user";
 import { useAppRouter } from "@/hooks/use-app-router";
 import { useExpandableSearch } from "@/hooks/use-expandable-search";
+import { generateCreativeIdentifier } from "./project-dynamic-identifier.helper";
 
 export const TopNavPowerK = observer(() => {
   // router
@@ -64,6 +66,42 @@ export const TopNavPowerK = observer(() => {
   const workItemId = workItemIdentifier ? getIssueIdByIdentifier(workItemIdentifier.toString()) : undefined;
   const workItemDetails = workItemId ? getIssueById(workItemId) : undefined;
   const projectId: string | string[] | undefined | null = routerProjectId ?? workItemDetails?.project_id;
+
+  const { getProjectById, currentProjectDetails } = useProject();
+  const currentProject = (typeof projectId === "string" ? getProjectById(projectId) : undefined) ?? currentProjectDetails;
+
+  const [identifier, setIdentifier] = useState<string>(() =>
+    generateCreativeIdentifier(
+      currentProject?.name,
+      currentProject?.identifier,
+      workItemDetails?.name,
+      workItemIdentifier?.toString()
+    )
+  );
+
+  useEffect(() => {
+    setIdentifier(
+      generateCreativeIdentifier(
+        currentProject?.name,
+        currentProject?.identifier,
+        workItemDetails?.name,
+        workItemIdentifier?.toString()
+      )
+    );
+
+    const interval = setInterval(() => {
+      setIdentifier(
+        generateCreativeIdentifier(
+          currentProject?.name,
+          currentProject?.identifier,
+          workItemDetails?.name,
+          workItemIdentifier?.toString()
+        )
+      );
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [currentProject?.name, currentProject?.identifier, workItemDetails?.name, workItemIdentifier]);
 
   // Build command context
   const context: TPowerKContext = useMemo(
@@ -244,6 +282,13 @@ export const TopNavPowerK = observer(() => {
             </button>
           )}
         </div>
+        <span
+          className="absolute left-full ml-2 text-[11px] text-tertiary select-none pointer-events-none font-mono shrink-0 whitespace-nowrap max-w-[64ch] overflow-hidden truncate transition-opacity duration-300"
+          title={identifier}
+          aria-label="Project Identifier"
+        >
+          {identifier}
+        </span>
       </div>
       <div
         className={cn(

@@ -12,6 +12,38 @@ web frontend under `apps/web/` (`core/` upstream, `ce/` fork), god-mode under
 
 ## Fork-original features
 
+### Discord integration & bot commands
+
+Integrate multiple Discord servers per project with customizable notification preferences (task creation, updates, and completion). Supports bot commands (`/create`, `/update`, `/complete`, `/status`) for managing work items directly from Discord.
+
+- **Backend** — `apps/api/plane/db/models/integration/discord.py`, `apps/api/plane/bgtasks/discord_task.py`, `apps/api/plane/app/views/project/discord.py`, `apps/api/plane/app/urls/project.py`
+
+### Guest and unauthenticated read-only access
+
+Allows unauthenticated visitors and guests to view project tasks (issues) and wiki pages for public projects without requiring a login session. All mutation operations (creation, modification, deletion) remain strictly forbidden for unauthenticated visitors and guests.
+
+- **Backend** — `apps/api/plane/app/permissions/base.py`, `apps/api/plane/app/permissions/page.py`, `apps/api/plane/app/views/issue/base.py`, `apps/api/plane/app/views/page/base.py`
+- **Frontend** — `apps/web/core/lib/wrappers/authentication-wrapper.tsx`
+
+### Automated site rebuild workflow
+
+A GitHub Actions CI workflow that triggers on pushes to branches including `main` to run typechecks, Turborepo builds, and verify resulting site artifacts.
+
+- **Workflow** — `.github/workflows/rebuild-site.yml`
+
+### Onboarding project join flow & normal user creation restrictions
+
+When creating an account, onboarding presents a list of existing joinable projects rather than prompting for workspace/project creation. Normal users are prohibited from creating workspaces (reserved for instance admins) or projects (reserved for workspace administrators).
+
+- **Backend** — `apps/api/plane/app/views/project/joinable.py`, `apps/api/plane/app/views/project/base.py`, `apps/api/plane/app/views/workspace/base.py`, `apps/api/plane/app/permissions/project.py`
+- **Frontend** — `apps/web/core/components/onboarding/steps/workspace/join-projects.tsx`, `apps/web/core/components/onboarding/steps/workspace/root.tsx`, `apps/web/core/components/project/create-project-modal.tsx`, `apps/web/app/(all)/create-workspace/page.tsx`
+
+### Dynamic project identifier
+
+A dynamic, constantly updating identifier string rendered next to the top search box. It generates creative representations (<= 64 characters) combining project and task keywords, numbers, symbols, and emojis, cycling periodically.
+
+- **Frontend** — `apps/web/core/components/navigation/top-nav-power-k.tsx`, `apps/web/core/components/navigation/project-dynamic-identifier.helper.ts`
+
 ### Instance dashboard
 
 > Full documentation: **[Instance Dashboard](./instance-dashboard.md)**
