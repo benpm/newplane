@@ -1,5 +1,12 @@
 # Changelog
 
+## 9/6/2026 — Markdown Editor autocomplete list item padding and count limit customization
+
+- Configured a smaller default padding (`0.2rem`) between list items in all autocomplete suggestion lists to improve visual scanability.
+- Made the vertical padding configurable via CSS variable `--editor-suggestion-padding-y`.
+- Made the maximum count of items displayed in suggestion lists configurable via `data-suggestion-max-items` HTML data attribute on the ProseMirror editor container element.
+- Fully documented customization options in `docs/features.md`.
+
 ## 9/6/2026 — Markdown Editor hashtag autocomplete for issue linking
 
 - Added autocomplete for issue links in description, document, and comment editors, triggered by typing `#` in the middle of a line.

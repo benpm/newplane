@@ -338,6 +338,31 @@ Typing `#` opens the mentions dropdown to search workspace issues and inserts a
 - `packages/editor/src/core/extensions/issue-link/`, wired in
   `packages/editor/src/core/extensions/extensions.ts`
 
+### Autocomplete suggestion lists customization
+
+The padding between list items and the maximum number of items shown in autocomplete suggestion lists (e.g. for members, pages, issues) are fully configurable:
+
+#### 1. Customizing padding (CSS variables)
+By default, the vertical padding between suggestion list items is set to a compact `0.2rem`. This can be customized by defining the `--editor-suggestion-padding-y` CSS variable in your application's global stylesheets:
+```css
+:root {
+  /* Customize vertical padding between autocomplete items */
+  --editor-suggestion-padding-y: 0.15rem;
+}
+```
+
+#### 2. Customizing max items in the list (HTML data attributes)
+The maximum number of matching items displayed in the autocomplete suggestion list defaults to `10`. This can be configured dynamically by setting the `data-suggestion-max-items` attribute on the ProseMirror editor container element.
+
+For example, when defining the editor's options:
+```typescript
+const editorProps = {
+  attributes: {
+    "data-suggestion-max-items": "5", // show at most 5 items per section
+  }
+}
+```
+
 ### God-mode menu RBAC
 
 Instance admins are scoped to a granted subset of god-mode menus. Enforcement

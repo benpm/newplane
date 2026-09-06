@@ -88,7 +88,17 @@ export const MentionsListDropdown = forwardRef(function MentionsListDropdown(pro
       try {
         const sectionsResponse = await searchCallback?.(searchQuery);
         if (sectionsResponse) {
-          setSections(sectionsResponse);
+          const maxItemsAttr = props.editor?.view?.dom?.getAttribute("data-suggestion-max-items");
+          const maxItems = maxItemsAttr ? parseInt(maxItemsAttr, 10) : 10;
+
+          const slicedSections = sectionsResponse
+            .map((section) => ({
+              ...section,
+              items: section.items.slice(0, maxItems),
+            }))
+            .filter((section) => section.items.length > 0);
+
+          setSections(slicedSections);
         }
       } catch (error) {
         console.error("Failed to fetch suggestions:", error);
@@ -96,7 +106,7 @@ export const MentionsListDropdown = forwardRef(function MentionsListDropdown(pro
         setIsLoading(false);
       }
     }, 300),
-    [searchCallback]
+    [searchCallback, props.editor]
   );
 
   // trigger debounced search when query changes
@@ -172,11 +182,15 @@ export const MentionsListDropdown = forwardRef(function MentionsListDropdown(pro
                     id={`mention-item-${sectionIndex}-${itemIndex}`}
                     type="button"
                     className={cn(
-                      "flex items-center gap-2 w-full rounded-sm px-1 py-1.5 text-11 text-left truncate text-secondary hover:bg-layer-1-hover",
+                      "flex items-center gap-2 w-full rounded-sm px-1 text-11 text-left truncate text-secondary hover:bg-layer-1-hover",
                       {
                         "bg-layer-1-hover": isSelected,
                       }
                     )}
+                    style={{
+                      paddingTop: "var(--editor-suggestion-padding-y, 0.2rem)",
+                      paddingBottom: "var(--editor-suggestion-padding-y, 0.2rem)",
+                    }}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
