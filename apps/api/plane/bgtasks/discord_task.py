@@ -112,7 +112,10 @@ def execute_discord_command(project: Project, command_text: str, user=None) -> d
         if len(parts) < 2:
             return {"success": False, "message": "Usage: /create <title>"}
         title = " ".join(parts[1:])
-        default_state = State.objects.filter(project=project, default=True).first() or State.objects.filter(project=project).first()
+        default_state = (
+            State.objects.filter(project=project, default=True).first()
+            or State.objects.filter(project=project).first()
+        )
         issue = Issue.objects.create(
             name=title,
             project=project,
@@ -156,7 +159,9 @@ def execute_discord_command(project: Project, command_text: str, user=None) -> d
         issue.completed_at = issue.completed_at or settings.TIME_ZONE and None
         issue.save()
 
-        send_discord_notification_task.delay("completed", str(issue.id), {"state": f"{old_state_name} -> {completed_state.name}"})
+        send_discord_notification_task.delay(
+            "completed", str(issue.id), {"state": f"{old_state_name} -> {completed_state.name}"}
+        )
         return {
             "success": True,
             "message": f"Marked [{project.identifier}-{issue.sequence_id}] {issue.name} as completed.",
@@ -228,9 +233,13 @@ def execute_discord_command(project: Project, command_text: str, user=None) -> d
         if not issue:
             return {"success": False, "message": f"Work item {identifier} not found."}
 
+        state_name = issue.state.name if issue.state else "None"
         return {
             "success": True,
-            "message": f"[{project.identifier}-{issue.sequence_id}] {issue.name} | State: {issue.state.name if issue.state else 'None'} | Priority: {issue.priority}",
+            "message": (
+                f"[{project.identifier}-{issue.sequence_id}] {issue.name} "
+                f"| State: {state_name} | Priority: {issue.priority}"
+            ),
             "issue": {
                 "id": str(issue.id),
                 "identifier": f"{project.identifier}-{issue.sequence_id}",

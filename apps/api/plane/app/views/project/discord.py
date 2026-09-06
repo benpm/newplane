@@ -91,7 +91,17 @@ class ProjectDiscordIntegrationViewSet(BaseViewSet):
         if not integration:
             return Response({"error": "Integration not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        for field in ["server_name", "channel_id", "webhook_url", "bot_token", "notify_on_create", "notify_on_update", "notify_on_complete", "is_active"]:
+        updatable_fields = [
+            "server_name",
+            "channel_id",
+            "webhook_url",
+            "bot_token",
+            "notify_on_create",
+            "notify_on_update",
+            "notify_on_complete",
+            "is_active",
+        ]
+        for field in updatable_fields:
             if field in request.data:
                 setattr(integration, field, request.data[field])
 

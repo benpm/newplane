@@ -102,8 +102,12 @@ class TestDiscordIntegration:
             identifier="CMD",
             workspace=workspace,
         )
-        state_todo = State.objects.create(name="Todo", group="unstarted", project=project, workspace=workspace, default=True)
-        state_done = State.objects.create(name="Done", group="completed", project=project, workspace=workspace)
+        State.objects.create(
+            name="Todo", group="unstarted", project=project, workspace=workspace, default=True
+        )
+        state_done = State.objects.create(
+            name="Done", group="completed", project=project, workspace=workspace
+        )
 
         command_url = f"/api/workspaces/{workspace.slug}/projects/{project.id}/discord/command/"
 
