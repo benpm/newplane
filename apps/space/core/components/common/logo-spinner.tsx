@@ -7,9 +7,8 @@
 import { useTheme } from "next-themes";
 // assets
 import LogoSpinnerImg from "@/app/assets/images/logo-spinner.svg?url";
-
 export function LogoSpinner() {
-  const { _resolvedTheme } = useTheme();
+  useTheme();
 
   const logoSrc = LogoSpinnerImg;
 

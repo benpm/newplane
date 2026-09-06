@@ -10,7 +10,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notab
 - Page relationships
 - Dynamic project identifier string rendered next to the search box
 - Onboarding project join list & normal user creation restrictions
-- Automated site rebuild via GitHub Actions on repository push
+- Automated site rebuild & GitHub Pages dashboard deployment via GitHub Actions on push
 - Guest & unauthenticated read-only access to project tasks and pages
 - Discord multi-server integration for notifications, work item updates, and bot commands
 - Markdown editor issue-linking `#` autocomplete suggestion list
@@ -18,6 +18,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notab
 
 ## Quick Links
 
+- **Dashboard (GitHub Pages):** https://benpm.github.io/newplane/
 - **Documentation:** [docs/](./docs/)
   - [Project Overview & PDR](./docs/project-overview-pdr.md)
   - [Codebase Summary](./docs/codebase-summary.md)

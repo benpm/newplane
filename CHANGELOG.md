@@ -1,5 +1,13 @@
 # Changelog
 
+## 9/6/2026 — GitHub Pages Instance Dashboard Deployment via GitHub Actions
+
+- Added automated GitHub Actions deployment to GitHub Pages (`https://benpm.github.io/newplane/`) in `.github/workflows/rebuild-site.yml`.
+- Created standalone dashboard builder `scripts/build-pages.mjs` that packages an operational Plane Instance Dashboard with service health, system counts, storage metrics, and searchable inventories of workspaces, projects, and users.
+- Included dark/light theme switching, live refresh capability, and commit hash tracking.
+- Resolved CI runner missing `.env` issues across apps by seeding from `.env.example` before typechecks and builds.
+- Fixed TypeScript `_resolvedTheme` error in `apps/space/core/components/common/logo-spinner.tsx`.
+
 ## 9/6/2026 — Work item GitHub badge icon, identifier formatting & Board view cleanup
 
 - Replaced the work item GitHub badge icon with official `GitHub_Invertocat_White.png` asset, ensuring the full Invertocat icon is displayed without cutoff.

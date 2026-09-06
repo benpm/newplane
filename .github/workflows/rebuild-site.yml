@@ -1,4 +1,4 @@
-name: Rebuild Site on Push
+name: Rebuild Site and Deploy Dashboard
 
 on:
   push:
@@ -9,9 +9,14 @@ on:
       - canary
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-site:
@@ -22,6 +27,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -47,6 +54,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
+      - name: Prepare environment files
+        shell: bash
+        run: |
+          for app in admin api live space web; do
+            if [ -f "apps/$app/.env.example" ] && [ ! -f "apps/$app/.env" ]; then
+              cp "apps/$app/.env.example" "apps/$app/.env"
+            fi
+          done
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -60,3 +76,25 @@ jobs:
         run: |
           test -d apps/web/build/client
           echo "Site build artifacts verified successfully."
+
+      - name: Build GitHub Pages Dashboard
+        run: node scripts/build-pages.mjs
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/pages
+
+  deploy-pages:
+    name: Deploy Dashboard to GitHub Pages
+    needs: build-site
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

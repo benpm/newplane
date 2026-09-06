@@ -25,11 +25,12 @@ Allows unauthenticated visitors and guests to view project tasks (issues) and wi
 - **Backend** — `apps/api/plane/app/permissions/base.py`, `apps/api/plane/app/permissions/page.py`, `apps/api/plane/app/views/issue/base.py`, `apps/api/plane/app/views/page/base.py`
 - **Frontend** — `apps/web/core/lib/wrappers/authentication-wrapper.tsx`
 
-### Automated site rebuild workflow
+### Automated site rebuild & GitHub Pages dashboard deployment
 
-A GitHub Actions CI workflow that triggers on pushes to branches including `main` to run typechecks, Turborepo builds, and verify resulting site artifacts.
+A GitHub Actions CI workflow that triggers on pushes to branches including `main` to run typechecks, Turborepo builds, compile a standalone operational instance dashboard, and deploy it to GitHub Pages (`https://benpm.github.io/newplane/`).
 
 - **Workflow** — `.github/workflows/rebuild-site.yml`
+- **Dashboard Generator** — `scripts/build-pages.mjs`
 
 ### Onboarding project join flow & normal user creation restrictions
 

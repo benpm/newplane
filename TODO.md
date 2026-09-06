@@ -29,7 +29,7 @@ For the markdown editor in tasks and pages.
 - [x] When user is creating their account, instead of showing the screen for creating a project / workspace, show existing projects that user can join. _Do not allow normal users to create Workspace or Project._
 - [x] Allow anyone including new guests to view the project tasks and pages without logging in, but not able to edit.
 - [x] Discord integration for notifications and updates for when new work items are created, updated, or completed. Should be customizable. Allow commands for various actions, such as creating a new work item, updating an existing one, or marking a work item as complete. Allow for multiple Discord servers to be integrated with the same project.
-- [x] Integrate GitHub Actions to automatically rebuild the site when changes are pushed to the repository.
+- [x] Integrate GitHub Actions to automatically rebuild the site and deploy the operational dashboard to GitHub Pages when changes are pushed to the repository.
 - [x] Enable Google SSO for authentication, allowing users to log in with their Google accounts. This should create an account with the associated email address if one does not already exist, and allow for linking to an existing account if the email address is already associated with a different account. Make sure to write tests and handle edge cases, such as when a user tries to log in with a Google account that is already associated with a different account.
 
 ## Dev-site hardening (2026-08-05)
