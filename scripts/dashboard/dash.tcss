@@ -1,0 +1,63 @@
+InstancePane {
+    height: 1fr;
+}
+
+InstancePane .info {
+    height: auto;
+    padding: 0 1;
+    border: round $primary-darken-2;
+}
+
+InstancePane .ops {
+    height: 3;
+}
+
+InstancePane .ops Button {
+    margin: 0 1 0 0;
+    min-width: 10;
+}
+
+InstancePane .containers {
+    height: auto;
+    max-height: 16;
+    border: round $primary-darken-2;
+}
+
+InstancePane .lower {
+    height: 1fr;
+}
+
+ChangeLog {
+    height: 1fr;
+}
+
+ChangeLog Input {
+    height: 3;
+}
+
+Confirm {
+    align: center middle;
+}
+
+#dialog {
+    width: 64;
+    height: auto;
+    padding: 1 2;
+    border: thick $warning;
+    background: $surface;
+}
+
+#dialog-title {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+#dialog-buttons {
+    height: 3;
+    margin-top: 1;
+    align-horizontal: right;
+}
+
+#dialog-buttons Button {
+    margin-left: 1;
+}

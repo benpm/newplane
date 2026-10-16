@@ -1,0 +1,15 @@
+// zellij --layout scripts/dashboard/plane-dash.kdl
+// or, inside a running session:  zellij action new-tab --layout scripts/dashboard/plane-dash.kdl
+layout {
+    tab name="plane" focus=true {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        pane name="plane-dash" command="uv" {
+            args "run" "--script" "/home/beb/live/plane/scripts/dashboard/plane-dash.py"
+        }
+        pane size=2 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+}

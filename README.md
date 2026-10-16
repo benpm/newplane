@@ -147,6 +147,10 @@ enter version control.
 > stack. Note `docker-compose.dev.yml` is the separate local hot-reload overlay
 > used by `pnpm dev:local`; the dev site uses `docker-compose.devsite.yml`.
 
+`./scripts/plane dash` opens a live TUI over both stacks — container health,
+a database change feed, and restart/update buttons. See
+[docs/scripts.md](./docs/scripts.md#monitoring).
+
 **4. (Recommended) Setup Code Intelligence**
 
 ```bash

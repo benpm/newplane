@@ -168,6 +168,45 @@ Datastores are excluded by default because their chatter drowns out app logs.
 
 ---
 
+## Monitoring
+
+### `plane dash`
+
+Live Textual TUI over every Plane instance on this host (production `plane`,
+dev site `planedev`), one tab each. Runs via `uv run --script`, so its only
+dependency (`textual`) needs no install. To open it in its own zellij tab:
+
+```bash
+zellij --layout scripts/dashboard/plane-dash.kdl              # new session
+zellij action new-tab --layout scripts/dashboard/plane-dash.kdl  # inside one
+```
+
+Per instance it shows HTTP status, schema migration head, the checkout an
+update would build from, and every container's state, health, uptime and image
+age. A container whose image tag has been rebuilt since it was created is
+flagged _image rebuilt, not deployed_; backend images built at different times
+raise a warning (a partial rebuild silently drops new Celery tasks).
+
+**Operations** — Restart, Update (backup → build all images incl. migrator →
+migrate → `up -d`), Migrate, Backup DB, Stop, Start — each behind a confirm
+dialog. They run detached (`setsid`, logged to
+`~/.local/state/plane-dash/ops/`), so closing the pane cannot kill a migration;
+a per-instance lock keeps them exclusive and a restarted dashboard reattaches.
+Backups go to `~/plane-backups/`.
+
+**DB changes** — backfilled with the 150 most recent row changes, then polled
+every 3 s: `pg_stat_user_tables` counters reveal which tables moved (hard
+deletes included), and Plane's audit columns name the row, the operation
+(create/update/soft delete) and who did it. Filterable; `n` toggles noisy
+tables (celery beat, sessions, recent visits, GitHub sync). New entries are also
+appended to `~/.local/state/plane-dash/changes/<instance>.log`.
+**Table activity** tallies inserts/updates/deletes per table since launch.
+
+Keys: `1`/`2` switch instance, `r` refresh, `n` noise, `q` quit.
+`PLANE_ROOT` overrides the checkout operations run in (default
+`/home/beb/live/plane`, whose untracked `.env` and compose override production
+depends on).
+
 ## Release
 
 ### `plane release build [--all]`

@@ -1451,6 +1451,9 @@ ${C_BOLD}DEV SITE${C_RESET}  ${C_DIM}(second full deployment — dev.mousetrip.o
   ${C_CYAN}devsite${C_RESET} <cmd>            up, down, build, ps, restart, exec, …
   ${C_CYAN}devsite logs${C_RESET} [opts]      follow logs (--errors, --all, --tail N)
 
+${C_BOLD}MONITORING${C_RESET}
+  ${C_CYAN}dash${C_RESET}                     live TUI: both instances, DB change feed, restart/update
+
 ${C_BOLD}RELEASE${C_RESET}
   ${C_CYAN}release build${C_RESET} [--all]    build linux/amd64 images into dist/
   ${C_CYAN}release verify${C_RESET} [dir]     assert every tarball is linux/amd64
@@ -1508,6 +1511,7 @@ main() {
     dev)          cmd_dev "$@" ;;
     test)         cmd_test "$@" ;;
     devsite)      cmd_devsite "$@" ;;
+    dash)         require_cmd uv; exec uv run --script "$SCRIPT_DIR/dashboard/plane-dash.py" "$@" ;;
     gitnexus)     cmd_gitnexus "$@" ;;
     release)      cmd_release "$@" ;;
     deploy)       cmd_deploy "$@" ;;
