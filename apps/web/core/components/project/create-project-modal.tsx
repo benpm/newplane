@@ -38,11 +38,7 @@ enum EProjectCreationSteps {
 export function CreateProjectModal(props: Props) {
   const { isOpen, onClose, setToFavorite = false, workspaceSlug, data, templateId } = props;
   const { allowPermissions } = useUserPermissions();
-  const isWorkspaceAdmin = allowPermissions(
-    [EUserPermissions.ADMIN],
-    EUserPermissionsLevel.WORKSPACE,
-    workspaceSlug
-  );
+  const isWorkspaceAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE, workspaceSlug);
 
   // states
   const [currentStep, setCurrentStep] = useState<EProjectCreationSteps>(EProjectCreationSteps.CREATE_PROJECT);

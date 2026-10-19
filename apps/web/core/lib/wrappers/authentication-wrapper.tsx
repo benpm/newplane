@@ -136,8 +136,7 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
       }
     } else {
       const isPublicTaskOrPage =
-        pathname &&
-        (pathname.includes("/issues") || pathname.includes("/pages") || pathname.includes("/browse"));
+        pathname && (pathname.includes("/issues") || pathname.includes("/pages") || pathname.includes("/browse"));
       if (isPublicTaskOrPage) {
         return <>{children}</>;
       }

@@ -10,7 +10,12 @@ import { generateCreativeIdentifier } from "./project-dynamic-identifier.helper"
 describe("generateCreativeIdentifier", () => {
   it("generates an identifier string not exceeding 64 characters", () => {
     for (let i = 0; i < 50; i++) {
-      const id = generateCreativeIdentifier("Super Long Project Name With Many Elaborate Words", "EXTRALONGIDENTIFIER", "Complex Task Title With Multiple Requirements", "TASK-123456");
+      const id = generateCreativeIdentifier(
+        "Super Long Project Name With Many Elaborate Words",
+        "EXTRALONGIDENTIFIER",
+        "Complex Task Title With Multiple Requirements",
+        "TASK-123456"
+      );
       expect(id.length).toBeLessThanOrEqual(64);
       expect(id.length).toBeGreaterThan(0);
     }
