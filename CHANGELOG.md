@@ -12,6 +12,8 @@
 - Highlight unassigned work items with a yellow "Get" / "Take" / "Yoink" claim button.
 - Default profile pictures are a stable per-user emoji; users can pick an emoji avatar instead of uploading a photo.
 - With a single project, the sidebar shows its navigation directly under Home; project admins can hide Intake.
+- Add `scripts/plane dash`, a live terminal dashboard (zellij layout included) for the production and dev-site stacks: container health, undeployed-image warnings, a database change feed, and restart / update / migrate / backup / stop / start buttons.
+- Deployed to production and the dev site on 10/19/2026 (schema `db.0198`); pre-deploy images are tagged `:pre-20261019`.
 
 ## 9/7/2026 — Page editor Subpages tab & Home page GitHub issue links with configurable filter
 
