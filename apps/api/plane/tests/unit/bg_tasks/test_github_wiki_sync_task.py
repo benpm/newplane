@@ -122,6 +122,18 @@ class TestGithubWikiSync:
         assert "[[Release-Notes]]" in remote["_Sidebar.md"]
         assert "[[Home]]" in remote["_Sidebar.md"]
 
+    def test_new_pages_linking_each_other_get_wiki_links_in_one_run(self, env):
+        # Pairing happens before any push, so a link to a page exported in the
+        # same run resolves instead of degrading to plain text.
+        target = env["make_page"]("Zeta Target")
+        project = env["project"]
+        url = f"/{project.workspace.slug}/projects/{project.id}/pages/{target.id}"
+        env["make_page"]("Alpha Source", html=f"<p>see [target]({url})</p>")
+        run_sync(env)
+
+        remote = read_remote(env["bare"], env["tmp"], "check-links")
+        assert remote["Alpha-Source.md"].strip() == "see [target](https://github.com/acme/widgets/wiki/Zeta-Target)"
+
     def test_second_run_without_changes_commits_nothing(self, env):
         run_sync(env)
 

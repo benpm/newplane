@@ -6,6 +6,8 @@
 
 import re
 
+_CODE_BLOCK_RE = re.compile(r"<pre\b.*?</pre>", re.IGNORECASE | re.DOTALL)
+
 
 def extract_checkbox_counts(html: str) -> tuple[int, int]:
     """Extract (total, completed) checkbox counts from an issue description HTML/markdown string.
@@ -15,6 +17,9 @@ def extract_checkbox_counts(html: str) -> tuple[int, int]:
     """
     if not html:
         return 0, 0
+
+    # Checkbox syntax quoted in a code block is an example, not a task.
+    html = _CODE_BLOCK_RE.sub("", html)
 
     # 1. TipTap taskItem <li> tags:
     # <li data-type="taskItem" data-checked="true"> or <li class="..." data-checked="false" data-type="taskItem">

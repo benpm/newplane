@@ -158,7 +158,7 @@ def sync_github_wiki(github_sync_id, force=False):
             pulled = pushed = created_pages = created_files = deleted_files = deleted_pages = 0
             pulled_slugs = set()
 
-            # --- linked pairs: decide direction ---------------------------------------
+            # --- deletions: a side that lost its half of a pairing --------------------
             for slug, link in list(links.items()):
                 page = pages_by_id.get(link.page_id)
                 if page is None:
@@ -169,12 +169,9 @@ def sync_github_wiki(github_sync_id, force=False):
                         link.delete()
                     del links[slug]
                     wiki_files.pop(slug, None)
-                    continue
-                if force or (slug not in wiki_files and link.wiki_content_hash is None):
-                    if _apply_push(page, wiki_dir, link):
-                        pushed += 1
-                    continue
-                if slug not in wiki_files:
+                elif slug not in wiki_files and link.wiki_content_hash is not None and not force:
+                    # Only a file that was once transferred counts as deleted; a
+                    # missing never-pushed file is retried below instead.
                     Page.objects.filter(parent_id=page.id).update(parent_id=page.parent_id)
                     for child in pages_by_id.values():
                         if child.parent_id == page.id:
@@ -185,6 +182,49 @@ def sync_github_wiki(github_sync_id, force=False):
                     del links[slug]
                     del pages_by_id[page.id]
                     deleted_pages += 1
+            existing = list(links.items())
+
+            # --- pair everything new before converting any content -----------------
+            # Cross-links resolve only through link rows, so every pairing must
+            # exist before the first push or pull of this run.
+            new_pages, new_files = [], []
+            owner = project.created_by or project.workspace.owner
+            for slug in list(wiki_files):
+                if slug in links:
+                    continue
+                if force:
+                    (wiki_root / f"{slug}.md").unlink()
+                    del wiki_files[slug]
+                    deleted_files += 1
+                    continue
+                page = Page.objects.create(
+                    workspace=project.workspace,
+                    name=title_from_slug(slug),
+                    owned_by=owner,
+                    access=0,
+                )
+                ProjectPage.objects.create(workspace=project.workspace, project=project, page=page)
+                links[slug] = GithubWikiPageLink.objects.create(
+                    github_sync=github_sync, project=project, page=page, wiki_slug=slug
+                )
+                pages_by_id[page.id] = page
+                new_pages.append(slug)
+            reserved = {Path(name).stem for name in RESERVED_WIKI_FILES}
+            for page in pages:
+                if page.id in linked_page_ids:
+                    continue
+                slug = slugify_page_name(page.name, taken=set(links) | set(wiki_files) | reserved)
+                links[slug] = GithubWikiPageLink.objects.create(
+                    github_sync=github_sync, project=project, page=page, wiki_slug=slug
+                )
+                new_files.append(slug)
+
+            # --- linked pairs: decide direction ---------------------------------------
+            for slug, link in existing:
+                page = pages_by_id[link.page_id]
+                if force or slug not in wiki_files:
+                    if _apply_push(page, wiki_dir, link):
+                        pushed += 1
                     continue
                 markdown = wiki_files[slug]
                 wiki_changed = content_hash(markdown) != link.wiki_content_hash
@@ -205,47 +245,16 @@ def sync_github_wiki(github_sync_id, force=False):
                 elif direction == "push" and _apply_push(page, wiki_dir, link):
                     pushed += 1
 
-            # --- unlinked wiki files -> new pages --------------------------------------
-            owner = project.created_by or project.workspace.owner
-            for slug, markdown in wiki_files.items():
-                if slug in links:
-                    continue
-                if force:
-                    (wiki_root / f"{slug}.md").unlink()
-                    deleted_files += 1
-                    continue
-                page = Page.objects.create(
-                    workspace=project.workspace,
-                    name=title_from_slug(slug),
-                    owned_by=owner,
-                    access=0,
-                )
-                ProjectPage.objects.create(workspace=project.workspace, project=project, page=page)
-                link = GithubWikiPageLink.objects.create(
-                    github_sync=github_sync, project=project, page=page, wiki_slug=slug
-                )
-                if _apply_pull(page, markdown, link):
+            # --- new pairs: wiki files -> new pages, pages -> new wiki files ------------
+            for slug in new_pages:
+                link = links[slug]
+                if _apply_pull(pages_by_id[link.page_id], wiki_files[slug], link):
                     created_pages += 1
                     pulled_slugs.add(slug)
-                links[slug] = link
-                pages_by_id[page.id] = page
-
-            # --- unlinked pages -> new wiki files ---------------------------------------
-            for page in pages:
-                if page.id in linked_page_ids:
-                    continue
-                slug = slugify_page_name(
-                    page.name,
-                    taken=set(links.keys())
-                    | (set() if force else set(wiki_files.keys()))
-                    | {Path(name).stem for name in RESERVED_WIKI_FILES},
-                )
-                link = GithubWikiPageLink.objects.create(
-                    github_sync=github_sync, project=project, page=page, wiki_slug=slug
-                )
-                if _apply_push(page, wiki_dir, link):
+            for slug in new_files:
+                link = links[slug]
+                if _apply_push(pages_by_id[link.page_id], wiki_dir, link):
                     created_files += 1
-                links[slug] = link
 
             # --- hierarchy: apply newer wiki edits, keeping newer Plane moves -----------
             sidebar_time = _wiki_file_commit_time(wiki_dir, "_Sidebar.md") if not force else None

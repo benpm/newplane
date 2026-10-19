@@ -4,257 +4,232 @@
 
 """Cross-link conversion between Plane and GitHub.
 
-Converts links in markdown descriptions between:
-- Plane page links (e.g. /workspace/projects/pid/pages/page_id) <-> GitHub wiki / issue links
-- Plane issue links (e.g. /workspace/projects/pid/issues/issue_id) <-> GitHub issue links
-- Plane browse links (e.g. /browse/PROJ-123) <-> GitHub issue links
+Converts links in markdown between:
+- Plane page links (…/pages/<uuid>) <-> GitHub wiki pages
+- Plane work item links (…/issues/<uuid>, …/browse/PROJ-123) <-> GitHub issues
 
-Ensures that when syncing between Plane and GitHub, there is no unintentional cross-linking:
-- On GitHub, links point to GitHub issues and GitHub wiki pages.
-- On Plane, links point to Plane work items and Plane wiki pages.
+so that after a sync, links on GitHub point at GitHub and links on Plane point
+at Plane. Rules:
+- Only verified pairings are followed — a sync's issue/wiki link rows, or a work
+  item imported from this repository. Destinations are never guessed from titles.
+- Every lookup is scoped to the sync's workspace and project, so a link into
+  another workspace is never resolved (or its title leaked to GitHub).
+- An outbound Plane link with no GitHub counterpart becomes plain text: its
+  label is kept, the Plane hyperlink is dropped.
+- Code spans and fenced code blocks are left untouched, as is any link carrying
+  a #fragment: headings and comment anchors have no equivalent on the other side.
 """
 
 import re
-from plane.utils.github_wiki import slugify_page_name, title_from_slug
 
-# Regex for Plane page links:
-# Matches [Text](.../pages/<uuid>)
-PLANE_PAGE_LINK_RE = re.compile(
-    r"\[(?P<text>[^\]]*)\]\((?P<url>(?:https?://[^\s\)/]+)?(?:/[^\s\)/]+)*/pages/(?P<page_id>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-fA-F]{32})(?:[/?#][^)]*)?)\)"
-)
+from plane.utils.github_wiki import title_from_slug
 
-# Regex for bare Plane page links:
-PLANE_PAGE_BARE_RE = re.compile(
-    r"(?<!\()https?://[^\s\)/]+(?:/[^\s\)/]+)*/pages/(?P<page_id>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-fA-F]{32})(?:[/?#][^\s\)]*)?"
-)
+_UUID = r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-fA-F]{32}"
+_PLANE_PATH = r"(?:https?://[^\s\)/]+)?(?:/[^\s\)/#?]+)*"
+_BARE_PATH = r"(?<![\(\w/])https?://[^\s\)/]+(?:/[^\s\)/#?]+)*"
+# Query strings are dropped; a fragment is captured so the link can be left alone.
+_TAIL_LINK = r"/?(?:\?[^\s\)#]*)?(?P<fragment>#[^\s\)]*)?"
+_TAIL_BARE = r"/?(?:\?[^\s\)#]*)?(?P<fragment>#[^\s\)]*)?"
+_FENCE_RE = re.compile(r"^\s*(```|~~~)")
+_INLINE_CODE_RE = re.compile(r"(`[^`\n]*`)")
+_REF_TEXT_RE = re.compile(r"^(#\d+|[A-Za-z0-9_]+-\d+)$")
 
-# Regex for Plane issue links:
-# Matches [Text](.../issues/<uuid>)
-PLANE_ISSUE_LINK_RE = re.compile(
-    r"\[(?P<text>[^\]]*)\]\((?P<url>(?:https?://[^\s\)/]+)?(?:/[^\s\)/]+)*/issues/(?P<issue_id>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-fA-F]{32})(?:[/?#][^)]*)?)\)"
-)
 
-# Regex for bare Plane issue links:
-PLANE_ISSUE_BARE_RE = re.compile(
-    r"(?<!\()https?://[^\s\)/]+(?:/[^\s\)/]+)*/issues/(?P<issue_id>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-fA-F]{32})(?:[/?#][^\s\)]*)?"
-)
+def _link_and_bare(target):
+    """A `[text](url)` pattern and a bare-URL pattern for the same Plane target."""
+    return (
+        re.compile(rf"\[(?P<text>[^\]]*)\]\({_PLANE_PATH}/{target}{_TAIL_LINK}\)"),
+        re.compile(rf"{_BARE_PATH}/{target}{_TAIL_BARE}"),
+    )
 
-# Regex for Plane browse links:
-# Matches [Text](.../browse/<identifier>-<seq>)
-PLANE_BROWSE_LINK_RE = re.compile(
-    r"\[(?P<text>[^\]]*)\]\((?P<url>(?:https?://[^\s\)/]+)?(?:/[^\s\)/]+)*/browse/(?P<identifier>[A-Za-z0-9_]+)-(?P<sequence_id>\d+)(?:[/?#][^)]*)?)\)"
-)
 
-# Regex for bare Plane browse links:
-PLANE_BROWSE_BARE_RE = re.compile(
-    r"(?<!\()https?://[^\s\)/]+(?:/[^\s\)/]+)*/browse/(?P<identifier>[A-Za-z0-9_]+)-(?P<sequence_id>\d+)(?:[/?#][^\s\)]*)?"
-)
+PLANE_PAGE_RES = _link_and_bare(rf"pages/(?P<page_id>{_UUID})")
+PLANE_ISSUE_RES = _link_and_bare(rf"(?:issues|work-items)/(?P<issue_id>{_UUID})")
+PLANE_BROWSE_RES = _link_and_bare(r"browse/(?P<identifier>[A-Za-z0-9_]+)-(?P<sequence_id>\d+)")
+
+
+def _outside_code(markdown, convert):
+    """Apply `convert` to the prose of a markdown document, never inside code."""
+    out, prose, fence = [], [], None
+
+    def flush():
+        if prose:
+            text = "".join(prose)
+            parts = _INLINE_CODE_RE.split(text)
+            out.append("".join(p if i % 2 else convert(p) for i, p in enumerate(parts)))
+            prose.clear()
+
+    for line in markdown.splitlines(keepends=True):
+        marker = _FENCE_RE.match(line)
+        if fence is None and marker:
+            flush()
+            fence = marker.group(1)
+            out.append(line)
+        elif fence is not None:
+            out.append(line)
+            if line.strip().startswith(fence):
+                fence = None
+        else:
+            prose.append(line)
+    flush()
+    return "".join(out)
+
+
+def _text(match):
+    return match.groupdict().get("text")
+
+
+def _has_fragment(match):
+    return bool(match.groupdict().get("fragment"))
+
+
+def _render(match, url, ref):
+    """A converted link; reference-style text ("#12", "PROJ-12") follows the target."""
+    text = _text(match)
+    if text is None:
+        return url
+    return f"[{ref if _REF_TEXT_RE.match(text.strip()) else text}]({url})"
+
+
+def _plain(match, label):
+    """The unresolved-link fallback: keep the words, drop the Plane hyperlink."""
+    text = _text(match)
+    return text if text is not None else label
 
 
 def transform_plane_links_to_github(markdown: str, github_sync, project=None) -> str:
-    """Rewrite Plane page and issue links to native GitHub wiki / issue links."""
+    """Rewrite Plane page and work item links to native GitHub wiki / issue links."""
     if not markdown or not github_sync:
         return markdown
 
     from plane.db.models import GithubIssueLink, GithubWikiPageLink, Issue, Page
 
-    owner = github_sync.repository_owner
-    repo = github_sync.repository_name
     project = project or github_sync.project
+    base = f"https://github.com/{github_sync.repository_owner}/{github_sync.repository_name}"
 
-    def replace_page_link(match):
-        text = match.group("text") if "text" in match.groupdict() else None
-        page_id = match.group("page_id")
+    def github_number(issue):
+        link = GithubIssueLink.objects.filter(github_sync=github_sync, issue=issue).first()
+        if link:
+            return link.github_issue_number
+        # Imported from this repository before link rows existed.
+        if issue.project_id == project.id and issue.external_source == "github" and issue.external_id:
+            return issue.external_id
+        return None
 
-        # 1. Check if page has a wiki link
-        wiki_link = GithubWikiPageLink.objects.filter(github_sync=github_sync, page_id=page_id).first()
-        if wiki_link:
-            gh_url = f"https://github.com/{owner}/{repo}/wiki/{wiki_link.wiki_slug}"
-            return f"[{text}]({gh_url})" if text is not None else gh_url
+    def replace_issue_ref(match, issue):
+        if issue is None or _has_fragment(match):
+            return match.group(0)
+        number = github_number(issue)
+        if number is None:
+            return _plain(match, f"{issue.project.identifier}-{issue.sequence_id}")
+        return _render(match, f"{base}/issues/{number}", f"#{number}")
 
-        # 2. Check if page exists
-        page = Page.objects.filter(pk=page_id).first()
-        if page:
-            # Check if there is an issue with the same name that is synced
-            issue_link = GithubIssueLink.objects.filter(
-                github_sync=github_sync, issue__name=page.name
-            ).first()
-            if issue_link:
-                gh_url = f"https://github.com/{owner}/{repo}/issues/{issue_link.github_issue_number}"
-                return f"[{text}]({gh_url})" if text is not None else gh_url
+    def replace_page(match):
+        page = Page.objects.filter(pk=match.group("page_id"), workspace_id=project.workspace_id).first()
+        if page is None or _has_fragment(match):
+            return match.group(0)
+        link = GithubWikiPageLink.objects.filter(github_sync=github_sync, page=page).first()
+        if link is None:
+            return _plain(match, page.name or "Untitled")
+        url = f"{base}/wiki/{link.wiki_slug}"
+        text = _text(match)
+        return url if text is None else f"[{text}]({url})"
 
-            # Otherwise, use the wiki slug for this page
-            slug = slugify_page_name(page.name, set())
-            gh_url = f"https://github.com/{owner}/{repo}/wiki/{slug}"
-            return f"[{text}]({gh_url})" if text is not None else gh_url
+    def replace_issue(match):
+        issue = (
+            Issue.objects.filter(pk=match.group("issue_id"), workspace_id=project.workspace_id)
+            .select_related("project")
+            .first()
+        )
+        return replace_issue_ref(match, issue)
 
-        return match.group(0)
-
-    def replace_issue_link(match):
-        text = match.group("text") if "text" in match.groupdict() else None
-        issue_id = match.group("issue_id")
-
-        issue_link = GithubIssueLink.objects.filter(github_sync=github_sync, issue_id=issue_id).first()
-        if issue_link:
-            gh_num = issue_link.github_issue_number
-            gh_url = f"https://github.com/{owner}/{repo}/issues/{gh_num}"
-            if text is None:
-                return gh_url
-            display_text = (
-                f"#{gh_num}"
-                if re.match(r"^(#\d+|[A-Za-z0-9_]+-\d+)$", text.strip())
-                else text
+    def replace_browse(match):
+        issue = (
+            Issue.objects.filter(
+                workspace_id=project.workspace_id,
+                project__identifier__iexact=match.group("identifier"),
+                sequence_id=match.group("sequence_id"),
             )
-            return f"[{display_text}]({gh_url})"
+            .select_related("project")
+            .first()
+        )
+        return replace_issue_ref(match, issue)
 
-        issue = Issue.objects.filter(pk=issue_id).first()
-        if issue and issue.external_source == "github" and issue.external_id:
-            gh_num = issue.external_id
-            gh_url = f"https://github.com/{owner}/{repo}/issues/{gh_num}"
-            if text is None:
-                return gh_url
-            display_text = (
-                f"#{gh_num}"
-                if re.match(r"^(#\d+|[A-Za-z0-9_]+-\d+)$", text.strip())
-                else text
-            )
-            return f"[{display_text}]({gh_url})"
+    def convert(text):
+        for patterns, replace in (
+            (PLANE_PAGE_RES, replace_page),
+            (PLANE_ISSUE_RES, replace_issue),
+            (PLANE_BROWSE_RES, replace_browse),
+        ):
+            for pattern in patterns:
+                text = pattern.sub(replace, text)
+        return text
 
-        return match.group(0)
-
-    def replace_browse_link(match):
-        text = match.group("text") if "text" in match.groupdict() else None
-        identifier = match.group("identifier")
-        seq_id = match.group("sequence_id")
-
-        issue = Issue.objects.filter(project__identifier=identifier, sequence_id=seq_id).first()
-        if issue:
-            issue_link = GithubIssueLink.objects.filter(github_sync=github_sync, issue=issue).first()
-            if issue_link:
-                gh_num = issue_link.github_issue_number
-                gh_url = f"https://github.com/{owner}/{repo}/issues/{gh_num}"
-                if text is None:
-                    return gh_url
-                display_text = (
-                    f"#{gh_num}"
-                    if re.match(r"^(#\d+|[A-Za-z0-9_]+-\d+)$", text.strip())
-                    else text
-                )
-                return f"[{display_text}]({gh_url})"
-            elif issue.external_source == "github" and issue.external_id:
-                gh_num = issue.external_id
-                gh_url = f"https://github.com/{owner}/{repo}/issues/{gh_num}"
-                if text is None:
-                    return gh_url
-                display_text = (
-                    f"#{gh_num}"
-                    if re.match(r"^(#\d+|[A-Za-z0-9_]+-\d+)$", text.strip())
-                    else text
-                )
-                return f"[{display_text}]({gh_url})"
-
-        return match.group(0)
-
-    # 1. Replace markdown links [Text](URL)
-    result = PLANE_PAGE_LINK_RE.sub(replace_page_link, markdown)
-    result = PLANE_ISSUE_LINK_RE.sub(replace_issue_link, result)
-    result = PLANE_BROWSE_LINK_RE.sub(replace_browse_link, result)
-
-    # 2. Replace bare URLs
-    result = PLANE_PAGE_BARE_RE.sub(replace_page_link, result)
-    result = PLANE_ISSUE_BARE_RE.sub(replace_issue_link, result)
-    result = PLANE_BROWSE_BARE_RE.sub(replace_browse_link, result)
-
-    return result
+    return _outside_code(markdown, convert)
 
 
 def transform_github_links_to_plane(markdown: str, github_sync, project=None) -> str:
-    """Rewrite GitHub issue and wiki links to native Plane work item and page links."""
+    """Rewrite GitHub issue and wiki links to native Plane work item and page links.
+
+    Unresolved GitHub links are kept: they still lead somewhere meaningful.
+    """
     if not markdown or not github_sync:
         return markdown
 
-    from plane.db.models import GithubIssueLink, GithubWikiPageLink, Issue, Page
+    from plane.db.models import GithubIssueLink, GithubWikiPageLink, Issue
 
-    owner = re.escape(github_sync.repository_owner)
-    repo = re.escape(github_sync.repository_name)
     project = project or github_sync.project
-    workspace_slug = project.workspace.slug
-    project_id = str(project.id)
+    plane_base = f"/{project.workspace.slug}/projects/{project.id}"
+    repo = rf"https://github\.com/{re.escape(github_sync.repository_owner)}/{re.escape(github_sync.repository_name)}"
 
-    # Regex for GitHub wiki links:
-    # https://github.com/owner/repo/wiki/<slug>
-    GH_WIKI_LINK_RE = re.compile(
-        rf"\[(?P<text>[^\]]*)\]\(https://github\.com/{owner}/{repo}/wiki/(?P<slug>[A-Za-z0-9._-]+)(?:[#?][^\s\)]*)?\)"
+    wiki_res = (
+        re.compile(rf"\[(?P<text>[^\]]*)\]\({repo}/wiki/(?P<slug>[A-Za-z0-9._-]+){_TAIL_LINK}\)"),
+        re.compile(r"\[\[(?:(?P<text>[^\]|]+)\|)?(?P<slug>[^\]|#]+)\]\]"),  # gollum [[Page]] / [[Text|Page]]
+        re.compile(rf"(?<![\(\w/]){repo}/wiki/(?P<slug>[A-Za-z0-9._-]+){_TAIL_BARE}"),
     )
-    GH_WIKI_BARE_RE = re.compile(
-        rf"(?<!\()https://github\.com/{owner}/{repo}/wiki/(?P<slug>[A-Za-z0-9._-]+)(?:[#?][^\s\)]*)?"
-    )
-    GH_WIKI_BRACKET_RE = re.compile(r"\[\[(?:(?P<text>[^\]|]+)\|)?(?P<slug>[^\]]+)\]\]")
-
-    # Regex for GitHub issue links:
-    # https://github.com/owner/repo/issues/<number>
-    GH_ISSUE_LINK_RE = re.compile(
-        rf"\[(?P<text>[^\]]*)\]\(https://github\.com/{owner}/{repo}/issues/(?P<number>\d+)(?:[#?][^\s\)]*)?\)"
-    )
-    GH_ISSUE_BARE_RE = re.compile(
-        rf"(?<!\()https://github\.com/{owner}/{repo}/issues/(?P<number>\d+)(?:[#?][^\s\)]*)?"
+    issue_res = (
+        re.compile(rf"\[(?P<text>[^\]]*)\]\({repo}/issues/(?P<number>\d+){_TAIL_LINK}\)"),
+        re.compile(rf"(?<![\(\w/]){repo}/issues/(?P<number>\d+){_TAIL_BARE}"),
     )
 
-    def replace_gh_wiki(match):
+    def replace_wiki(match):
+        if _has_fragment(match):
+            return match.group(0)
         slug = match.group("slug").strip().replace(" ", "-")
-        text = match.group("text") if "text" in match.groupdict() and match.group("text") else None
+        link = (
+            GithubWikiPageLink.objects.filter(github_sync=github_sync, wiki_slug__iexact=slug)
+            .select_related("page")
+            .first()
+        )
+        if link is None or link.page is None:
+            return match.group(0)
+        label = _text(match) or link.page.name or title_from_slug(slug)
+        return f"[{label}]({plane_base}/pages/{link.page_id})"
 
-        wiki_link = GithubWikiPageLink.objects.filter(github_sync=github_sync, wiki_slug__iexact=slug).first()
-        if wiki_link:
-            plane_url = f"/{workspace_slug}/projects/{project_id}/pages/{wiki_link.page_id}"
-            display_text = text or (wiki_link.page.name if wiki_link.page else None) or title_from_slug(slug)
-            return f"[{display_text}]({plane_url})"
-
-        # Check if page with matching name exists in project
-        page = Page.objects.filter(projects=project, name__iexact=title_from_slug(slug)).first()
-        if page:
-            plane_url = f"/{workspace_slug}/projects/{project_id}/pages/{page.id}"
-            display_text = text or page.name
-            return f"[{display_text}]({plane_url})"
-
-        return match.group(0)
-
-    def replace_gh_issue(match):
-        text = match.group("text") if "text" in match.groupdict() and match.group("text") else None
+    def replace_issue(match):
+        if _has_fragment(match):
+            return match.group(0)
         number = int(match.group("number"))
-
-        issue_link = (
+        link = (
             GithubIssueLink.objects.filter(github_sync=github_sync, github_issue_number=number)
             .select_related("issue")
             .first()
         )
+        issue = link.issue if link else None
+        if issue is None:
+            issue = Issue.objects.filter(project=project, external_source="github", external_id=str(number)).first()
+        if issue is None:
+            return match.group(0)
+        ref = f"{project.identifier}-{issue.sequence_id}"
+        text = _text(match)
+        display = text if text and not _REF_TEXT_RE.match(text.strip()) else ref
+        return f"[{display}](/{project.workspace.slug}/browse/{ref}/)"
 
-        if issue_link:
-            plane_issue = issue_link.issue
-            plane_url = f"/{workspace_slug}/projects/{project_id}/issues/{plane_issue.id}"
-            display_text = (
-                f"#{plane_issue.sequence_id}"
-                if (text and re.match(r"^#\d+$", text.strip()))
-                else (text or f"#{plane_issue.sequence_id}")
-            )
-            return f"[{display_text}]({plane_url})"
+    def convert(text):
+        for pattern in wiki_res:
+            text = pattern.sub(replace_wiki, text)
+        for pattern in issue_res:
+            text = pattern.sub(replace_issue, text)
+        return text
 
-        issue = Issue.objects.filter(project=project, external_source="github", external_id=str(number)).first()
-        if issue:
-            plane_url = f"/{workspace_slug}/projects/{project_id}/issues/{issue.id}"
-            display_text = (
-                f"#{issue.sequence_id}"
-                if (text and re.match(r"^#\d+$", text.strip()))
-                else (text or f"#{issue.sequence_id}")
-            )
-            return f"[{display_text}]({plane_url})"
-
-        return match.group(0)
-
-    result = GH_WIKI_LINK_RE.sub(replace_gh_wiki, markdown)
-    result = GH_WIKI_BRACKET_RE.sub(replace_gh_wiki, result)
-    result = GH_WIKI_BARE_RE.sub(replace_gh_wiki, result)
-    result = GH_ISSUE_LINK_RE.sub(replace_gh_issue, result)
-    result = GH_ISSUE_BARE_RE.sub(replace_gh_issue, result)
-
-    return result
+    return _outside_code(markdown, convert)
