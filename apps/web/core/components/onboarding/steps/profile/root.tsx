@@ -15,6 +15,7 @@ import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { IUser } from "@plane/types";
 import { EOnboardingSteps } from "@plane/types";
 import { cn, getFileURL, getPasswordStrength, validatePersonName } from "@plane/utils";
+import { Avatar } from "@plane/ui";
 // components
 import { UserImageUploadModal } from "@/components/core/modals/user-image-upload-modal";
 // hooks
@@ -177,20 +178,17 @@ export const ProfileSetupStep = observer(function ProfileSetupStep({ handleStepC
       />
       <div className="flex items-center gap-4">
         <button
-          className="size-12 rounded-full bg-accent-primary flex items-center justify-center text-on-color font-semibold text-18"
+          className="size-12 rounded-full overflow-hidden flex items-center justify-center cursor-pointer"
           type="button"
           onClick={() => setIsImageUploadModalOpen(true)}
         >
-          {userAvatar ? (
-            <img
-              src={getFileURL(userAvatar ?? "")}
-              onClick={() => setIsImageUploadModalOpen(true)}
-              alt={user?.display_name}
-              className="w-full h-full rounded-full object-cover"
-            />
-          ) : (
-            <>{watch("first_name")[0] ?? "R"}</>
-          )}
+          <Avatar
+            name={watch("first_name")}
+            src={getFileURL(userAvatar ?? "")}
+            size={48}
+            shape="circle"
+            showTooltip={false}
+          />
         </button>
         <input type="file" className="hidden" id="profile-image-input" />
         <button

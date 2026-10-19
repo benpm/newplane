@@ -34,6 +34,7 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web components
 import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
 import { WorkItemGithubBadge } from "@/plane-web/components/issues/work-item-github-badge";
+import { TaskCheckboxProgress } from "@/plane-web/components/issues/task-checkbox-progress";
 // local components
 import { IssueStats } from "@/plane-web/components/issues/issue-layouts/issue-stats";
 import type { TRenderQuickActions } from "../list/list-view-types";
@@ -98,9 +99,14 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
 
   useOutsideClickDetector(menuActionRef, () => setIsMenuActive(false));
 
+  const hasGithub = Boolean(issue?.github_issue_number && issue?.github_repository);
+  const hasComments = Boolean(hasGithub && issue?.github_comment_count && issue.github_comment_count > 0);
+  const leftPadClass = hasComments ? "pl-9" : hasGithub ? "pl-5" : "";
+
   return (
     <>
-      <div className="relative flex items-center gap-1.5">
+      <WorkItemGithubBadge issue={issue} className="absolute top-[4px] left-[4px] z-10" />
+      <div className={cn("relative flex items-center gap-1.5 min-w-0 pr-6", leftPadClass)}>
         {issue.project_id && (
           <IssueIdentifier
             issueId={issue.id}
@@ -110,7 +116,12 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
             displayProperties={displayProperties}
           />
         )}
-        <WorkItemGithubBadge issue={issue} />
+        <Tooltip tooltipContent={issue.name} isMobile={isMobile} renderByDefault={false}>
+          <div className="flex-grow min-w-0 line-clamp-1 text-body-sm-medium text-primary">
+            <span>{issue.name}</span>
+          </div>
+        </Tooltip>
+        <TaskCheckboxProgress issue={issue} className="flex-shrink-0" />
         <div
           className={cn("absolute -top-1 right-0", {
             "hidden group-hover/kanban-block:block": !isMobile,
@@ -125,12 +136,6 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
           })}
         </div>
       </div>
-
-      <Tooltip tooltipContent={issue.name} isMobile={isMobile} renderByDefault={false}>
-        <div className="w-full line-clamp-1 text-body-sm-medium text-primary">
-          <span>{issue.name}</span>
-        </div>
-      </Tooltip>
 
       <IssueProperties
         className="flex flex-wrap items-center gap-2 whitespace-nowrap text-tertiary pt-1.5"
@@ -277,7 +282,7 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
           href={workItemLink}
           ref={cardRef}
           className={cn(
-            "block rounded-lg border outline-[0.5px] outline-transparent shadow-raised-100 w-full border-subtle bg-layer-2 text-13 transition-all p-3 hover:shadow-raised-200 hover:border-strong",
+            "relative block rounded-lg border outline-[0.5px] outline-transparent shadow-raised-100 w-full border-subtle bg-layer-2 text-13 transition-all p-3 hover:shadow-raised-200 hover:border-strong",
             { "hover:cursor-pointer": isDragAllowed },
             { "border border-accent-strong hover:border-accent-strong": getIsIssuePeeked(issue.id) },
             { "bg-layer-1 z-[100]": isCurrentBlockDragging }

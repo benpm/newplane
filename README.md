@@ -7,6 +7,7 @@
 See [CHANGELOG.md](./CHANGELOG.md) for a list of changes and new features. Notable additions include:
 
 - Extensive synchronization with a git repo that can be associated with a specific project.
+- Bidirectional Pages / GitHub Wiki deletion sync and an admin Force Sync action
 - Page relationships
 - Dynamic project identifier string rendered next to the search box
 - Onboarding project join list & normal user creation restrictions

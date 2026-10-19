@@ -17,6 +17,7 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 type Props = {
   issue: TIssue | undefined | null;
   className?: string;
+  iconClassName?: string;
 };
 
 /**
@@ -33,7 +34,7 @@ type Props = {
  * the sync has run.
  */
 export const WorkItemGithubBadge: React.FC<Props> = observer((props) => {
-  const { issue, className } = props;
+  const { issue, className, iconClassName } = props;
   const { t } = useTranslation();
   const { isMobile } = usePlatformOS();
 
@@ -60,7 +61,11 @@ export const WorkItemGithubBadge: React.FC<Props> = observer((props) => {
         className={`flex flex-shrink-0 items-center gap-1 text-tertiary hover:text-primary ${className ?? ""}`}
         aria-label={tooltip}
       >
-        <img src={GitHubInvertocatWhite} alt="GitHub" className="h-3 w-3 flex-shrink-0 object-contain" />
+        <img
+          src={GitHubInvertocatWhite}
+          alt="GitHub"
+          className={iconClassName ?? "h-4 w-4 flex-shrink-0 object-contain"}
+        />
         {commentCount > 0 && <span className="text-caption-sm-regular">{commentCount}</span>}
       </a>
     </Tooltip>

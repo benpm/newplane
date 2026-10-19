@@ -10,6 +10,7 @@ import { observer } from "mobx-react";
 import type { TIssue } from "@plane/types";
 // components
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
+import { UnassignedAssigneeBadge } from "@/plane-web/components/issues/unassigned-assignee-badge";
 
 type Props = {
   issue: TIssue;
@@ -39,6 +40,13 @@ export const SpreadsheetAssigneeColumn = observer(function SpreadsheetAssigneeCo
         disabled={disabled}
         multiple
         placeholder="Assignees"
+        button={
+          !issue?.assignee_ids || issue.assignee_ids.length === 0 ? (
+            <div className="flex items-center h-full px-page-x">
+              <UnassignedAssigneeBadge issueId={issue?.id} />
+            </div>
+          ) : undefined
+        }
         buttonVariant={
           issue?.assignee_ids && issue.assignee_ids.length > 1 ? "transparent-without-text" : "transparent-with-text"
         }

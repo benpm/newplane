@@ -24,6 +24,7 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web imports
 import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
 import { WorkItemGithubBadge } from "@/plane-web/components/issues/work-item-github-badge";
+import { TaskCheckboxProgress } from "@/plane-web/components/issues/task-checkbox-progress";
 import { IssueStats } from "@/plane-web/components/issues/issue-layouts/issue-stats";
 // local imports
 import { WorkItemPreviewCard } from "../../preview-card";
@@ -73,10 +74,11 @@ export const IssueGanttBlock = observer(function IssueGanttBlock(props: Props) {
           >
             <div className="absolute left-0 top-0 h-full w-full bg-surface-1/50 " />
             <div
-              className="sticky w-auto overflow-hidden truncate px-2.5 py-1 text-13 text-primary flex-1"
+              className="sticky w-auto overflow-hidden truncate px-2.5 py-1 text-13 text-primary flex-1 flex items-center gap-1.5"
               style={{ left: `${SIDEBAR_WIDTH}px` }}
             >
-              {issueDetails?.name}
+              <span className="truncate">{issueDetails?.name}</span>
+              <TaskCheckboxProgress issue={issueDetails} className="flex-shrink-0" />
             </div>
             {isEpic && (
               <IssueStats
@@ -164,6 +166,7 @@ export const IssueGanttSidebarBlock = observer(function IssueGanttSidebarBlock(p
         <Tooltip tooltipContent={issueDetails?.name} isMobile={isMobile}>
           <span className="flex-grow truncate text-13 font-medium">{issueDetails?.name}</span>
         </Tooltip>
+        <TaskCheckboxProgress issue={issueDetails} className="flex-shrink-0" />
       </div>
     </ControlLink>
   );

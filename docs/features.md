@@ -296,7 +296,23 @@ ways.
 | Comments           | count only, never synced |                 |
 | Labels, assignees  | not synced               |                 |
 
-Separately, Plane pages sync both ways with the repo wiki over GFM.
+Separately, public, unarchived project Pages sync both ways with the repo wiki
+as Markdown on the five-minute schedule. Deleting a linked Page removes its wiki
+file; deleting a previously synchronized wiki file soft-deletes its Page. Page
+archival, private access, or removal from the project also removes its linked
+wiki file. Unsynchronized missing files are retried rather than treated as deletions.
+
+Project administrators can use **Settings → GitHub repository → Sync now** to
+queue both enabled integrations. **Force Sync** requires Wiki sync to be enabled
+and makes Pages authoritative: it overwrites every linked wiki page, recreates
+missing files, exports new Pages, and deletes wiki pages with no matching Page.
+Wiki-only content is not imported during Force Sync. Private and archived Pages
+are excluded. The generated `_Sidebar.md` follows the Pages tree; reserved wiki
+layout files `_Header.md` and `_Footer.md` are preserved.
+
+Status refreshes automatically while settings are open. Sync jobs run one at a
+time per project. Failed conversion or Git pushes roll back sync bookkeeping so
+the next run retries the content.
 
 **How it converges.** `GithubIssueLink.github_state` suppresses the state loop
 and `content_hash` the content loop. The rule worth internalising before
@@ -318,8 +334,8 @@ work item is still half-built at `post_save`) and the five-minute sweep as its
 real guarantee — `bulk_create` never fires signals. Both call the same
 idempotent helper.
 
-**Deliberately not done:** deletions do not propagate (a Plane delete is
-recoverable, a GitHub one is not); drafts and archived items are never pushed;
+**Issue-sync limits:** issue deletions do not propagate; drafts and archived
+issues are never pushed;
 sub-items flatten to a `Sub-task of #N` line in the body, added on push and
 stripped on pull.
 

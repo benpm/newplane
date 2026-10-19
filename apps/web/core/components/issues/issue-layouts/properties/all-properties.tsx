@@ -33,6 +33,7 @@ import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { ModuleDropdown } from "@/components/dropdowns/module/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import { UnassignedAssigneeBadge } from "@/plane-web/components/issues/unassigned-assignee-badge";
 // hooks
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { useProjectEstimates } from "@/hooks/store/estimates";
@@ -348,6 +349,11 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
             onChange={handleAssignee}
             disabled={isReadOnly}
             multiple
+            button={
+              !issue?.assignee_ids || issue.assignee_ids.length === 0 ? (
+                <UnassignedAssigneeBadge issueId={issue?.id} />
+              ) : undefined
+            }
             buttonVariant={issue.assignee_ids?.length > 0 ? "transparent-without-text" : "border-without-text"}
             buttonClassName={issue.assignee_ids?.length > 0 ? "hover:bg-transparent px-0" : ""}
             showTooltip={issue?.assignee_ids?.length === 0}

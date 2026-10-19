@@ -13,6 +13,7 @@ import { EIssueServiceType } from "@plane/types";
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import { UnassignedAssigneeBadge } from "@/plane-web/components/issues/unassigned-assignee-badge";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 // types
@@ -87,6 +88,11 @@ export const RelationIssueProperty = observer(function RelationIssueProperty(pro
           onChange={handleAssigneeChange}
           disabled={disabled}
           multiple
+          button={
+            !issue?.assignee_ids || issue.assignee_ids.length === 0 ? (
+              <UnassignedAssigneeBadge issueId={issue?.id} />
+            ) : undefined
+          }
           buttonVariant={(issue?.assignee_ids || []).length > 0 ? "transparent-without-text" : "border-without-text"}
           buttonClassName={(issue?.assignee_ids || []).length > 0 ? "hover:bg-transparent px-0" : ""}
         />

@@ -22,6 +22,7 @@ import useIssuePeekOverviewRedirection from "@/hooks/use-issue-peek-overview-red
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web imports
 import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
+import { TaskCheckboxProgress } from "@/plane-web/components/issues/task-checkbox-progress";
 import type { TIssueRelationTypes } from "@/plane-web/types";
 // local imports
 import { useRelationOperations } from "../issue-detail-widgets/relations/helper";
@@ -148,6 +149,7 @@ export const RelationIssueListItem = observer(function RelationIssueListItem(pro
               <Tooltip tooltipContent={issue.name} isMobile={isMobile}>
                 <span className="flex-1 w-0 truncate text-13 text-primary">{issue.name}</span>
               </Tooltip>
+              <TaskCheckboxProgress issue={issue} className="flex-shrink-0" />
             </div>
             <div
               className="flex-shrink-0 text-13"

@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { observer } from "mobx-react";
 import { Ellipsis } from "lucide-react";
 import { Disclosure, Transition } from "@headlessui/react";
@@ -18,19 +18,37 @@ import {
 import { useTranslation } from "@plane/i18n";
 import { ChevronRightIcon } from "@plane/propel/icons";
 import { cn } from "@plane/utils";
+import { useParams } from "next/navigation";
 // components
 import { SidebarNavItem } from "@/components/sidebar/sidebar-navigation";
 // store hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
+import { useProject } from "@/hooks/store/use-project";
 import useLocalStorage from "@/hooks/use-local-storage";
 import {
   usePersonalNavigationPreferences,
   useWorkspaceNavigationPreferences,
 } from "@/hooks/use-navigation-preferences";
 // plane-web imports
+import { ProjectNavigationRoot } from "@/plane-web/components/sidebar";
 import { SidebarItem } from "@/plane-web/components/workspace/sidebar/sidebar-item";
 
-export const SidebarMenuItems = observer(function SidebarMenuItems() {
+type Props = {
+  singleProjectId?: string;
+};
+
+export const SidebarMenuItems = observer(function SidebarMenuItems(props: Props) {
+  const { singleProjectId: propSingleProjectId } = props;
+  const { workspaceSlug } = useParams();
+  const { joinedProjectIds, workspaceProjectIds } = useProject();
+
+  const projectsList =
+    joinedProjectIds && joinedProjectIds.length > 0
+      ? joinedProjectIds
+      : (workspaceProjectIds ?? []);
+  const isSingleProject = propSingleProjectId !== undefined ? Boolean(propSingleProjectId) : projectsList.length === 1;
+  const singleProjectId = propSingleProjectId ?? (isSingleProject ? projectsList[0] : undefined);
+
   // routers
   const { setValue: toggleWorkspaceMenu, storedValue: isWorkspaceMenuOpen } = useLocalStorage<boolean>(
     "is_workspace_menu_open",
@@ -94,10 +112,21 @@ export const SidebarMenuItems = observer(function SidebarMenuItems() {
     [workspacePreferences]
   );
 
+  const homeItem = filteredStaticNavigationItems.find((item) => item.key === "home");
+  const otherStaticItems = filteredStaticNavigationItems.filter((item) => item.key !== "home");
+
   return (
     <>
       <div className="flex flex-col gap-0.5">
-        {filteredStaticNavigationItems.map((item, _index) => (
+        {homeItem && <SidebarItem item={homeItem} />}
+        {isSingleProject && singleProjectId && workspaceSlug && (
+          <ProjectNavigationRoot
+            workspaceSlug={workspaceSlug.toString()}
+            projectId={singleProjectId}
+            isRootLevel
+          />
+        )}
+        {otherStaticItems.map((item, _index) => (
           <SidebarItem key={`static_${_index}`} item={item} />
         ))}
       </div>

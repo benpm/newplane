@@ -67,4 +67,4 @@ export const getBorderRadius = (shape: "circle" | "square") => {
  * @param value The value to check
  * @returns Whether the value is a valid number or not
  */
-export const isAValidNumber = (value: unknown) => typeof value === "number" && !isNaN(value);
+export const isAValidNumber = (value: unknown): value is number => typeof value === "number" && !isNaN(value);

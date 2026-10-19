@@ -69,8 +69,10 @@ export class CEProjectGithubSyncService extends APIService {
       });
   }
 
-  async syncNow(workspaceSlug: string, projectId: string): Promise<void> {
-    return this.post(`/api/workspaces/${workspaceSlug}/projects/${projectId}/github-sync/sync-now/`)
+  async syncNow(workspaceSlug: string, projectId: string, forceWiki = false): Promise<void> {
+    return this.post(`/api/workspaces/${workspaceSlug}/projects/${projectId}/github-sync/sync-now/`, {
+      force_wiki: forceWiki,
+    })
       .then(() => undefined)
       .catch((error) => {
         throw error?.response?.data;

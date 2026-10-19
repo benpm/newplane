@@ -87,3 +87,20 @@ export const groupReactions: (reactions: any[], key: string) => { [key: string]:
  * @returns {string} A random emoji code
  */
 export const getRandomEmoji = (): string => RANDOM_EMOJI_CODES[Math.floor(Math.random() * RANDOM_EMOJI_CODES.length)];
+
+export const DEFAULT_AVATAR_EMOJIS = [
+  "🐭", "🐱", "🐶", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮",
+  "🐷", "🐸", "🐵", "🐙", "🦄", "🦉", "🐧", "🦆", "🦅", "🐝",
+  "🦋", "🐢", "🐬", "🐳", "🦈", "🦭", "🦦", "🦥", "🦔", "🐿️",
+  "🦩", "🦚", "🦜", "🦖", "🦕", "🐉", "🌵", "🌸", "🌻", "🍀",
+  "🚀", "🛸", "🪐", "⭐", "🌈", "🔥", "⚡", "🍕", "🍔", "🍦",
+];
+
+export const getRandomAvatarEmoji = (key?: string | null): string => {
+  if (!key) return DEFAULT_AVATAR_EMOJIS[0];
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  }
+  return DEFAULT_AVATAR_EMOJIS[hash % DEFAULT_AVATAR_EMOJIS.length];
+};

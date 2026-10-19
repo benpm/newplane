@@ -7,14 +7,15 @@
 import { useState } from "react";
 import { observer } from "mobx-react";
 import { Controller, useForm } from "react-hook-form";
-import { CircleUserRound } from "lucide-react";
+import { Camera, CircleUserRound, Smile, Trash2 } from "lucide-react";
 // plane imports
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
+import { EmojiPicker } from "@plane/propel/emoji-icon-picker";
 import { TOAST_TYPE, setPromiseToast, setToast } from "@plane/propel/toast";
 import { EFileAssetType } from "@plane/types";
 import type { IUser, TUserProfile } from "@plane/types";
-import { Input } from "@plane/ui";
+import { Avatar, Input } from "@plane/ui";
 import { getFileURL } from "@plane/utils";
 // components
 import { DeactivateAccountModal } from "@/components/account/deactivate-account-modal";
@@ -56,6 +57,8 @@ export const GeneralProfileSettingsForm = observer(function GeneralProfileSettin
   // states
   const [isLoading, setIsLoading] = useState(false);
   const [isImageUploadModalOpen, setIsImageUploadModalOpen] = useState(false);
+  const [isAvatarEmojiPickerOpen, setIsAvatarEmojiPickerOpen] = useState(false);
+  const [isButtonEmojiPickerOpen, setIsButtonEmojiPickerOpen] = useState(false);
   const [deactivateAccountModal, setDeactivateAccountModal] = useState(false);
   const [isChangeEmailModalOpen, setIsChangeEmailModalOpen] = useState(false);
   // language support
@@ -116,6 +119,29 @@ export const GeneralProfileSettingsForm = observer(function GeneralProfileSettin
       .finally(() => {
         setIsImageUploadModalOpen(false);
       });
+  };
+
+  const handleEmojiSelect = async (val: any) => {
+    const emojiVal = val?.value ?? (typeof val === "string" ? val : "");
+    if (emojiVal && typeof emojiVal === "string") {
+      setValue("avatar_url", emojiVal, { shouldDirty: true });
+      setIsAvatarEmojiPickerOpen(false);
+      setIsButtonEmojiPickerOpen(false);
+      try {
+        await updateCurrentUser({ avatar_url: emojiVal });
+        setToast({
+          type: TOAST_TYPE.SUCCESS,
+          title: "Success!",
+          message: "Profile emoji updated successfully.",
+        });
+      } catch {
+        setToast({
+          type: TOAST_TYPE.ERROR,
+          title: "Error!",
+          message: "Failed to update profile emoji.",
+        });
+      }
+    }
   };
 
   const onSubmit = async (formData: TUserProfileForm) => {
@@ -207,24 +233,26 @@ export const GeneralProfileSettingsForm = observer(function GeneralProfileSettin
               alt={currentUser?.first_name ?? "Cover image"}
             />
             <div className="absolute -bottom-6 left-6 flex items-end justify-between">
-              <div className="flex gap-3">
-                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-surface-2">
-                  <button type="button" onClick={() => setIsImageUploadModalOpen(true)}>
-                    {!userAvatar || userAvatar === "" ? (
-                      <div className="h-16 w-16 rounded-md bg-layer-1 p-2">
-                        <CircleUserRound className="h-full w-full text-secondary" />
+              <div className="flex gap-3 items-end">
+                <EmojiPicker
+                  isOpen={isAvatarEmojiPickerOpen}
+                  handleToggle={(val: boolean) => setIsAvatarEmojiPickerOpen(val)}
+                  label={
+                    <div className="group relative flex h-16 w-16 items-center justify-center rounded-lg bg-surface-2 ring-4 ring-surface-1 shadow-sm overflow-hidden cursor-pointer">
+                      <Avatar
+                        src={getFileURL(userAvatar)}
+                        name={currentUser?.display_name}
+                        size={64}
+                        className="h-16 w-16 rounded-lg text-3xl"
+                        shape="square"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Smile className="h-6 w-6 text-white" />
                       </div>
-                    ) : (
-                      <div className="relative h-16 w-16 overflow-hidden">
-                        <img
-                          src={getFileURL(userAvatar)}
-                          className="absolute left-0 top-0 h-full w-full rounded-lg object-cover"
-                          alt={currentUser?.display_name}
-                        />
-                      </div>
-                    )}
-                  </button>
-                </div>
+                    </div>
+                  }
+                  onChange={handleEmojiSelect}
+                />
               </div>
             </div>
             <div className="absolute bottom-3 right-3 flex">
@@ -243,12 +271,44 @@ export const GeneralProfileSettingsForm = observer(function GeneralProfileSettin
               />
             </div>
           </div>
-          <div className="item-center mt-6 flex justify-between">
+          <div className="item-center mt-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-col">
               <div className="item-center flex text-16 font-medium text-secondary">
                 <span>{`${watch("first_name")} ${watch("last_name")}`}</span>
               </div>
               <span className="text-13 text-tertiary tracking-tight">{watch("email")}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <EmojiPicker
+                isOpen={isButtonEmojiPickerOpen}
+                handleToggle={(val: boolean) => setIsButtonEmojiPickerOpen(val)}
+                label={
+                  <Button variant="secondary" size="sm" type="button">
+                    <Smile className="h-4 w-4 mr-1.5" />
+                    Change Emoji
+                  </Button>
+                }
+                onChange={handleEmojiSelect}
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                type="button"
+                onClick={() => setIsImageUploadModalOpen(true)}
+              >
+                <Camera className="h-4 w-4 mr-1.5" />
+                Upload Photo
+              </Button>
+              {userAvatar ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  type="button"
+                  onClick={async () => await handleProfilePictureDelete(userAvatar)}
+                >
+                  <Trash2 className="h-4 w-4 text-danger-primary" />
+                </Button>
+              ) : null}
             </div>
           </div>
           <div className="flex flex-col gap-2">

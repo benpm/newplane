@@ -22,6 +22,8 @@ import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
+import { TaskCheckboxProgress } from "@/plane-web/components/issues/task-checkbox-progress";
+import { UnassignedAssigneeBadge } from "@/plane-web/components/issues/unassigned-assignee-badge";
 
 type BlockProps = {
   activity?: TActivityEntityData;
@@ -52,6 +54,8 @@ type TRecentIssueData = {
   updated_at?: string;
   github_issue_number?: number | null;
   github_repository?: string | null;
+  checkbox_total?: number | null;
+  checkbox_completed?: number | null;
 };
 
 export const RecentIssue = observer(function RecentIssue(props: BlockProps) {
@@ -138,7 +142,12 @@ export const RecentIssue = observer(function RecentIssue(props: BlockProps) {
           )}
         </div>
       }
-      appendTitleElement={<div className="flex-shrink-0 font-medium text-11 text-placeholder">{timeText}</div>}
+      appendTitleElement={
+        <div className="flex-shrink-0 flex items-center gap-2">
+          <TaskCheckboxProgress issue={issueDetails as any} />
+          <div className="flex-shrink-0 font-medium text-11 text-placeholder">{timeText}</div>
+        </div>
+      }
       quickActionElement={
         <div className="flex gap-4">
           <Tooltip tooltipHeading="Status" tooltipContent={state?.name ?? "Status"}>
@@ -156,23 +165,26 @@ export const RecentIssue = observer(function RecentIssue(props: BlockProps) {
               <PriorityIcon priority={issueDetails?.priority} withContainer size={12} />
             </div>
           </Tooltip>
-          {assignees?.length > 0 && (
-            <div className="h-5">
-              <MemberDropdown
-                projectId={issueDetails?.project_id ?? undefined}
-                value={assignees}
-                onChange={() => {}}
-                disabled
-                multiple
-                buttonVariant={assignees?.length > 0 ? "transparent-without-text" : "border-without-text"}
-                buttonClassName={assignees?.length > 0 ? "hover:bg-transparent px-0" : ""}
-                showTooltip={assignees?.length === 0}
-                placeholder="Assignees"
-                optionsClassName="z-10"
-                tooltipContent=""
-              />
-            </div>
-          )}
+          <div className="h-5">
+            <MemberDropdown
+              projectId={issueDetails?.project_id ?? undefined}
+              value={assignees}
+              onChange={() => {}}
+              disabled
+              multiple
+              button={
+                !assignees || assignees.length === 0 ? (
+                  <UnassignedAssigneeBadge issueId={issueDetails?.id} />
+                ) : undefined
+              }
+              buttonVariant={assignees?.length > 0 ? "transparent-without-text" : "border-without-text"}
+              buttonClassName={assignees?.length > 0 ? "hover:bg-transparent px-0" : ""}
+              showTooltip={assignees?.length === 0}
+              placeholder="Assignees"
+              optionsClassName="z-10"
+              tooltipContent=""
+            />
+          </div>
         </div>
       }
       parentRef={resolvedParentRef}

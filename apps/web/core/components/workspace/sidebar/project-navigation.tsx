@@ -12,6 +12,7 @@ import { EUserPermissionsLevel, EUserPermissions } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { CycleIcon, IntakeIcon, ModuleIcon, PageIcon, ViewsIcon, WorkItemsIcon } from "@plane/propel/icons";
 import type { EUserProjectRoles } from "@plane/types";
+import { cn } from "@plane/utils";
 // plane ui
 // components
 import { SidebarNavItem } from "@/components/sidebar/sidebar-navigation";
@@ -37,11 +38,12 @@ export type TNavigationItem = {
 type TProjectItemsProps = {
   workspaceSlug: string;
   projectId: string;
+  isRootLevel?: boolean;
   additionalNavigationItems?: (workspaceSlug: string, projectId: string) => TNavigationItem[];
 };
 
 export const ProjectNavigation = observer(function ProjectNavigation(props: TProjectItemsProps) {
-  const { workspaceSlug, projectId, additionalNavigationItems } = props;
+  const { workspaceSlug, projectId, additionalNavigationItems, isRootLevel = false } = props;
   const { workItem: workItemIdentifierFromRoute } = useParams();
   // store hooks
   const { t } = useTranslation();
@@ -194,9 +196,15 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
                     <item.icon
                       className={`flex-shrink-0 size-4 ${item.name === "Intake" ? "stroke-1" : "stroke-[1.5]"}`}
                     />
-                    <span className="text-11 font-medium">{t(item.i18n_key)}</span>
+                    <span className={cn("font-medium", isRootLevel ? "text-13 leading-5" : "text-11")}>
+                      {t(item.i18n_key)}
+                    </span>
                   </div>
-                  {shouldShowCount && <span className="text-11 font-medium text-tertiary">{project.intake_count}</span>}
+                  {shouldShowCount && (
+                    <span className={cn("font-medium text-tertiary", isRootLevel ? "text-12" : "text-11")}>
+                      {project.intake_count}
+                    </span>
+                  )}
                 </div>
               </SidebarNavItem>
             </Link>

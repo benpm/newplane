@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.1 — 9/8/2026 — Reliable Pages / GitHub Wiki sync
+
+- Propagate Page and Wiki deletions in both directions, including soft-deleted Page links.
+- Add an admin-only Force Sync button in project settings to overwrite Wiki content from public, unarchived Pages and remove unmatched wiki pages.
+- Include Wiki in Sync now and refresh sync status automatically.
+- Serialize sync runs, preserve retry state after conversion or Git push failures, and retain newer page hierarchy edits.
+
 ## 9/7/2026 — Page editor Subpages tab & Home page GitHub issue links with configurable filter
 
 - Replaced project slug prefix (`PROJECT-ITEM_NUMBER`) on the home page with clickable GitHub issue number pill (`#<num>`) linking directly to the corresponding GitHub issue.

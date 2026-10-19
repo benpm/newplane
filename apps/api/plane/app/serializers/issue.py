@@ -66,6 +66,8 @@ class IssueFlatSerializer(BaseSerializer):
             "sequence_id",
             "sort_order",
             "is_draft",
+            "checkbox_total",
+            "checkbox_completed",
         ]
 
 
@@ -837,6 +839,8 @@ class IssueSerializer(DynamicBaseSerializer):
     github_issue_number = serializers.IntegerField(read_only=True, allow_null=True)
     github_comment_count = serializers.IntegerField(read_only=True, allow_null=True)
     github_repository = serializers.CharField(read_only=True, allow_null=True)
+    checkbox_total = serializers.IntegerField(read_only=True)
+    checkbox_completed = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Issue
@@ -873,6 +877,8 @@ class IssueSerializer(DynamicBaseSerializer):
             "github_repository",
             "main_task_category_id",
             "sub_task_category_id",
+            "checkbox_total",
+            "checkbox_completed",
         ]
         read_only_fields = fields
 
@@ -940,6 +946,8 @@ class IssueListDetailSerializer(serializers.Serializer):
             "sub_task_category_id": instance.sub_task_category_id,
             "main_task_category_name": instance.main_task_category.name if instance.main_task_category else None,
             "sub_task_category_name": instance.sub_task_category.name if instance.sub_task_category else None,
+            "checkbox_total": getattr(instance, "checkbox_total", 0) or 0,
+            "checkbox_completed": getattr(instance, "checkbox_completed", 0) or 0,
         }
 
         # Handle expanded fields only when requested - using direct field access

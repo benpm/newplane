@@ -57,6 +57,8 @@ class ViewIssueListSerializer(serializers.Serializer):
             "sub_task_category_id": instance.sub_task_category_id,
             "main_task_category_name": instance.main_task_category.name if instance.main_task_category else None,
             "sub_task_category_name": instance.sub_task_category.name if instance.sub_task_category else None,
+            "checkbox_total": getattr(instance, "checkbox_total", 0) or 0,
+            "checkbox_completed": getattr(instance, "checkbox_completed", 0) or 0,
         }
         return data
 

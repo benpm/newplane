@@ -22,6 +22,7 @@ import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 import { WithDisplayPropertiesHOC } from "@/components/issues/issue-layouts/properties/with-display-properties-HOC";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { IssueWorklogProperty } from "@/plane-web/components/issues/worklog/property";
+import { UnassignedAssigneeBadge } from "@/plane-web/components/issues/unassigned-assignee-badge";
 
 type Props = {
   workspaceSlug: string;
@@ -222,6 +223,11 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
             }}
             disabled={!canEdit}
             multiple
+            button={
+              !issue?.assignee_ids || issue.assignee_ids.length === 0 ? (
+                <UnassignedAssigneeBadge issueId={issueId} />
+              ) : undefined
+            }
             buttonVariant={(issue?.assignee_ids || []).length > 0 ? "transparent-without-text" : "border-without-text"}
             buttonClassName={(issue?.assignee_ids || []).length > 0 ? "hover:bg-transparent px-0" : ""}
           />

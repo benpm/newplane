@@ -149,6 +149,8 @@ class Issue(ProjectBaseModel):
     description_html = models.TextField(blank=True, default="<p></p>")
     description_stripped = models.TextField(blank=True, null=True)
     description_binary = models.BinaryField(null=True)
+    checkbox_total = models.PositiveIntegerField(default=0)
+    checkbox_completed = models.PositiveIntegerField(default=0)
     priority = models.CharField(
         max_length=30,
         choices=PRIORITY_CHOICES,
@@ -255,6 +257,27 @@ class Issue(ProjectBaseModel):
                     # else: state unchanged — preserve existing completed_at (allows manual edits)
             except ImportError:
                 pass
+
+        # Compute checkbox counts from description_html
+        try:
+            from plane.utils.checkbox import extract_checkbox_counts
+
+            total, completed = extract_checkbox_counts(self.description_html)
+            self.checkbox_total = total
+            self.checkbox_completed = completed
+        except Exception:
+            pass
+
+        if "update_fields" in kwargs and kwargs["update_fields"] is not None:
+            update_fields = set(kwargs["update_fields"])
+            if (
+                "description_html" in update_fields
+                or "description_json" in update_fields
+                or "description_stripped" in update_fields
+            ):
+                update_fields.add("checkbox_total")
+                update_fields.add("checkbox_completed")
+                kwargs["update_fields"] = list(update_fields)
 
         if self._state.adding:
             with transaction.atomic():

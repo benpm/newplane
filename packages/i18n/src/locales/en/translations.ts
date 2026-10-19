@@ -2402,6 +2402,10 @@ export default {
       connect: "Connect",
       disconnect: "Disconnect",
       sync_now: "Sync now",
+      force_sync: "Force Sync",
+      force_sync_description:
+        "Overwrite GitHub Wiki with public, unarchived project Pages. Wiki pages without a matching Page will be deleted.",
+      force_sync_started: "Force sync queued. GitHub Wiki will be replaced with project Pages.",
       never_synced: "Not synced yet.",
       issue_status: "Issues",
       wiki_status: "Wiki",
@@ -2412,7 +2416,7 @@ export default {
       connected: "GitHub repository connected.",
       disconnected: "GitHub repository disconnected.",
       updated: "GitHub sync settings updated.",
-      sync_started: "Sync started. Issues will appear shortly.",
+      sync_started: "Sync queued. Issues and Pages will update shortly.",
       request_failed: "GitHub sync request failed. Please try again.",
     },
     auto_add_new_users: {

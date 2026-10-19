@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { isEmpty } from "lodash-es";
 import { observer } from "mobx-react";
 // plane helpers
@@ -17,6 +16,7 @@ import { SidebarQuickActions } from "@/components/workspace/sidebar/quick-action
 import { SidebarMenuItems } from "@/components/workspace/sidebar/sidebar-menu-items";
 // hooks
 import { useFavorite } from "@/hooks/store/use-favorite";
+import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
 // plane web components
 import { SidebarTeamsList } from "@/plane-web/components/workspace/sidebar/teams-sidebar-list";
@@ -25,6 +25,7 @@ export const AppSidebar = observer(function AppSidebar() {
   // store hooks
   const { allowPermissions } = useUserPermissions();
   const { groupedFavorites } = useFavorite();
+  const { joinedProjectIds, workspaceProjectIds } = useProject();
 
   // derived values
   const canPerformWorkspaceMemberActions = allowPermissions(
@@ -34,15 +35,22 @@ export const AppSidebar = observer(function AppSidebar() {
 
   const isFavoriteEmpty = isEmpty(groupedFavorites);
 
+  const projectsList =
+    joinedProjectIds && joinedProjectIds.length > 0
+      ? joinedProjectIds
+      : (workspaceProjectIds ?? []);
+  const isSingleProject = projectsList.length === 1;
+  const singleProjectId = isSingleProject ? projectsList[0] : undefined;
+
   return (
     <SidebarWrapper title="Projects" quickActions={<SidebarQuickActions />}>
-      <SidebarMenuItems />
+      <SidebarMenuItems singleProjectId={singleProjectId} />
       {/* Favorites Menu */}
       {canPerformWorkspaceMemberActions && !isFavoriteEmpty && <SidebarFavoritesMenu />}
       {/* Teams List */}
-      <SidebarTeamsList />
+      {!isSingleProject && <SidebarTeamsList />}
       {/* Projects List */}
-      <SidebarProjectsList />
+      {!isSingleProject && <SidebarProjectsList />}
     </SidebarWrapper>
   );
 });

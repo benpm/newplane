@@ -20,6 +20,7 @@ import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { ModuleDropdown } from "@/components/dropdowns/module/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import { UnassignedAssigneeBadge } from "@/plane-web/components/issues/unassigned-assignee-badge";
 // helpers
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
@@ -215,6 +216,11 @@ export const DraftIssueProperties = observer(function DraftIssueProperties(props
           value={issue?.assignee_ids}
           onChange={handleAssignee}
           multiple
+          button={
+            !issue?.assignee_ids || issue.assignee_ids.length === 0 ? (
+              <UnassignedAssigneeBadge issueId={issue?.id} />
+            ) : undefined
+          }
           buttonVariant={issue.assignee_ids?.length > 0 ? "transparent-without-text" : "border-without-text"}
           buttonClassName={issue.assignee_ids?.length > 0 ? "hover:bg-transparent px-0" : ""}
           showTooltip={issue?.assignee_ids?.length === 0}

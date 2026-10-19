@@ -34,6 +34,7 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web components
 import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
 import { WorkItemGithubBadge } from "@/plane-web/components/issues/work-item-github-badge";
+import { TaskCheckboxProgress } from "@/plane-web/components/issues/task-checkbox-progress";
 // local components
 import type { TRenderQuickActions } from "../list/list-view-types";
 import { isIssueNew } from "../utils";
@@ -367,6 +368,7 @@ const IssueRowDetails = observer(function IssueRowDetails(props: IssueRowDetails
                         {issueDetail.name}
                       </div>
                     </Tooltip>
+                    <TaskCheckboxProgress issue={issueDetail} className="flex-shrink-0" />
                     {issueDetail.archived_at && (
                       <div className="flex-shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-200">
                         <ArchiveIcon className="size-2.5" />

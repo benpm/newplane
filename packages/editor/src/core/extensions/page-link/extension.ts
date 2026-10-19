@@ -13,7 +13,7 @@ import { renderMentionsDropdown } from "@/extensions/mentions/utils";
 import type { TPageLinkHandler, TPageLinkSuggestion } from "@/types";
 
 /**
- * Autocomplete for links to other pages, triggered by typing `[[`.
+ * Autocomplete for links to other pages, triggered by typing `[`.
  *
  * Deliberately inserts a plain link mark rather than a mention node: links survive the
  * GFM round trip as `[Title](url)` (needed by wiki sync and raw markdown mode), while
@@ -36,15 +36,19 @@ export const PageLinkSuggestionExtension = (props: TPageLinkHandler) => {
       return [
         Suggestion({
           editor: this.editor,
-          char: "[[",
+          char: "[",
           allowSpaces: true,
+          allowedPrefixes: [" ", "["],
           pluginKey: new PluginKey("pageLinkSuggestion"),
           command: ({ editor, range, props: item }) => {
             const suggestion = item as TPageLinkSuggestion;
+            const from = range.from;
+            const docText = editor.state.doc.textBetween(Math.max(0, from - 1), from);
+            const actualRange = docText === "[" ? { from: from - 1, to: range.to } : range;
             editor
               .chain()
               .focus()
-              .deleteRange(range)
+              .deleteRange(actualRange)
               .insertContent([
                 {
                   type: "text",

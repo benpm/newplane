@@ -13,6 +13,7 @@ import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 // plane web imports
 import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
+import { TaskCheckboxProgress } from "@/plane-web/components/issues/task-checkbox-progress";
 // local imports
 import { WorkItemPreviewCardDate } from "./date";
 
@@ -23,7 +24,18 @@ type Props = {
     id?: string;
     name?: string;
   };
-  workItem: Pick<TIssue, "id" | "name" | "sequence_id" | "priority" | "start_date" | "target_date" | "type_id">;
+  workItem: Pick<
+    TIssue,
+    | "id"
+    | "name"
+    | "sequence_id"
+    | "priority"
+    | "start_date"
+    | "target_date"
+    | "type_id"
+    | "checkbox_total"
+    | "checkbox_completed"
+  >;
 };
 
 export const WorkItemPreviewCard = observer(function WorkItemPreviewCard(props: Props) {
@@ -53,8 +65,9 @@ export const WorkItemPreviewCard = observer(function WorkItemPreviewCard(props: 
           <p className="text-11 font-medium">{stateName}</p>
         </div>
       </div>
-      <div>
-        <h6 className="text-13">{workItem.name}</h6>
+      <div className="flex items-center gap-1.5">
+        <h6 className="text-13 flex-grow">{workItem.name}</h6>
+        <TaskCheckboxProgress issue={workItem as any} className="flex-shrink-0" />
       </div>
       <div className="flex items-center gap-1 h-5">
         <PriorityIcon priority={workItem.priority} withContainer />

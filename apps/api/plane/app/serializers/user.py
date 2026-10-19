@@ -19,6 +19,8 @@ DISCORD_USERNAME_RE = re.compile(r"^[a-z0-9._]{2,32}$")
 
 
 class UserSerializer(BaseSerializer):
+    avatar_url = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
     def validate_first_name(self, value):
         if contains_url(value):
             raise serializers.ValidationError("First name cannot contain a URL.")
@@ -46,10 +48,19 @@ class UserSerializer(BaseSerializer):
             )
         return value
 
+    def update(self, instance, validated_data):
+        if "avatar_url" in validated_data:
+            avatar_url = validated_data.pop("avatar_url")
+            instance.avatar = avatar_url or ""
+            instance.avatar_asset = None
+        if "avatar" in validated_data and validated_data["avatar"]:
+            instance.avatar_asset = None
+        return super().update(instance, validated_data)
+
     class Meta:
         model = User
         # Exclude password field from the serializer
-        fields = [field.name for field in User._meta.fields if field.name != "password"]
+        fields = [field.name for field in User._meta.fields if field.name != "password"] + ["avatar_url"]
         # Make all system fields and email read only
         read_only_fields = [
             "id",

@@ -8,7 +8,7 @@ import type { FC } from "react";
 import { useState } from "react";
 import { observer } from "mobx-react";
 import { Menu, Transition } from "@headlessui/react";
-// ui
+import { Avatar } from "@plane/ui";
 import { cn, getFileURL } from "@plane/utils";
 // helpers
 // hooks
@@ -40,17 +40,13 @@ export const SwitchAccountDropdown = observer(function SwitchAccountDropdown(pro
       <SwitchAccountModal isOpen={showSwitchAccountModal} onClose={() => setShowSwitchAccountModal(false)} />
       <Menu as="div" className="relative">
         <Menu.Button className="flex items-center gap-x-2.5 px-2 py-1.5 rounded-lg bg-layer-1 z-10">
-          <div className="size-6 rounded-full bg-success-primary flex items-center justify-center text-on-color font-semibold text-13 capitalize">
-            {user?.avatar_url ? (
-              <img
-                src={getFileURL(user?.avatar_url)}
-                alt={user?.display_name}
-                className="w-full h-full rounded-full object-cover"
-              />
-            ) : (
-              <>{fullName?.[0] ?? "R"}</>
-            )}
-          </div>
+          <Avatar
+            name={displayName ?? fullName ?? ""}
+            src={getFileURL(user?.avatar_url ?? "")}
+            size={24}
+            shape="circle"
+            showTooltip={false}
+          />
           <span className="text-13 font-medium text-secondary">{displayName}</span>
         </Menu.Button>
         <Transition

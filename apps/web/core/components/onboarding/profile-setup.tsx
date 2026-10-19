@@ -15,7 +15,7 @@ import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { IUser, TUserProfile, TOnboardingSteps } from "@plane/types";
 // ui
-import { Input, PasswordStrengthIndicator, Spinner } from "@plane/ui";
+import { Avatar, Input, PasswordStrengthIndicator, Spinner } from "@plane/ui";
 // components
 import { cn, getFileURL, getPasswordStrength, validatePersonName } from "@plane/utils";
 import { UserImageUploadModal } from "@/components/core/modals/user-image-upload-modal";
@@ -267,26 +267,20 @@ export const ProfileSetup = observer(function ProfileSetup(props: Props) {
               />
               <div className="space-y-1 flex items-center justify-center">
                 <button type="button" onClick={() => setIsImageUploadModalOpen(true)}>
-                  {!userAvatar || userAvatar === "" ? (
-                    <div className="flex flex-col items-center justify-between">
-                      <div className="relative h-14 w-14 overflow-hidden">
-                        <div className="absolute left-0 top-0 flex items-center justify-center h-full w-full rounded-full text-on-color text-24 font-medium bg-accent-primary uppercase">
-                          {watch("first_name")[0] ?? "R"}
-                        </div>
-                      </div>
-                      <div className="pt-1 text-13 font-medium text-accent-secondary hover:text-tertiary">
-                        Choose image
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="relative mr-3 h-16 w-16 overflow-hidden">
-                      <img
+                  <div className="flex flex-col items-center justify-between">
+                    <div className="relative h-14 w-14 overflow-hidden rounded-full flex items-center justify-center">
+                      <Avatar
+                        name={watch("first_name")}
                         src={getFileURL(userAvatar ?? "")}
-                        className="absolute left-0 top-0 h-full w-full rounded-full object-cover"
-                        alt={user?.display_name}
+                        size={56}
+                        shape="circle"
+                        showTooltip={false}
                       />
                     </div>
-                  )}
+                    <div className="pt-1 text-13 font-medium text-accent-secondary hover:text-tertiary">
+                      Choose image
+                    </div>
+                  </div>
                 </button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

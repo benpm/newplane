@@ -38,7 +38,8 @@ export const GithubSyncSettingsRoot = observer(function GithubSyncSettingsRoot(p
     mutate,
   } = useSWR(
     workspaceSlug && projectId ? `PROJECT_GITHUB_SYNC_${projectId}` : null,
-    workspaceSlug && projectId ? () => githubSyncService.fetch(workspaceSlug, projectId) : null
+    workspaceSlug && projectId ? () => githubSyncService.fetch(workspaceSlug, projectId) : null,
+    { refreshInterval: 5000 }
   );
 
   const run = async (operation: () => Promise<unknown>, successKey: string) => {
@@ -178,6 +179,23 @@ export const GithubSyncSettingsRoot = observer(function GithubSyncSettingsRoot(p
               disabled={!isAdmin}
               size="sm"
             />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-11 text-tertiary">{t("project_settings.github_sync.force_sync_description")}</p>
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={isBusy}
+              disabled={!isAdmin || isBusy || !githubSync.is_wiki_sync_enabled}
+              onClick={() =>
+                void run(
+                  () => githubSyncService.syncNow(workspaceSlug, projectId, true),
+                  "project_settings.github_sync.force_sync_started"
+                )
+              }
+            >
+              {t("project_settings.github_sync.force_sync")}
+            </Button>
           </div>
         </div>
       )}

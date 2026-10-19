@@ -24,6 +24,7 @@ import useIssuePeekOverviewRedirection from "@/hooks/use-issue-peek-overview-red
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web components
 import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
+import { TaskCheckboxProgress } from "@/plane-web/components/issues/task-checkbox-progress";
 // local components
 import { SubIssuesListItemProperties } from "./properties";
 import { SubIssuesListRoot } from "./root";
@@ -168,6 +169,7 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
               <Tooltip tooltipContent={issue.name} isMobile={isMobile}>
                 <span className="flex-1 w-0 truncate text-13 text-primary">{issue.name}</span>
               </Tooltip>
+              <TaskCheckboxProgress issue={issue} className="flex-shrink-0" />
             </div>
 
             <div

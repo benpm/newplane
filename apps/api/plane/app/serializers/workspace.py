@@ -247,6 +247,8 @@ class IssueRecentVisitSerializer(serializers.ModelSerializer):
             "github_issue_number",
             "github_repository",
             "github_comment_count",
+            "checkbox_total",
+            "checkbox_completed",
         ]
 
     def get_project_identifier(self, obj):

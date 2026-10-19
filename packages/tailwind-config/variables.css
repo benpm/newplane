@@ -693,6 +693,8 @@
   --color-*: initial;
   --color-white: oklch(1 0 0);
   --color-black: oklch(0.1482 0.0034 196.79);
+  --color-yellow-400: #facc15;
+  --color-yellow-500: #eab308;
   /* ---------- Border radius ---------- */
   --radius-4xl: initial;
   /* ---------- Border width ---------- */

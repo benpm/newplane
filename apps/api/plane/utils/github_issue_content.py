@@ -73,7 +73,7 @@ def github_issue_markdown(gh_issue):
     return gh_issue.get("body") or ""
 
 
-def plane_issue_markdown(issue):
+def plane_issue_markdown(issue, github_sync=None):
     """The body Plane would send: converted description, plus any sub-task line.
 
     None when the live server could not convert -- the caller must treat that as
@@ -82,7 +82,12 @@ def plane_issue_markdown(issue):
     markdown = convert_html_to_markdown(issue.description_html)
     if markdown is None:
         return None
-    return f"{sub_task_reference(issue)}{markdown}"
+    content = f"{sub_task_reference(issue)}{markdown}"
+    if github_sync is not None:
+        from plane.utils.github_link_sync import transform_plane_links_to_github
+
+        content = transform_plane_links_to_github(content, github_sync, issue.project)
+    return content
 
 
 def issue_content_hash(title, body_markdown):
@@ -109,7 +114,7 @@ def decide_content_direction(issue, link, gh_title, gh_markdown, gh_updated_at):
     if link.content_synced_at is not None and issue.updated_at <= link.content_synced_at:
         return ("pull" if github_changed else None), None
 
-    plane_markdown = plane_issue_markdown(issue)
+    plane_markdown = plane_issue_markdown(issue, github_sync=link.github_sync if link else None)
     if plane_markdown is None:
         # Cannot verify the Plane side, so pushing would be a guess. Pulling is still
         # safe when GitHub demonstrably changed.
@@ -129,7 +134,12 @@ def decide_content_direction(issue, link, gh_title, gh_markdown, gh_updated_at):
 
 def apply_content_pull(issue, link, gh_title, gh_markdown, gh_updated_at=None):
     """Write GitHub's content onto the work item. Returns whether anything was written."""
-    body = strip_sub_task_reference(gh_markdown)
+    from plane.utils.github_link_sync import transform_github_links_to_plane
+
+    gh_markdown_transformed = transform_github_links_to_plane(
+        gh_markdown, link.github_sync if link else None, issue.project
+    )
+    body = strip_sub_task_reference(gh_markdown_transformed)
     formats = convert_markdown_to_formats(body, variant="rich")
     if formats is None:
         return False  # retried next run; content_hash is left alone on purpose

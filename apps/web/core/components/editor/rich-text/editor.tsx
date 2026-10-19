@@ -7,8 +7,8 @@
 import { forwardRef } from "react";
 // plane imports
 import { RichTextEditorWithRef } from "@plane/editor";
-import type { EditorRefApi, IRichTextEditorProps, TFileHandler, TIssueLinkSuggestion } from "@plane/editor";
-import { WorkItemsIcon } from "@plane/propel/icons";
+import type { EditorRefApi, IRichTextEditorProps, TFileHandler, TIssueLinkSuggestion, TPageLinkSuggestion } from "@plane/editor";
+import { PageIcon, WorkItemsIcon } from "@plane/propel/icons";
 import type { MakeOptional, TSearchEntityRequestPayload, TSearchResponse } from "@plane/types";
 import { cn } from "@plane/utils";
 // components
@@ -125,6 +125,29 @@ export const RichTextEditor = forwardRef(function RichTextEditor(
                   project_identifier: foundIssue.project__identifier,
                 }));
                 return items.length > 0 ? [{ key: "issues", title: "Issues", items }] : [];
+              },
+            }
+          : undefined
+      }
+      pageLinkHandler={
+        editable && projectId
+          ? {
+              searchCallback: async (query) => {
+                const res = await props.searchMentionCallback({
+                  count: 10,
+                  query_type: ["page"],
+                  query,
+                  project_id: projectId,
+                });
+                const items: TPageLinkSuggestion[] = (res?.page ?? []).map((foundPage) => ({
+                  id: foundPage.id ?? "",
+                  entity_identifier: foundPage.id ?? "",
+                  entity_name: "page" as const,
+                  title: foundPage.name || "Untitled",
+                  icon: <PageIcon className="size-3.5 text-tertiary" />,
+                  redirect_uri: `/${workspaceSlug}/projects/${foundPage.projects__id ?? projectId}/pages/${foundPage.id}`,
+                }));
+                return items.length > 0 ? [{ key: "pages", title: "Pages", items }] : [];
               },
             }
           : undefined

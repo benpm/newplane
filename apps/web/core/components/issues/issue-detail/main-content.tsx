@@ -24,6 +24,7 @@ import useSize from "@/hooks/use-window-size";
 // plane web components
 import { DeDupeIssuePopoverRoot } from "@/plane-web/components/de-dupe/duplicate-popover";
 import { IssueTypeSwitcher } from "@/plane-web/components/issues/issue-details/issue-type-switcher";
+import { TaskCheckboxProgress } from "@/plane-web/components/issues/task-checkbox-progress";
 import { useDebouncedDuplicateIssues } from "@/plane-web/hooks/use-debounced-duplicate-issues";
 // services
 import { WorkItemVersionService } from "@/services/issue";
@@ -120,17 +121,20 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
           </div>
         </div>
 
-        <IssueTitleInput
-          workspaceSlug={workspaceSlug}
-          projectId={issue.project_id}
-          issueId={issue.id}
-          isSubmitting={isSubmitting}
-          setIsSubmitting={(value) => setIsSubmitting(value)}
-          issueOperations={issueOperations}
-          disabled={isArchived || !isEditable}
-          value={issue.name}
-          containerClassName="-ml-3"
-        />
+        <div className="flex items-start justify-between gap-2">
+          <IssueTitleInput
+            workspaceSlug={workspaceSlug}
+            projectId={issue.project_id}
+            issueId={issue.id}
+            isSubmitting={isSubmitting}
+            setIsSubmitting={(value) => setIsSubmitting(value)}
+            issueOperations={issueOperations}
+            disabled={isArchived || !isEditable}
+            value={issue.name}
+            containerClassName="-ml-3 flex-grow"
+          />
+          <TaskCheckboxProgress issue={issue} className="mt-1 flex-shrink-0" size={18} />
+        </div>
 
         <DescriptionInput
           issueSequenceId={issue.sequence_id}

@@ -7,6 +7,8 @@
 // ui
 import { Tooltip } from "@plane/propel/tooltip";
 // helpers
+// utils
+import { getRandomAvatarEmoji } from "@plane/utils";
 import { cn } from "../utils";
 import type { TAvatarSize } from "./helper";
 import { getBorderRadius, getSizeInfo, isAValidNumber } from "./helper";
@@ -71,6 +73,11 @@ export function Avatar(props: Props) {
   // get size details based on the size prop
   const sizeInfo = getSizeInfo(size);
 
+  const isImageSrc = Boolean(
+    src && (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("/") || src.startsWith("data:"))
+  );
+  const emoji = src && !isImageSrc ? src : (fallbackText ?? getRandomAvatarEmoji(name));
+
   return (
     <Tooltip tooltipContent={fallbackText ?? name ?? "?"} disabled={!showTooltip}>
       <div
@@ -87,22 +94,23 @@ export function Avatar(props: Props) {
         }
         tabIndex={-1}
       >
-        {src ? (
+        {isImageSrc ? (
           <img src={src} className={cn("h-full w-full", getBorderRadius(shape), className)} alt={name} />
         ) : (
           <div
             className={cn(
               sizeInfo.fontSize,
-              "grid h-full w-full place-items-center",
+              "grid h-full w-full place-items-center select-none leading-none",
               getBorderRadius(shape),
               className
             )}
             style={{
-              backgroundColor: fallbackBackgroundColor ?? "#028375",
-              color: fallbackTextColor ?? "#ffffff",
+              backgroundColor: fallbackBackgroundColor ?? "var(--color-layer-2, #27272a)",
+              color: fallbackTextColor ?? "inherit",
+              fontSize: isAValidNumber(size) ? `${Math.round(size * 0.55)}px` : undefined,
             }}
           >
-            {name?.[0]?.toUpperCase() ?? fallbackText ?? "?"}
+            {emoji}
           </div>
         )}
       </div>

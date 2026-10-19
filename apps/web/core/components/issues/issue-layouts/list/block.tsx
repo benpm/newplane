@@ -32,6 +32,7 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web components
 import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
 import { WorkItemGithubBadge } from "@/plane-web/components/issues/work-item-github-badge";
+import { TaskCheckboxProgress } from "@/plane-web/components/issues/task-checkbox-progress";
 import { IssueStats } from "@/plane-web/components/issues/issue-layouts/issue-stats";
 // types
 import { WithDisplayPropertiesHOC } from "../properties/with-display-properties-HOC";
@@ -286,6 +287,7 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
             >
               <p className="truncate cursor-pointer text-body-xs-medium text-primary">{issue.name}</p>
             </Tooltip>
+            <TaskCheckboxProgress issue={issue} className="flex-shrink-0 ml-1.5" />
             {isEpic && displayProperties && (
               <WithDisplayPropertiesHOC
                 displayProperties={displayProperties}

@@ -1077,6 +1077,8 @@ class IssuePaginatedViewSet(BaseViewSet):
             "total_logged_minutes",
             *GITHUB_ISSUE_FIELDS,
             "frequency",
+            "checkbox_total",
+            "checkbox_completed",
         ]
 
         if str(is_description_required).lower() == "true":

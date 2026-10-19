@@ -23,6 +23,7 @@ import { useProject } from "@/hooks/store/use-project";
 import { useWorkspaceDraftIssues } from "@/hooks/store/workspace-draft";
 // plane-web imports
 import { IssueTypeIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
+import { TaskCheckboxProgress } from "@/plane-web/components/issues/task-checkbox-progress";
 // local imports
 import { IdentifierText } from "../issue-detail/identifier-text";
 import { CreateUpdateIssueModal } from "../issue-modal/modal";
@@ -167,6 +168,7 @@ export const DraftIssueBlock = observer(function DraftIssueBlock(props: Props) {
               <Tooltip tooltipContent={issue.name} position="top-start" renderByDefault={false}>
                 <p className="w-full truncate cursor-pointer text-13 text-primary">{issue.name}</p>
               </Tooltip>
+              <TaskCheckboxProgress issue={issue as any} className="flex-shrink-0 ml-1.5" />
             </div>
 
             {/* quick actions */}

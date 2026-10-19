@@ -31,7 +31,7 @@ def create_github_issue_for(github_sync, issue):
     if existing is not None:
         return existing
 
-    markdown = plane_issue_markdown(issue)
+    markdown = plane_issue_markdown(issue, github_sync=github_sync)
     if markdown is None:
         return None  # live server down; the next sweep retries
 

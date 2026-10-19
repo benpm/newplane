@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from plane.app.permissions import ROLE, allow_permission
 from plane.app.serializers import ProjectGithubSyncSerializer
 from plane.bgtasks.github_issue_sync_task import sync_github_issues_to_project
+from plane.bgtasks.github_wiki_sync_task import sync_github_wiki
 from plane.db.models import ProjectGithubSync
 
 from ..base import BaseAPIView
@@ -88,7 +89,7 @@ class ProjectGithubSyncEndpoint(BaseAPIView):
 
 
 class ProjectGithubSyncNowEndpoint(BaseAPIView):
-    """Manually trigger an issue sync run."""
+    """Manually sync enabled integrations or force Pages onto the wiki."""
 
     @allow_permission(allowed_roles=[ROLE.ADMIN], level="PROJECT")
     def post(self, request, slug, project_id):
@@ -96,5 +97,13 @@ class ProjectGithubSyncNowEndpoint(BaseAPIView):
         if github_sync is None:
             return Response({"error": "No GitHub repository is connected"}, status=status.HTTP_404_NOT_FOUND)
 
-        sync_github_issues_to_project.delay(str(github_sync.id))
+        force_wiki = request.data.get("force_wiki", False)
+        if not isinstance(force_wiki, bool):
+            return Response({"error": "force_wiki must be a boolean"}, status=status.HTTP_400_BAD_REQUEST)
+        if force_wiki and not github_sync.is_wiki_sync_enabled:
+            return Response({"error": "Wiki sync is disabled"}, status=status.HTTP_400_BAD_REQUEST)
+        if github_sync.is_issue_sync_enabled and not force_wiki:
+            sync_github_issues_to_project.delay(str(github_sync.id))
+        if github_sync.is_wiki_sync_enabled:
+            sync_github_wiki.delay(str(github_sync.id), force=force_wiki)
         return Response({"message": "Sync started"}, status=status.HTTP_202_ACCEPTED)

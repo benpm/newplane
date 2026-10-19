@@ -137,6 +137,8 @@ def issue_on_results(
         "sub_task_category_id",
         "main_task_category_name",
         "sub_task_category_name",
+        "checkbox_total",
+        "checkbox_completed",
         *GITHUB_ISSUE_FIELDS,
     ]
 

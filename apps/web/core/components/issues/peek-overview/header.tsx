@@ -25,6 +25,7 @@ import { useUser } from "@/hooks/store/user";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web imports
 import { WorkItemGithubBadge } from "@/plane-web/components/issues/work-item-github-badge";
+import { TaskCheckboxProgress } from "@/plane-web/components/issues/task-checkbox-progress";
 // local imports
 import { IssueSubscription } from "../issue-detail/subscription";
 import { WorkItemDetailQuickActions } from "../issue-layouts/quick-action-dropdowns";
@@ -209,6 +210,7 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
           {currentUser && !isArchived && (
             <IssueSubscription workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} />
           )}
+          <TaskCheckboxProgress issue={issueDetails} />
           <WorkItemGithubBadge issue={issueDetails} />
           <Tooltip tooltipContent={t("common.actions.copy_link")} isMobile={isMobile}>
             <IconButton variant="secondary" size="lg" onClick={(e) => void handleCopyText(e)} icon={CopyLinkIcon} />

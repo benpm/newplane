@@ -16,10 +16,11 @@ import { useProject } from "@/hooks/store/use-project";
 type TProjectItemsRootProps = {
   workspaceSlug: string;
   projectId: string;
+  isRootLevel?: boolean;
 };
 
 export function ProjectNavigationRoot(props: TProjectItemsRootProps) {
-  const { workspaceSlug, projectId } = props;
+  const { workspaceSlug, projectId, isRootLevel = false } = props;
   const { getPartialProjectById } = useProject();
   const project = getPartialProjectById(projectId);
 
@@ -48,6 +49,7 @@ export function ProjectNavigationRoot(props: TProjectItemsRootProps) {
     <ProjectNavigation
       workspaceSlug={workspaceSlug}
       projectId={projectId}
+      isRootLevel={isRootLevel}
       additionalNavigationItems={additionalNavItems}
     />
   );

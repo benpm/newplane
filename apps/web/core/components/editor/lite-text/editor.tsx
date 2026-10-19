@@ -9,8 +9,8 @@ import React, { useState } from "react";
 import type { EIssueCommentAccessSpecifier } from "@plane/constants";
 // plane imports
 import { LiteTextEditorWithRef } from "@plane/editor";
-import type { EditorRefApi, ILiteTextEditorProps, TFileHandler, TIssueLinkSuggestion } from "@plane/editor";
-import { WorkItemsIcon } from "@plane/propel/icons";
+import type { EditorRefApi, ILiteTextEditorProps, TFileHandler, TIssueLinkSuggestion, TPageLinkSuggestion } from "@plane/editor";
+import { PageIcon, WorkItemsIcon } from "@plane/propel/icons";
 import { useTranslation } from "@plane/i18n";
 import type { MakeOptional } from "@plane/types";
 import { cn, isCommentEmpty } from "@plane/utils";
@@ -189,6 +189,30 @@ export const LiteTextEditor = React.forwardRef(function LiteTextEditor(
                         project_identifier: foundIssue.project__identifier,
                       }));
                       return items.length > 0 ? [{ key: "issues", title: "Issues", items }] : [];
+                    },
+                  }
+                : undefined
+            }
+            pageLinkHandler={
+              editable && projectId
+                ? {
+                    searchCallback: async (query) => {
+                      const res = await workspaceService.searchEntity(workspaceSlug, {
+                        count: 10,
+                        query_type: ["page"],
+                        query,
+                        project_id: projectId,
+                        issue_id,
+                      });
+                      const items: TPageLinkSuggestion[] = (res?.page ?? []).map((foundPage) => ({
+                        id: foundPage.id ?? "",
+                        entity_identifier: foundPage.id ?? "",
+                        entity_name: "page" as const,
+                        title: foundPage.name || "Untitled",
+                        icon: <PageIcon className="size-3.5 text-tertiary" />,
+                        redirect_uri: `/${workspaceSlug}/projects/${foundPage.projects__id ?? projectId}/pages/${foundPage.id}`,
+                      }));
+                      return items.length > 0 ? [{ key: "pages", title: "Pages", items }] : [];
                     },
                   }
                 : undefined

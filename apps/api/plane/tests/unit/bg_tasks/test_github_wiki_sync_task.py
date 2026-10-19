@@ -194,7 +194,9 @@ class TestGithubWikiSync:
 
         run_sync(env)
 
-        slugs = set(GithubWikiPageLink.objects.filter(github_sync=env["github_sync"]).values_list("wiki_slug", flat=True))
+        slugs = set(
+            GithubWikiPageLink.objects.filter(github_sync=env["github_sync"]).values_list("wiki_slug", flat=True)
+        )
         assert "Home" in slugs
         assert "Home-2" in slugs
 
@@ -206,22 +208,15 @@ class TestGithubWikiSync:
         assert env["github_sync"].wiki_sync_status.startswith("error")
 
     def test_sync_recovers_when_conversion_was_unavailable(self, env, monkeypatch):
-        """A push that could not convert must be retried, not read as a deletion.
-
-        The link row is written before the first push, so if the live markdown
-        service is unreachable the pairing is recorded with no file behind it.
-        Treating the missing file as a wiki-side deletion stranded the page
-        forever: the link exists, so the "unlinked pages" pass skips it on every
-        later run, and the page could never reach the wiki.
-        """
+        """Conversion failure rolls back bookkeeping and retries on the next run."""
         env["make_page"]("Stranded Page")
 
-        # First run with conversion down: the link is created, no file written.
+        # Conversion failure must not mark content as synchronized.
         monkeypatch.setattr(github_wiki_sync_task, "convert_html_to_markdown", lambda _html: None)
         run_sync(env)
 
-        link = GithubWikiPageLink.objects.get(wiki_slug="Stranded-Page")
-        assert link.wiki_content_hash is None
+        assert env["github_sync"].wiki_sync_status.startswith("error")
+        assert not GithubWikiPageLink.objects.filter(wiki_slug="Stranded-Page").exists()
         assert "Stranded-Page.md" not in read_remote(env["bare"], env["tmp"], "down")
 
         # Conversion recovers: the next run must push it rather than skip it.
@@ -235,7 +230,7 @@ class TestGithubWikiSync:
         remote = read_remote(env["bare"], env["tmp"], "recovered")
         assert "Stranded-Page.md" in remote
         assert remote["Stranded-Page.md"].strip() == "page body"
-        link.refresh_from_db()
+        link = GithubWikiPageLink.objects.get(wiki_slug="Stranded-Page")
         assert link.wiki_content_hash is not None
 
     def test_a_soft_deleted_link_does_not_block_relinking(self, env):
@@ -278,12 +273,8 @@ class TestGithubWikiSync:
                 wiki_slug="Only-Once-duplicate",
             )
 
-    def test_wiki_side_deletion_is_still_not_propagated(self, env):
-        """The recovery path must not resurrect a genuinely deleted wiki file.
-
-        Only links that never transferred anything are retried; one that has a
-        recorded content hash represents a real deletion on the wiki side.
-        """
+    def test_wiki_side_deletion_removes_page(self, env):
+        """A previously synced wiki deletion also deletes its Plane page."""
         env["make_page"]("Doomed Page")
         run_sync(env)
         link = GithubWikiPageLink.objects.get(wiki_slug="Doomed-Page")
@@ -299,3 +290,136 @@ class TestGithubWikiSync:
         run_sync(env)
 
         assert "Doomed-Page.md" not in read_remote(env["bare"], env["tmp"], "after-delete")
+
+        assert not Page.objects.filter(pk=link.page_id).exists()
+
+    def test_deleted_page_removes_wiki_file_without_reimport(self, env):
+        run_sync(env)
+        page = Page.objects.get(github_wiki_link__wiki_slug="Home")
+        page.delete()
+        run_sync(env)
+        run_sync(env)
+        assert "Home.md" not in read_remote(env["bare"], env["tmp"], "deleted-page")
+        assert not Page.objects.filter(projects=env["project"]).exists()
+
+    def test_force_sync_removes_unmatched_files_and_overwrites_content(self, env):
+        run_sync(env)
+        page = Page.objects.get(github_wiki_link__wiki_slug="Home")
+        seed_wiki(
+            env["bare"],
+            env["tmp"] / "force-edit",
+            {
+                "Home.md": "remote changes\n",
+                "Unmatched.md": "wiki only\n",
+            },
+        )
+        env["make_page"]("New Page")
+        github_wiki_sync_task.sync_github_wiki(str(env["github_sync"].id), force=True)
+        remote = read_remote(env["bare"], env["tmp"], "forced")
+        assert remote["Home.md"] == "initial home\n"
+        assert remote["New-Page.md"] == "page body\n"
+        assert "Unmatched.md" not in remote
+        page.refresh_from_db()
+        assert page.description_html == "<p>initial home</p>"
+        assert not Page.objects.filter(name="Unmatched").exists()
+
+    def test_failed_push_keeps_baseline_and_retries_plane_edit(self, env, monkeypatch):
+        from plane.utils import github_wiki
+
+        run_sync(env)
+        link = GithubWikiPageLink.objects.get(wiki_slug="Home")
+        baseline = link.wiki_content_hash
+        page = link.page
+        page.description_html = "<p>must retry</p>"
+        page.save()
+        real_git = github_wiki.run_git
+
+        def fail_push(args, cwd):
+            if args[0] == "push":
+                raise RuntimeError("push unavailable")
+            return real_git(args, cwd)
+
+        monkeypatch.setattr(github_wiki, "run_git", fail_push)
+        run_sync(env)
+        link.refresh_from_db()
+        assert link.wiki_content_hash == baseline
+        assert env["github_sync"].wiki_sync_status.startswith("error")
+        monkeypatch.setattr(github_wiki, "run_git", real_git)
+        run_sync(env)
+        assert read_remote(env["bare"], env["tmp"], "retried")["Home.md"] == "must retry\n"
+
+    def test_force_sync_preserves_plane_hierarchy(self, env):
+        parent = env["make_page"]("Parent")
+        child = env["make_page"]("Child", parent=parent)
+        run_sync(env)
+        seed_wiki(env["bare"], env["tmp"] / "sidebar-edit", {"_Sidebar.md": "- [[Child]]\n- [[Parent]]\n"})
+        github_wiki_sync_task.sync_github_wiki(str(env["github_sync"].id), force=True)
+        child.refresh_from_db()
+        assert child.parent_id == parent.id
+        assert "  - [[Child]]" in read_remote(env["bare"], env["tmp"], "tree")["_Sidebar.md"]
+
+    def test_force_sync_recreates_missing_linked_file(self, env):
+        page = env["make_page"]("Missing")
+        GithubWikiPageLink.objects.create(
+            github_sync=env["github_sync"],
+            project=env["project"],
+            page=page,
+            wiki_slug="Missing",
+            wiki_content_hash="previous-content",
+        )
+        github_wiki_sync_task.sync_github_wiki(str(env["github_sync"].id), force=True)
+        assert Page.objects.filter(pk=page.id).exists()
+        assert read_remote(env["bare"], env["tmp"], "restored")["Missing.md"] == "page body\n"
+
+    def test_never_transferred_link_retries_missing_file(self, env):
+        page = env["make_page"]("Pending")
+        GithubWikiPageLink.objects.create(
+            github_sync=env["github_sync"],
+            project=env["project"],
+            page=page,
+            wiki_slug="Pending",
+        )
+        run_sync(env)
+        assert read_remote(env["bare"], env["tmp"], "pending")["Pending.md"] == "page body\n"
+
+    @pytest.mark.parametrize("force", [False, True])
+    def test_sync_now_queues_wiki_with_requested_direction(self, env, monkeypatch, force):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from plane.app.views.project.github_sync import ProjectGithubSyncNowEndpoint
+
+        wiki = Mock()
+        issues = Mock()
+        monkeypatch.setattr("plane.app.views.project.github_sync.sync_github_wiki.delay", wiki)
+        monkeypatch.setattr("plane.app.views.project.github_sync.sync_github_issues_to_project.delay", issues)
+        response = ProjectGithubSyncNowEndpoint.post.__wrapped__(
+            ProjectGithubSyncNowEndpoint(),
+            SimpleNamespace(data={"force_wiki": force}),
+            env["project"].workspace.slug,
+            env["project"].id,
+        )
+        assert response.status_code == 202
+        wiki.assert_called_once_with(str(env["github_sync"].id), force=force)
+        assert issues.call_count == (0 if force else 1)
+
+    def test_sidebar_only_edit_pulls_hierarchy(self, env, monkeypatch):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        parent = env["make_page"]("Parent")
+        child = env["make_page"]("Child")
+        run_sync(env)
+        seed_wiki(
+            env["bare"],
+            env["tmp"] / "move-child",
+            {
+                "_Sidebar.md": "- [[Parent]]\n  - [[Child]]\n- [[Home]]\n",
+            },
+        )
+        # Git commit timestamps have one-second precision.
+        monkeypatch.setattr(
+            github_wiki_sync_task, "_wiki_file_commit_time", lambda *_: timezone.now() + timedelta(seconds=1)
+        )
+        run_sync(env)
+        child.refresh_from_db()
+        assert child.parent_id == parent.id
