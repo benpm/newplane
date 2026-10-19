@@ -88,9 +88,7 @@ export function WorkspaceJoinProjectsStep(props: Props) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-13 font-medium text-primary truncate">
-                      {truncateText(project.name, 35)}
-                    </span>
+                    <span className="text-13 font-medium text-primary truncate">{truncateText(project.name, 35)}</span>
                     <span className="text-11 font-mono text-tertiary bg-layer-2 px-1.5 py-0.5 rounded">
                       {project.identifier}
                     </span>
@@ -118,7 +116,8 @@ export function WorkspaceJoinProjectsStep(props: Props) {
           <div className="text-center py-8 flex flex-col items-center gap-2">
             <span className="text-14 font-medium text-primary">No joinable projects available</span>
             <span className="text-13 text-tertiary max-w-sm">
-              There are no public projects to join right now. Please ask an administrator to add you to a project or send you an invitation.
+              There are no public projects to join right now. Please ask an administrator to add you to a project or
+              send you an invitation.
             </span>
           </div>
         )}
@@ -129,10 +128,17 @@ export function WorkspaceJoinProjectsStep(props: Props) {
           <Button variant="link" size="sm" onClick={handleCurrentViewChange}>
             View Workspace Invitations
           </Button>
-        ) : <div />}
+        ) : (
+          <div />
+        )}
 
         {isInstanceAdmin && handleCurrentViewChange ? (
-          <Button variant="link" size="sm" onClick={handleCurrentViewChange} className="text-tertiary hover:text-primary">
+          <Button
+            variant="link"
+            size="sm"
+            onClick={handleCurrentViewChange}
+            className="text-tertiary hover:text-primary"
+          >
             Admin: Create Workspace
           </Button>
         ) : null}
