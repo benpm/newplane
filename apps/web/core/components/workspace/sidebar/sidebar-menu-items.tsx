@@ -42,10 +42,7 @@ export const SidebarMenuItems = observer(function SidebarMenuItems(props: Props)
   const { workspaceSlug } = useParams();
   const { joinedProjectIds, workspaceProjectIds } = useProject();
 
-  const projectsList =
-    joinedProjectIds && joinedProjectIds.length > 0
-      ? joinedProjectIds
-      : (workspaceProjectIds ?? []);
+  const projectsList = joinedProjectIds && joinedProjectIds.length > 0 ? joinedProjectIds : (workspaceProjectIds ?? []);
   const isSingleProject = propSingleProjectId !== undefined ? Boolean(propSingleProjectId) : projectsList.length === 1;
   const singleProjectId = propSingleProjectId ?? (isSingleProject ? projectsList[0] : undefined);
 
@@ -120,11 +117,7 @@ export const SidebarMenuItems = observer(function SidebarMenuItems(props: Props)
       <div className="flex flex-col gap-0.5">
         {homeItem && <SidebarItem item={homeItem} />}
         {isSingleProject && singleProjectId && workspaceSlug && (
-          <ProjectNavigationRoot
-            workspaceSlug={workspaceSlug.toString()}
-            projectId={singleProjectId}
-            isRootLevel
-          />
+          <ProjectNavigationRoot workspaceSlug={workspaceSlug.toString()} projectId={singleProjectId} isRootLevel />
         )}
         {otherStaticItems.map((item, _index) => (
           <SidebarItem key={`static_${_index}`} item={item} />

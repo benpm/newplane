@@ -132,14 +132,7 @@ export const TaskCheckboxProgress: React.FC<TaskCheckboxProgressProps> = observe
           className="flex-shrink-0"
         >
           {/* Background track circle */}
-          <circle
-            cx="8"
-            cy="8"
-            r={radius}
-            stroke="currentColor"
-            strokeWidth="1.8"
-            className="opacity-25"
-          />
+          <circle cx="8" cy="8" r={radius} stroke="currentColor" strokeWidth="1.8" className="opacity-25" />
           {/* Progress circle */}
           {validCompleted > 0 && (
             <circle

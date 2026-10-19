@@ -124,7 +124,12 @@ export function Avatar(props: Props) {
       <AvatarPrimitive.Root className={cn("h-full w-full", getBorderRadius(shape), className)}>
         {isImageSrc && <AvatarPrimitive.Image src={src} width="48" height="48" />}
         <AvatarPrimitive.Fallback
-          className={cn(sizeInfo.fontSize, "grid h-full w-full place-items-center select-none leading-none", getBorderRadius(shape), className)}
+          className={cn(
+            sizeInfo.fontSize,
+            "grid h-full w-full place-items-center select-none leading-none",
+            getBorderRadius(shape),
+            className
+          )}
           style={{
             backgroundColor: fallbackBackgroundColor ?? "var(--background-color-accent-primary)",
             color: fallbackTextColor ?? "var(--text-color-on-color)",

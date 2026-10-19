@@ -35,10 +35,7 @@ export const AppSidebar = observer(function AppSidebar() {
 
   const isFavoriteEmpty = isEmpty(groupedFavorites);
 
-  const projectsList =
-    joinedProjectIds && joinedProjectIds.length > 0
-      ? joinedProjectIds
-      : (workspaceProjectIds ?? []);
+  const projectsList = joinedProjectIds && joinedProjectIds.length > 0 ? joinedProjectIds : (workspaceProjectIds ?? []);
   const isSingleProject = projectsList.length === 1;
   const singleProjectId = isSingleProject ? projectsList[0] : undefined;
 

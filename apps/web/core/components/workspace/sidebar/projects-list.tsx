@@ -48,16 +48,19 @@ export const SidebarProjectsList = observer(function SidebarProjectsList() {
   const { preferences: projectPreferences } = useProjectNavigationPreferences();
   const { isExtendedProjectSidebarOpened, toggleExtendedProjectSidebar } = useAppTheme();
 
-  const { loader, getPartialProjectById, joinedProjectIds: joinedProjects, workspaceProjectIds, updateProjectView } = useProject();
+  const {
+    loader,
+    getPartialProjectById,
+    joinedProjectIds: joinedProjects,
+    workspaceProjectIds,
+    updateProjectView,
+  } = useProject();
   // router params
   const { workspaceSlug } = useParams();
   const pathname = usePathname();
 
   // Single project check — projects are moved below home at root level
-  const projectsList =
-    joinedProjects && joinedProjects.length > 0
-      ? joinedProjects
-      : (workspaceProjectIds ?? []);
+  const projectsList = joinedProjects && joinedProjects.length > 0 ? joinedProjects : (workspaceProjectIds ?? []);
   const isSingleProject = projectsList.length === 1;
 
   // auth

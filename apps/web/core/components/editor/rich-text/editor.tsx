@@ -7,7 +7,13 @@
 import { forwardRef } from "react";
 // plane imports
 import { RichTextEditorWithRef } from "@plane/editor";
-import type { EditorRefApi, IRichTextEditorProps, TFileHandler, TIssueLinkSuggestion, TPageLinkSuggestion } from "@plane/editor";
+import type {
+  EditorRefApi,
+  IRichTextEditorProps,
+  TFileHandler,
+  TIssueLinkSuggestion,
+  TPageLinkSuggestion,
+} from "@plane/editor";
 import { PageIcon, WorkItemsIcon } from "@plane/propel/icons";
 import type { MakeOptional, TSearchEntityRequestPayload, TSearchResponse } from "@plane/types";
 import { cn } from "@plane/utils";

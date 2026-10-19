@@ -9,7 +9,13 @@ import React, { useState } from "react";
 import type { EIssueCommentAccessSpecifier } from "@plane/constants";
 // plane imports
 import { LiteTextEditorWithRef } from "@plane/editor";
-import type { EditorRefApi, ILiteTextEditorProps, TFileHandler, TIssueLinkSuggestion, TPageLinkSuggestion } from "@plane/editor";
+import type {
+  EditorRefApi,
+  ILiteTextEditorProps,
+  TFileHandler,
+  TIssueLinkSuggestion,
+  TPageLinkSuggestion,
+} from "@plane/editor";
 import { PageIcon, WorkItemsIcon } from "@plane/propel/icons";
 import { useTranslation } from "@plane/i18n";
 import type { MakeOptional } from "@plane/types";

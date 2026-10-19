@@ -290,12 +290,7 @@ export const GeneralProfileSettingsForm = observer(function GeneralProfileSettin
                 }
                 onChange={handleEmojiSelect}
               />
-              <Button
-                variant="secondary"
-                size="sm"
-                type="button"
-                onClick={() => setIsImageUploadModalOpen(true)}
-              >
+              <Button variant="secondary" size="sm" type="button" onClick={() => setIsImageUploadModalOpen(true)}>
                 <Camera className="h-4 w-4 mr-1.5" />
                 Upload Photo
               </Button>
