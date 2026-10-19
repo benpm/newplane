@@ -13,7 +13,8 @@ import { Menu, Transition } from "@headlessui/react";
 import type { EditorRefApi } from "@plane/editor";
 import { CheckIcon, CloseIcon } from "@plane/propel/icons";
 import type { TIssuePublicComment } from "@plane/types";
-import { getFileURL } from "@plane/utils";
+import { Avatar } from "@plane/ui";
+import { getAvatarURL } from "@plane/utils";
 // components
 import { LiteTextEditor } from "@/components/editor/lite-text-editor";
 import { CommentReactions } from "@/components/issues/peek-overview/comment/comment-reactions";
@@ -68,25 +69,14 @@ export const CommentCard = observer(function CommentCard(props: Props) {
   return (
     <div className="relative flex items-start space-x-3">
       <div className="relative px-1">
-        {comment.actor_detail.avatar_url && comment.actor_detail.avatar_url !== "" ? (
-          <img
-            src={getFileURL(comment.actor_detail.avatar_url)}
-            alt={
-              comment.actor_detail.is_bot ? comment.actor_detail.first_name + " Bot" : comment.actor_detail.display_name
-            }
-            height={30}
-            width={30}
-            className="grid size-7 place-items-center rounded-full border-2 border-strong-1"
-          />
-        ) : (
-          <div
-            className={`grid size-7 place-items-center rounded-full border-2 border-strong-1 bg-gray-500 text-on-color`}
-          >
-            {comment.actor_detail.is_bot
-              ? comment?.actor_detail?.first_name?.charAt(0)
-              : comment?.actor_detail?.display_name?.charAt(0)}
-          </div>
-        )}
+        <Avatar
+          name={
+            comment.actor_detail.is_bot ? comment.actor_detail.first_name + " Bot" : comment.actor_detail.display_name
+          }
+          src={getAvatarURL(comment.actor_detail.avatar_url)}
+          size={28}
+          showTooltip={false}
+        />
 
         <span className="absolute -bottom-0.5 -right-1 rounded-tl-sm bg-layer-1 px-0.5 py-px">
           <MessageSquare className="size-3 text-secondary" aria-hidden="true" strokeWidth={2} />

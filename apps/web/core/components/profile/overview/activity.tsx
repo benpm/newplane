@@ -10,8 +10,8 @@ import useSWR from "swr";
 // ui
 import { useTranslation } from "@plane/i18n";
 import { EmptyStateCompact } from "@plane/propel/empty-state";
-import { Loader, Card } from "@plane/ui";
-import { calculateTimeAgo, getFileURL } from "@plane/utils";
+import { Avatar, Loader, Card } from "@plane/ui";
+import { calculateTimeAgo, getAvatarURL } from "@plane/utils";
 // components
 import { ActivityMessage, IssueLink } from "@/components/core/activity";
 // constants
@@ -50,17 +50,13 @@ export const ProfileActivity = observer(function ProfileActivity() {
               {userProfileActivity.results.map((activity) => (
                 <div key={activity.id} className="flex gap-3">
                   <div className="flex-shrink-0 grid place-items-center overflow-hidden rounded-sm h-6 w-6">
-                    {activity.actor_detail?.avatar_url && activity.actor_detail?.avatar_url !== "" ? (
-                      <img
-                        src={getFileURL(activity.actor_detail?.avatar_url)}
-                        alt={activity.actor_detail?.display_name}
-                        className="rounded-sm"
-                      />
-                    ) : (
-                      <div className="grid h-6 w-6 place-items-center rounded-sm border-2 border-strong text-11 text-on-color">
-                        {activity.actor_detail?.display_name?.charAt(0)}
-                      </div>
-                    )}
+                    <Avatar
+                      name={activity.actor_detail?.display_name}
+                      src={getAvatarURL(activity.actor_detail?.avatar_url)}
+                      size={24}
+                      shape="square"
+                      showTooltip={false}
+                    />
                   </div>
                   <div className="-mt-1 w-4/5 break-words">
                     <p className="inline text-13 text-secondary">

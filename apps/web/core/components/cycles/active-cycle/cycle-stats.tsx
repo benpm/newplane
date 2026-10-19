@@ -21,7 +21,7 @@ import type { ICycle } from "@plane/types";
 import { EIssuesStoreType } from "@plane/types";
 // ui
 import { Loader, Avatar } from "@plane/ui";
-import { cn, renderFormattedDate, renderFormattedDateWithoutYear, getFileURL } from "@plane/utils";
+import { cn, renderFormattedDate, renderFormattedDateWithoutYear, getAvatarURL } from "@plane/utils";
 // assets
 import darkAssigneeAsset from "@/app/assets/empty-state/active-cycle/assignee-dark.webp?url";
 import lightAssigneeAsset from "@/app/assets/empty-state/active-cycle/assignee-light.webp?url";
@@ -279,7 +279,7 @@ export const ActiveCycleStats = observer(function ActiveCycleStats(props: Active
                           <div className="flex items-center gap-2">
                             <Avatar
                               name={assignee?.display_name ?? undefined}
-                              src={getFileURL(assignee?.avatar_url ?? "")}
+                              src={getAvatarURL(assignee?.avatar_url ?? "")}
                             />
 
                             <span>{assignee.display_name}</span>

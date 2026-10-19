@@ -13,7 +13,7 @@ import type { TInboxIssueFilterMemberKeys } from "@plane/types";
 // plane ui
 import { Avatar, Tag } from "@plane/ui";
 // helpers
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 import { useProjectInbox } from "@/hooks/store/use-project-inbox";
@@ -51,7 +51,7 @@ export const InboxIssueAppliedFiltersMember = observer(function InboxIssueApplie
             <div className="flex-shrink-0 relative flex justify-center items-center overflow-hidden">
               <Avatar
                 name={optionDetail.display_name}
-                src={getFileURL(optionDetail.avatar_url)}
+                src={getAvatarURL(optionDetail.avatar_url)}
                 showTooltip={false}
                 size="sm"
               />

@@ -17,7 +17,7 @@ import type { IUser, TUserProfile, TOnboardingSteps } from "@plane/types";
 // ui
 import { Avatar, Input, PasswordStrengthIndicator, Spinner } from "@plane/ui";
 // components
-import { cn, getFileURL, getPasswordStrength, validatePersonName } from "@plane/utils";
+import { cn, getPasswordStrength, validatePersonName, getAvatarURL } from "@plane/utils";
 import { UserImageUploadModal } from "@/components/core/modals/user-image-upload-modal";
 // hooks
 import { useUser, useUserProfile } from "@/hooks/store/user";
@@ -271,7 +271,7 @@ export const ProfileSetup = observer(function ProfileSetup(props: Props) {
                     <div className="relative h-14 w-14 overflow-hidden rounded-full flex items-center justify-center">
                       <Avatar
                         name={watch("first_name")}
-                        src={getFileURL(userAvatar ?? "")}
+                        src={getAvatarURL(userAvatar ?? "")}
                         size={56}
                         shape="circle"
                         showTooltip={false}

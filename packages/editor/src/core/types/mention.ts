@@ -30,7 +30,7 @@ export type TMentionHandler = {
   searchCallback?: (query: string) => Promise<TMentionSection[]>;
 };
 
-// Page-link autocomplete ([[ trigger). Items must be TPageLinkSuggestion — i.e. carry a
+// Page-link autocomplete (`[` / `[[` trigger). Items must be TPageLinkSuggestion — i.e. carry a
 // redirect_uri — since the picked entry is inserted as a plain link mark.
 export type TPageLinkSuggestion = TMentionSuggestion & {
   /** app-relative URL of the target page */

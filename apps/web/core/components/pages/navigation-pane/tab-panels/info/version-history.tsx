@@ -13,7 +13,7 @@ import useSWR from "swr";
 import { useTranslation } from "@plane/i18n";
 import type { TPageVersion } from "@plane/types";
 import { Avatar } from "@plane/ui";
-import { cn, getFileURL, renderFormattedDate, renderFormattedTime } from "@plane/utils";
+import { cn, renderFormattedDate, renderFormattedTime, getAvatarURL } from "@plane/utils";
 // components
 import type { TPageRootHandlers } from "@/components/pages/editor/page-root";
 // hooks
@@ -63,7 +63,7 @@ const VersionHistoryItem = observer(function VersionHistoryItem(props: VersionHi
         <p className="mt-1 flex items-center gap-1">
           <Avatar
             size="sm"
-            src={getFileURL(versionCreator?.avatar_url ?? "")}
+            src={getAvatarURL(versionCreator?.avatar_url ?? "")}
             name={versionCreator?.display_name}
             className="shrink-0"
           />

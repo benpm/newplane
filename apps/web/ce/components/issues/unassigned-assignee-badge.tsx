@@ -4,27 +4,26 @@
  * See the LICENSE file for details.
  */
 
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
+import { useTranslation } from "@plane/i18n";
+import { cn } from "@plane/utils";
+
+type TClaimLabelKey = "get" | "yoink" | "take";
 
 /**
- * Returns a stable pseudo-random action text ("Get", "Yoink", or "Take")
- * for an unassigned task based on its id, with "Get" having 75% probability.
+ * Picks the claim label for an unassigned work item: "get" 75%, "yoink" 12.5%, "take" 12.5%.
+ * Hashing the id keeps the label stable for the card, even when virtualised layouts remount it.
  */
-export const getUnassignedActionText = (id?: string | null): "Get" | "Yoink" | "Take" => {
-  if (!id) {
-    const r = Math.random();
-    if (r < 0.75) return "Get";
-    if (r < 0.875) return "Yoink";
-    return "Take";
+const getClaimLabelKey = (id?: string | null): TClaimLabelKey => {
+  let roll = Math.random();
+  if (id) {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+    roll = (hash % 1000) / 1000;
   }
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
-  }
-  const norm = (hash % 1000) / 1000;
-  if (norm < 0.75) return "Get";
-  if (norm < 0.875) return "Yoink";
-  return "Take";
+  if (roll < 0.75) return "get";
+  if (roll < 0.875) return "yoink";
+  return "take";
 };
 
 type Props = {
@@ -32,25 +31,26 @@ type Props = {
   className?: string;
 };
 
-export const UnassignedAssigneeBadge: React.FC<Props> = ({ issueId, className = "" }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const text = useMemo(() => getUnassignedActionText(issueId), [issueId]);
+/**
+ * Bold yellow button content shown in place of the assignee avatars when a work item has no assignees.
+ * Rendered as the `button` of a MemberDropdown, so clicking it still opens the assignment dropdown.
+ */
+export function UnassignedAssigneeBadge(props: Props) {
+  const { issueId, className } = props;
+  const { t } = useTranslation();
+  // computed once per mount so the label never flickers between renders
+  const [labelKey] = useState(() => getClaimLabelKey(issueId));
 
   return (
     <span
-      className={`unassigned-claim-btn inline-flex items-center justify-center h-5 px-2 py-0.5 rounded font-bold shadow-xs transition-colors cursor-pointer select-none ${className}`}
-      style={{
-        backgroundColor: isHovered ? "#eab308" : "#ffd600",
-        color: "#000000",
-        fontWeight: 700,
-        fontSize: "0.6875rem",
-        lineHeight: "1rem",
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      title="Assignees"
+      className={cn(
+        "inline-flex h-5 items-center justify-center rounded-sm px-2 text-11 leading-4 font-bold shadow-raised-100 select-none transition-colors",
+        "bg-label-yellow-bg-strong text-black hover:bg-label-yellow-focus",
+        className
+      )}
+      title={t("unassigned_claim.tooltip")}
     >
-      {text}
+      {t(`unassigned_claim.${labelKey}`)}
     </span>
   );
-};
+}

@@ -13,7 +13,7 @@ import type { TInboxIssueFilterMemberKeys } from "@plane/types";
 // plane ui
 import { Avatar, Loader } from "@plane/ui";
 // components
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 import { FilterHeader, FilterOption } from "@/components/issues/issue-layouts/filters";
 // helpers
 // hooks
@@ -88,7 +88,7 @@ export const FilterMember = observer(function FilterMember(props: Props) {
                       icon={
                         <Avatar
                           name={member.display_name}
-                          src={getFileURL(member.avatar_url)}
+                          src={getAvatarURL(member.avatar_url)}
                           showTooltip={false}
                           size="md"
                         />

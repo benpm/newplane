@@ -9,7 +9,7 @@ import { observer } from "mobx-react";
 import { Avatar } from "@plane/ui";
 // hooks
 import { useUser } from "@/hooks/store/user";
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 
 export const ProfileSettingsSidebarHeader = observer(function ProfileSettingsSidebarHeader() {
   // store hooks
@@ -19,7 +19,7 @@ export const ProfileSettingsSidebarHeader = observer(function ProfileSettingsSid
     <div className="shrink-0 flex items-center gap-2">
       <div className="shrink-0">
         <Avatar
-          src={getFileURL(currentUser?.avatar_url ?? "")}
+          src={getAvatarURL(currentUser?.avatar_url ?? "")}
           name={currentUser?.display_name}
           size={32}
           shape="circle"

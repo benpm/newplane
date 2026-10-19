@@ -10,7 +10,8 @@ import Link from "next/link";
 import useSWR from "swr";
 // icons
 import { History, MessageSquare } from "lucide-react";
-import { calculateTimeAgo, getFileURL } from "@plane/utils";
+import { Avatar } from "@plane/ui";
+import { calculateTimeAgo, getAvatarURL } from "@plane/utils";
 // hooks
 import { ActivityIcon, ActivityMessage } from "@/components/core/activity";
 import { RichTextEditor } from "@/components/editor/rich-text";
@@ -70,18 +71,13 @@ export const ActivityProfileSettingsList = observer(function ProfileActivityList
                     <div className="relative px-1">
                       {activityItem.field ? (
                         activityItem.new_value === "restore" && <History className="h-3.5 w-3.5 text-secondary" />
-                      ) : activityItem.actor_detail.avatar_url && activityItem.actor_detail.avatar_url !== "" ? (
-                        <img
-                          src={getFileURL(activityItem.actor_detail.avatar_url)}
-                          alt={activityItem.actor_detail.display_name}
-                          height={30}
-                          width={30}
-                          className="grid h-7 w-7 place-items-center rounded-full border-2 border-subtle-1 bg-layer-3"
-                        />
                       ) : (
-                        <div className="grid h-7 w-7 place-items-center rounded-full border-2 border-subtle-1 bg-layer-3 capitalize">
-                          {activityItem.actor_detail.display_name?.[0]}
-                        </div>
+                        <Avatar
+                          name={activityItem.actor_detail.display_name}
+                          src={getAvatarURL(activityItem.actor_detail.avatar_url)}
+                          size={28}
+                          showTooltip={false}
+                        />
                       )}
 
                       <span className="flex h-6 w-6 p-2 items-center justify-center rounded-full bg-layer-3 text-secondary">
@@ -135,19 +131,13 @@ export const ActivityProfileSettingsList = observer(function ProfileActivityList
                                   ) : (
                                     <ActivityIcon activity={activityItem} />
                                   )
-                                ) : activityItem.actor_detail.avatar_url &&
-                                  activityItem.actor_detail.avatar_url !== "" ? (
-                                  <img
-                                    src={getFileURL(activityItem.actor_detail.avatar_url)}
-                                    alt={activityItem.actor_detail.display_name}
-                                    height={24}
-                                    width={24}
-                                    className="h-full w-full rounded-full object-cover"
-                                  />
                                 ) : (
-                                  <div className="grid h-6 w-6 place-items-center rounded-full border-2 border-subtle-1 bg-layer-3 text-11 capitalize">
-                                    {activityItem.actor_detail.display_name?.[0]}
-                                  </div>
+                                  <Avatar
+                                    name={activityItem.actor_detail.display_name}
+                                    src={getAvatarURL(activityItem.actor_detail.avatar_url)}
+                                    size={24}
+                                    showTooltip={false}
+                                  />
                                 )}
                               </div>
                             </div>

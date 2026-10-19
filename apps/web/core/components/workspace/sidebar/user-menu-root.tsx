@@ -13,7 +13,7 @@ import { GOD_MODE_URL } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Avatar, CustomMenu } from "@plane/ui";
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 // components
 import { CoverImage } from "@/components/common/cover-image";
 import { AppSidebarItem } from "@/components/sidebar/sidebar-item";
@@ -63,7 +63,7 @@ export const UserMenuRoot = observer(function UserMenuRoot() {
             icon: (
               <Avatar
                 name={currentUser?.display_name}
-                src={getFileURL(currentUser?.avatar_url ?? "")}
+                src={getAvatarURL(currentUser?.avatar_url ?? "")}
                 size={20}
                 shape="circle"
               />
@@ -92,7 +92,7 @@ export const UserMenuRoot = observer(function UserMenuRoot() {
             <div>
               <Avatar
                 name={currentUser?.display_name}
-                src={getFileURL(currentUser?.avatar_url ?? "")}
+                src={getAvatarURL(currentUser?.avatar_url ?? "")}
                 size={40}
                 shape="circle"
                 className="text-18 font-medium"

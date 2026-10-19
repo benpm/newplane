@@ -41,7 +41,7 @@ export const SpreadsheetAssigneeColumn = observer(function SpreadsheetAssigneeCo
         multiple
         placeholder="Assignees"
         button={
-          !issue?.assignee_ids || issue.assignee_ids.length === 0 ? (
+          !disabled && !issue?.assignee_ids?.length ? (
             <div className="flex items-center h-full px-page-x">
               <UnassignedAssigneeBadge issueId={issue?.id} />
             </div>

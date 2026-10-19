@@ -8,7 +8,7 @@ import { useTranslation } from "@plane/i18n";
 
 import type { AnalyticsTableDataMap, UserInsightColumns } from "@plane/types";
 import { Avatar } from "@plane/ui";
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 
 // hooks
 import { useAnalytics } from "@/hooks/store/use-analytics";
@@ -72,7 +72,7 @@ const UsersInsightTable = observer(function UsersInsightTable() {
               {row.original.avatar_url && row.original.avatar_url !== "" ? (
                 <Avatar
                   name={row.original.display_name}
-                  src={getFileURL(row.original.avatar_url)}
+                  src={getAvatarURL(row.original.avatar_url)}
                   size={24}
                   shape="circle"
                 />

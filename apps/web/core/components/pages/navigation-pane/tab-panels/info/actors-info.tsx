@@ -10,7 +10,7 @@ import { useParams } from "next/navigation";
 // plane imports
 import { useTranslation } from "@plane/i18n";
 import { Avatar } from "@plane/ui";
-import { calculateTimeAgoShort, getFileURL, renderFormattedDate } from "@plane/utils";
+import { calculateTimeAgoShort, renderFormattedDate, getAvatarURL } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 // store
@@ -40,7 +40,7 @@ export const PageNavigationPaneInfoTabActorsInfo = observer(function PageNavigat
         <div className="mt-2 flex items-center justify-between gap-2 text-13 font-medium">
           <Link href={`/${workspaceSlug?.toString()}/profile/${page.updated_by}`} className="flex items-center gap-1">
             <Avatar
-              src={getFileURL(editorInformation?.avatar_url ?? "")}
+              src={getAvatarURL(editorInformation?.avatar_url ?? "")}
               name={editorInformation?.display_name}
               className="flex-shrink-0"
               size="sm"
@@ -57,7 +57,7 @@ export const PageNavigationPaneInfoTabActorsInfo = observer(function PageNavigat
         <div className="mt-2 flex items-center justify-between gap-2 text-13 font-medium">
           <Link href={`/${workspaceSlug?.toString()}/profile/${page.created_by}`} className="flex items-center gap-1">
             <Avatar
-              src={getFileURL(creatorInformation?.avatar_url ?? "")}
+              src={getAvatarURL(creatorInformation?.avatar_url ?? "")}
               name={creatorInformation?.display_name}
               className="flex-shrink-0"
               size="sm"

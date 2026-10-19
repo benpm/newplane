@@ -19,7 +19,7 @@ import { setPromiseToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { ICycle, TCycleGroups } from "@plane/types";
 import { Avatar, AvatarGroup, FavoriteStar } from "@plane/ui";
-import { getDate, getFileURL, generateQueryParams } from "@plane/utils";
+import { getDate, generateQueryParams, getAvatarURL } from "@plane/utils";
 // components
 import { DateRangeDropdown } from "@/components/dropdowns/date-range";
 import { ButtonAvatars } from "@/components/dropdowns/member/avatar";
@@ -279,7 +279,7 @@ export const CycleListItemAction = observer(function CycleListItemAction(props: 
                 {cycleDetails.assignee_ids?.map((assignee_id) => {
                   const member = getUserDetails(assignee_id);
                   return (
-                    <Avatar key={member?.id} name={member?.display_name} src={getFileURL(member?.avatar_url ?? "")} />
+                    <Avatar key={member?.id} name={member?.display_name} src={getAvatarURL(member?.avatar_url ?? "")} />
                   );
                 })}
               </AvatarGroup>

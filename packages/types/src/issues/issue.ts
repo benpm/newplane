@@ -120,6 +120,9 @@ export type TIssue = TBaseIssue & {
   sub_task_category_name?: string | null;
 };
 
+/** Anything carrying task checkbox counts; `description_html` is the fallback source when counts are absent. */
+export type TIssueCheckboxSource = Partial<Pick<TIssue, "checkbox_total" | "checkbox_completed" | "description_html">>;
+
 export type TIssueMap = {
   [issue_id: string]: TIssue;
 };

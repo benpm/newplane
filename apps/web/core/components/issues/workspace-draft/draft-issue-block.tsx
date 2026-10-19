@@ -168,7 +168,7 @@ export const DraftIssueBlock = observer(function DraftIssueBlock(props: Props) {
               <Tooltip tooltipContent={issue.name} position="top-start" renderByDefault={false}>
                 <p className="w-full truncate cursor-pointer text-13 text-primary">{issue.name}</p>
               </Tooltip>
-              <TaskCheckboxProgress issue={issue as any} className="flex-shrink-0 ml-1.5" />
+              <TaskCheckboxProgress issue={issue} className="flex-shrink-0 ml-1.5" />
             </div>
 
             {/* quick actions */}

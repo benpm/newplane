@@ -10,7 +10,7 @@ import { observer } from "mobx-react";
 // plane ui
 import { Avatar, Loader } from "@plane/ui";
 // components
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 import { FilterHeader, FilterOption } from "@/components/issues/issue-layouts/filters";
 // helpers
 // hooks
@@ -76,7 +76,7 @@ export const FilterCreatedBy = observer(function FilterCreatedBy(props: Props) {
                       key={`created-by-${member.id}`}
                       isChecked={appliedFilters?.includes(member.id) ? true : false}
                       onClick={() => handleUpdate(member.id)}
-                      icon={<Avatar name={member.display_name} src={getFileURL(member.avatar_url)} size="md" />}
+                      icon={<Avatar name={member.display_name} src={getAvatarURL(member.avatar_url)} size="md" />}
                       title={currentUser?.id === member.id ? "You" : member?.display_name}
                     />
                   );

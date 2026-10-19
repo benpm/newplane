@@ -580,6 +580,18 @@ export default {
     open: "Open {repository}#{number} on GitHub",
     comments: "{count, plural, one{# comment} other{# comments}} on GitHub, not shown in Plane",
   },
+  task_checkbox_progress: {
+    label: "Task checklist progress",
+    remaining: "{count, plural, one {# task left} other {# tasks left}}",
+    all_done: "All tasks done",
+    value: "{completed} of {total} tasks done",
+  },
+  unassigned_claim: {
+    get: "Get",
+    yoink: "Yoink",
+    take: "Take",
+    tooltip: "Unassigned. Click to choose assignees",
+  },
   attachments: "Attachments",
   declining: "Declining",
   declined: "Declined",
@@ -2279,6 +2291,13 @@ export default {
     label: "Profile",
     page_label: "My Work",
     work: "Work",
+    avatar: {
+      choose_emoji: "Choose emoji",
+      upload_photo: "Upload photo",
+      remove: "Remove avatar",
+      emoji_updated: "Profile emoji updated.",
+      emoji_update_failed: "Failed to update profile emoji. Please try again.",
+    },
     discord_username: {
       label: "Discord username",
       placeholder: "Enter your Discord username",

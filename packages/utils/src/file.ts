@@ -14,9 +14,6 @@ import { API_BASE_URL } from "@plane/constants";
  */
 export const getFileURL = (path: string): string | undefined => {
   if (!path) return undefined;
-  if (!path.startsWith("http") && !path.startsWith("/") && !path.startsWith("data:")) {
-    return path;
-  }
   const isValidURL = path.startsWith("http");
   if (isValidURL) return path;
   return `${API_BASE_URL}${path}`;

@@ -12,7 +12,7 @@ import { EUserProjectRoles } from "@plane/types";
 // plane ui
 import { Avatar, CustomSearchSelect } from "@plane/ui";
 // helpers
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 
@@ -44,7 +44,7 @@ export const MemberSelect = observer(function MemberSelect(props: Props) {
         query: `${memberDetails?.member.display_name}`,
         content: (
           <div className="flex items-center gap-2">
-            <Avatar name={memberDetails?.member.display_name} src={getFileURL(memberDetails?.member.avatar_url)} />
+            <Avatar name={memberDetails?.member.display_name} src={getAvatarURL(memberDetails?.member.avatar_url)} />
             {memberDetails?.member.display_name}
           </div>
         ),
@@ -65,7 +65,7 @@ export const MemberSelect = observer(function MemberSelect(props: Props) {
       label={
         <div className="flex items-center gap-2 h-3.5">
           {selectedOption && (
-            <Avatar name={selectedOption.member?.display_name} src={getFileURL(selectedOption.member?.avatar_url)} />
+            <Avatar name={selectedOption.member?.display_name} src={getAvatarURL(selectedOption.member?.avatar_url)} />
           )}
           {selectedOption ? (
             selectedOption.member?.display_name

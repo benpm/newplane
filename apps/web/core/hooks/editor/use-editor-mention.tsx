@@ -12,7 +12,7 @@ import type { TSearchEntities, TSearchEntityRequestPayload, TSearchResponse, TUs
 // plane ui
 import { Avatar } from "@plane/ui";
 // helpers
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 // plane web hooks
 import { useAdditionalEditorMention } from "@/plane-web/hooks/use-additional-editor-mention";
 
@@ -48,7 +48,7 @@ export const useEditorMention = (args: TArgs) => {
               icon: (
                 <Avatar
                   className="flex-shrink-0"
-                  src={getFileURL(user.member__avatar_url)}
+                  src={getAvatarURL(user.member__avatar_url)}
                   name={user.member__display_name}
                 />
               ),

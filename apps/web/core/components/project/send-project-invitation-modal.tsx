@@ -15,7 +15,7 @@ import { PlusIcon, CloseIcon, ChevronDownIcon } from "@plane/propel/icons";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Avatar, CustomSelect, CustomSearchSelect, EModalPosition, EModalWidth, ModalCore } from "@plane/ui";
 // helpers
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 import { useUserPermissions } from "@/hooks/store/user";
@@ -140,7 +140,7 @@ export const SendProjectInvitationModal = observer(function SendProjectInvitatio
         content: (
           <div className="flex w-full items-center gap-2">
             <div className="shrink-0 pt-0.5">
-              <Avatar name={memberDetails?.member.display_name} src={getFileURL(memberDetails?.member.avatar_url)} />
+              <Avatar name={memberDetails?.member.display_name} src={getAvatarURL(memberDetails?.member.avatar_url)} />
             </div>
             <div className="truncate">
               {memberDetails?.member.display_name} (
@@ -201,7 +201,7 @@ export const SendProjectInvitationModal = observer(function SendProjectInvitatio
                                 <div className="flex items-center gap-2">
                                   <Avatar
                                     name={selectedMember?.member.display_name}
-                                    src={getFileURL(selectedMember?.member.avatar_url ?? "")}
+                                    src={getAvatarURL(selectedMember?.member.avatar_url ?? "")}
                                   />
                                   {selectedMember?.member.display_name}
                                 </div>

@@ -5,7 +5,7 @@
  */
 
 import { Avatar } from "@plane/ui";
-import { calculateTimeAgo, getFileURL } from "@plane/utils";
+import { calculateTimeAgo, getAvatarURL } from "@plane/utils";
 import { useTranslation } from "@plane/i18n";
 import type { IModuleActivity } from "@plane/types";
 
@@ -37,7 +37,7 @@ export const ModuleActivityItem = ({ activity }: Props) => {
   const displayName = actor
     ? actor.display_name || `${actor.first_name} ${actor.last_name}`.trim()
     : t("module.activity.unknown_actor");
-  const avatarUrl = actor?.avatar_url ? getFileURL(actor.avatar_url) : undefined;
+  const avatarUrl = actor?.avatar_url ? getAvatarURL(actor.avatar_url) : undefined;
 
   return (
     <div className="flex items-start gap-2 py-1.5">

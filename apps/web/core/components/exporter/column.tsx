@@ -6,7 +6,8 @@
 
 import { Download } from "lucide-react";
 import type { IExportData } from "@plane/types";
-import { getDate, getFileURL, renderFormattedDate } from "@plane/utils";
+import { Avatar } from "@plane/ui";
+import { getDate, renderFormattedDate, getAvatarURL } from "@plane/utils";
 
 type RowData = IExportData;
 const checkExpiry = (inputDateString: string) => {
@@ -26,19 +27,7 @@ export const useExportColumns = () => {
         return (
           <div className="flex items-center gap-x-2">
             <div>
-              {avatar_url && avatar_url.trim() !== "" ? (
-                <span className="relative flex h-4 w-4 items-center justify-center rounded-full capitalize text-on-color">
-                  <img
-                    src={getFileURL(avatar_url)}
-                    className="absolute left-0 top-0 h-full w-full rounded-full object-cover"
-                    alt={display_name || email}
-                  />
-                </span>
-              ) : (
-                <span className="relative flex h-4 w-4 items-center justify-center rounded-full bg-gray-700 capitalize text-on-color text-11">
-                  {(email ?? display_name ?? "?")[0]}
-                </span>
-              )}
+              <Avatar name={display_name || email} src={getAvatarURL(avatar_url)} size={16} showTooltip={false} />
             </div>
             <div>{display_name}</div>
           </div>

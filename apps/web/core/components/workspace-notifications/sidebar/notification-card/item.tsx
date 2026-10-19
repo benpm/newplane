@@ -9,7 +9,7 @@ import { observer } from "mobx-react";
 import { Clock } from "lucide-react";
 // plane imports
 import { Avatar, Row } from "@plane/ui";
-import { cn, calculateTimeAgo, renderFormattedDate, renderFormattedTime, getFileURL } from "@plane/utils";
+import { cn, calculateTimeAgo, renderFormattedDate, renderFormattedTime, getAvatarURL } from "@plane/utils";
 // hooks
 import { useWorkspaceNotifications } from "@/hooks/store/notifications";
 import { useNotification } from "@/hooks/store/notifications/use-notification";
@@ -88,7 +88,7 @@ export const NotificationItem = observer(function NotificationItem(props: TNotif
           {notificationTriggeredBy && (
             <Avatar
               name={notificationTriggeredBy.display_name || notificationTriggeredBy?.first_name}
-              src={getFileURL(notificationTriggeredBy.avatar_url)}
+              src={getAvatarURL(notificationTriggeredBy.avatar_url)}
               size={42}
               shape="circle"
               className="text-body-sm-medium bg-layer-1"

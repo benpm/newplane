@@ -9,14 +9,8 @@ import React, { useState } from "react";
 import type { EIssueCommentAccessSpecifier } from "@plane/constants";
 // plane imports
 import { LiteTextEditorWithRef } from "@plane/editor";
-import type {
-  EditorRefApi,
-  ILiteTextEditorProps,
-  TFileHandler,
-  TIssueLinkSuggestion,
-  TPageLinkSuggestion,
-} from "@plane/editor";
-import { PageIcon, WorkItemsIcon } from "@plane/propel/icons";
+import type { EditorRefApi, ILiteTextEditorProps, TFileHandler, TIssueLinkSuggestion } from "@plane/editor";
+import { WorkItemsIcon } from "@plane/propel/icons";
 import { useTranslation } from "@plane/i18n";
 import type { MakeOptional } from "@plane/types";
 import { cn, isCommentEmpty } from "@plane/utils";
@@ -28,6 +22,7 @@ import { useEditorConfig, useEditorMention } from "@/hooks/editor";
 import { useMember } from "@/hooks/store/use-member";
 import { useParseEditorContent } from "@/hooks/use-parse-editor-content";
 // plane web hooks
+import { usePageLinkHandler } from "@/plane-web/hooks/editor/use-page-link-handler";
 import { useEditorFlagging } from "@/plane-web/hooks/use-editor-flagging";
 // plane web service
 import { WorkspaceService } from "@/services/workspace.service";
@@ -116,6 +111,14 @@ export const LiteTextEditor = React.forwardRef(function LiteTextEditor(
         issue_id,
       }),
   });
+  // `[` page-link autocomplete
+  const pageLinkHandler = usePageLinkHandler({
+    workspaceSlug,
+    projectId,
+    searchEntity: editable
+      ? async (payload) => await workspaceService.searchEntity(workspaceSlug, { ...payload, issue_id })
+      : undefined,
+  });
   // editor config
   const { getEditorFileHandlers } = useEditorConfig();
   function isMutableRefObject<T>(ref: React.ForwardedRef<T>): ref is React.MutableRefObject<T | null> {
@@ -199,30 +202,7 @@ export const LiteTextEditor = React.forwardRef(function LiteTextEditor(
                   }
                 : undefined
             }
-            pageLinkHandler={
-              editable && projectId
-                ? {
-                    searchCallback: async (query) => {
-                      const res = await workspaceService.searchEntity(workspaceSlug, {
-                        count: 10,
-                        query_type: ["page"],
-                        query,
-                        project_id: projectId,
-                        issue_id,
-                      });
-                      const items: TPageLinkSuggestion[] = (res?.page ?? []).map((foundPage) => ({
-                        id: foundPage.id ?? "",
-                        entity_identifier: foundPage.id ?? "",
-                        entity_name: "page" as const,
-                        title: foundPage.name || "Untitled",
-                        icon: <PageIcon className="size-3.5 text-tertiary" />,
-                        redirect_uri: `/${workspaceSlug}/projects/${foundPage.projects__id ?? projectId}/pages/${foundPage.id}`,
-                      }));
-                      return items.length > 0 ? [{ key: "pages", title: "Pages", items }] : [];
-                    },
-                  }
-                : undefined
-            }
+            pageLinkHandler={pageLinkHandler}
             placeholder={placeholder}
             showPlaceholderOnEmpty={showPlaceholderOnEmpty}
             containerClassName={cn(containerClassName, "relative", {

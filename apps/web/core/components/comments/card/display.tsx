@@ -14,7 +14,7 @@ import { useHashScroll } from "@plane/hooks";
 import { GlobeIcon, LockIcon } from "@plane/propel/icons";
 import { EIssueCommentAccessSpecifier } from "@plane/types";
 import type { TCommentsOperations, TIssueComment } from "@plane/types";
-import { calculateTimeAgo, cn, getFileURL, renderFormattedDate, renderFormattedTime } from "@plane/utils";
+import { calculateTimeAgo, cn, renderFormattedDate, renderFormattedTime, getAvatarURL } from "@plane/utils";
 // components
 import { LiteTextEditor } from "@/components/editor/lite-text";
 // local imports
@@ -117,7 +117,7 @@ export const CommentCardDisplay = observer(function CommentCardDisplay(props: TC
         </div>
       )}
       <div className="flex relative w-full gap-2 items-center mb-3">
-        <Avatar size="sm" name={displayName} src={getFileURL(avatarUrl)} className="shrink-0" />
+        <Avatar size="sm" name={displayName} src={getAvatarURL(avatarUrl)} className="shrink-0" />
         <div className="flex-1 flex flex-wrap items-center gap-1">
           <div className="text-caption-sm-medium">{displayName}</div>
           <div className="text-caption-sm-regular text-tertiary">

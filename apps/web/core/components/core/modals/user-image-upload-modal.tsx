@@ -14,7 +14,7 @@ import { UserCirclePropertyIcon } from "@plane/propel/icons";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { EFileAssetType } from "@plane/types";
 import { EModalPosition, EModalWidth, ModalCore } from "@plane/ui";
-import { getAssetIdFromUrl, getFileURL, checkURLValidity } from "@plane/utils";
+import { getAssetIdFromUrl, getAvatarEmoji, getFileURL, checkURLValidity } from "@plane/utils";
 // services
 import { FileService } from "@/services/file.service";
 const fileService = new FileService();
@@ -28,7 +28,9 @@ type Props = {
 };
 
 export const UserImageUploadModal = observer(function UserImageUploadModal(props: Props) {
-  const { handleRemove, isOpen, onClose, onSuccess, value } = props;
+  const { handleRemove, isOpen, onClose, onSuccess } = props;
+  // an emoji avatar is not an uploaded image, so there is nothing to preview or delete here
+  const value = getAvatarEmoji(props.value) ? null : props.value;
   // states
   const [image, setImage] = useState<File | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);

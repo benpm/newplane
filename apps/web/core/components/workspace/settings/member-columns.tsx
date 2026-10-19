@@ -18,9 +18,9 @@ import { Pill, EPillVariant, EPillSize } from "@plane/propel/pill";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { IUser, IWorkspaceMember } from "@plane/types";
 // plane ui
-import { CustomSelect, PopoverMenu } from "@plane/ui";
+import { Avatar, CustomSelect, PopoverMenu } from "@plane/ui";
 // helpers
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 import { useUser, useUserPermissions } from "@/hooks/store/user";
@@ -62,21 +62,9 @@ export function NameColumn(props: NameProps) {
                 <div className="bg-layer-1 rounded-full">
                   <SuspendedUserIcon className="size-6 text-placeholder" />
                 </div>
-              ) : avatar_url && avatar_url.trim() !== "" ? (
-                <Link href={`/${workspaceSlug}/profile/${id}`}>
-                  <span className="relative flex size-6 items-center justify-center rounded-full capitalize text-on-color">
-                    <img
-                      src={getFileURL(avatar_url)}
-                      className="absolute left-0 top-0 h-full w-full rounded-full object-cover"
-                      alt={display_name || email}
-                    />
-                  </span>
-                </Link>
               ) : (
                 <Link href={`/${workspaceSlug}/profile/${id}`}>
-                  <span className="relative flex size-6 text-11 items-center justify-center rounded-full  capitalize text-tertiary bg-layer-3">
-                    {(email ?? display_name ?? "?")[0]}
-                  </span>
+                  <Avatar name={display_name || email} src={getAvatarURL(avatar_url)} size={24} showTooltip={false} />
                 </Link>
               )}
               <span className={isSuspended ? "text-placeholder" : ""}>

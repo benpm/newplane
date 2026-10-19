@@ -9,7 +9,7 @@ import { observer } from "mobx-react";
 import { useTranslation } from "@plane/i18n";
 import type { TDescriptionVersion } from "@plane/types";
 import { Avatar, CustomMenu } from "@plane/ui";
-import { calculateTimeAgo, getFileURL } from "@plane/utils";
+import { calculateTimeAgo, getAvatarURL } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 
@@ -33,7 +33,7 @@ export const DescriptionVersionsDropdownItem = observer(function DescriptionVers
         <Avatar
           name={versionCreator?.display_name ?? t("common.deactivated_user")}
           size="sm"
-          src={getFileURL(versionCreator?.avatar_url ?? "")}
+          src={getAvatarURL(versionCreator?.avatar_url ?? "")}
         />
       </span>
       <p className="text-11 text-secondary flex items-center gap-1.5">

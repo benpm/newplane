@@ -8,7 +8,7 @@ import { Command } from "cmdk";
 import { observer } from "mobx-react";
 // plane imports
 import { Avatar } from "@plane/ui";
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 // local imports
@@ -38,7 +38,7 @@ export const PowerKMembersMenu = observer(function PowerKMembersMenu(props: Prop
             iconNode={
               <Avatar
                 name={memberDetails?.display_name}
-                src={getFileURL(memberDetails?.avatar_url ?? "")}
+                src={getAvatarURL(memberDetails?.avatar_url ?? "")}
                 showTooltip={false}
                 className="shrink-0"
               />

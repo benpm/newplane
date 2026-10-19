@@ -17,7 +17,7 @@ import type { ICycle } from "@plane/types";
 // plane ui
 import { Avatar, AvatarGroup, TextArea } from "@plane/ui";
 // helpers
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useMember } from "@/hooks/store/use-member";
@@ -84,7 +84,7 @@ export const CycleSidebarDetails = observer(function CycleSidebarDetails(props: 
           </div>
           <div className="flex w-3/5 items-center rounded-xs">
             <div className="flex items-center gap-2.5">
-              <Avatar name={cycleOwnerDetails?.display_name} src={getFileURL(cycleOwnerDetails?.avatar_url ?? "")} />
+              <Avatar name={cycleOwnerDetails?.display_name} src={getAvatarURL(cycleOwnerDetails?.avatar_url ?? "")} />
               <span className="text-13 text-secondary">{cycleOwnerDetails?.display_name}</span>
             </div>
           </div>
@@ -106,7 +106,7 @@ export const CycleSidebarDetails = observer(function CycleSidebarDetails(props: 
                         <Avatar
                           key={memberDetails?.id}
                           name={memberDetails?.display_name ?? ""}
-                          src={getFileURL(memberDetails?.avatar_url ?? "")}
+                          src={getAvatarURL(memberDetails?.avatar_url ?? "")}
                           showTooltip={false}
                         />
                       );

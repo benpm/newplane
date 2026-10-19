@@ -11,7 +11,7 @@ import { Link } from "react-router";
 import { ROLE } from "@plane/constants";
 import { Popover } from "@plane/propel/popover";
 import { Avatar } from "@plane/ui";
-import { cn, getFileURL } from "@plane/utils";
+import { cn, getAvatarURL } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 import { useUser } from "@/hooks/store/user";
@@ -63,7 +63,7 @@ export const EditorUserMention = observer(function EditorUserMention(props: Prop
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0 size-10 grid place-items-center">
                 <Avatar
-                  src={getFileURL(userDetails?.avatar_url ?? "")}
+                  src={getAvatarURL(userDetails?.avatar_url ?? "")}
                   name={userDetails?.display_name}
                   size={40}
                   className="text-18"

@@ -144,7 +144,7 @@ export const RecentIssue = observer(function RecentIssue(props: BlockProps) {
       }
       appendTitleElement={
         <div className="flex-shrink-0 flex items-center gap-2">
-          <TaskCheckboxProgress issue={issueDetails as any} />
+          <TaskCheckboxProgress issue={issueDetails} />
           <div className="flex-shrink-0 font-medium text-11 text-placeholder">{timeText}</div>
         </div>
       }

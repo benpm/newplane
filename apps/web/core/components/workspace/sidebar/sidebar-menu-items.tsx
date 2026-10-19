@@ -7,6 +7,7 @@
 import { useMemo } from "react";
 import { observer } from "mobx-react";
 import { Ellipsis } from "lucide-react";
+import { useParams } from "next/navigation";
 import { Disclosure, Transition } from "@headlessui/react";
 // plane imports
 import {
@@ -18,12 +19,10 @@ import {
 import { useTranslation } from "@plane/i18n";
 import { ChevronRightIcon } from "@plane/propel/icons";
 import { cn } from "@plane/utils";
-import { useParams } from "next/navigation";
 // components
 import { SidebarNavItem } from "@/components/sidebar/sidebar-navigation";
 // store hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
-import { useProject } from "@/hooks/store/use-project";
 import useLocalStorage from "@/hooks/use-local-storage";
 import {
   usePersonalNavigationPreferences,
@@ -32,21 +31,12 @@ import {
 // plane-web imports
 import { ProjectNavigationRoot } from "@/plane-web/components/sidebar";
 import { SidebarItem } from "@/plane-web/components/workspace/sidebar/sidebar-item";
+import { useSingleProjectId } from "@/plane-web/hooks/use-single-project-id";
 
-type Props = {
-  singleProjectId?: string;
-};
-
-export const SidebarMenuItems = observer(function SidebarMenuItems(props: Props) {
-  const { singleProjectId: propSingleProjectId } = props;
-  const { workspaceSlug } = useParams();
-  const { joinedProjectIds, workspaceProjectIds } = useProject();
-
-  const projectsList = joinedProjectIds && joinedProjectIds.length > 0 ? joinedProjectIds : (workspaceProjectIds ?? []);
-  const isSingleProject = propSingleProjectId !== undefined ? Boolean(propSingleProjectId) : projectsList.length === 1;
-  const singleProjectId = propSingleProjectId ?? (isSingleProject ? projectsList[0] : undefined);
-
+export const SidebarMenuItems = observer(function SidebarMenuItems() {
   // routers
+  const { workspaceSlug } = useParams();
+  const singleProjectId = useSingleProjectId();
   const { setValue: toggleWorkspaceMenu, storedValue: isWorkspaceMenuOpen } = useLocalStorage<boolean>(
     "is_workspace_menu_open",
     true
@@ -116,7 +106,7 @@ export const SidebarMenuItems = observer(function SidebarMenuItems(props: Props)
     <>
       <div className="flex flex-col gap-0.5">
         {homeItem && <SidebarItem item={homeItem} />}
-        {isSingleProject && singleProjectId && workspaceSlug && (
+        {singleProjectId && workspaceSlug && (
           <ProjectNavigationRoot workspaceSlug={workspaceSlug.toString()} projectId={singleProjectId} isRootLevel />
         )}
         {otherStaticItems.map((item, _index) => (

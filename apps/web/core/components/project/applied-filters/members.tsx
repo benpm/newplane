@@ -9,7 +9,7 @@ import { CloseIcon } from "@plane/propel/icons";
 // ui
 import { Avatar } from "@plane/ui";
 // helpers
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 // types
 import { useMember } from "@/hooks/store/use-member";
 
@@ -37,7 +37,7 @@ export const AppliedMembersFilters = observer(function AppliedMembersFilters(pro
           <div key={memberId} className="flex items-center gap-1 rounded-sm bg-layer-1 px-1.5 py-1 text-11">
             <Avatar
               name={memberDetails.display_name}
-              src={getFileURL(memberDetails.avatar_url)}
+              src={getAvatarURL(memberDetails.avatar_url)}
               showTooltip={false}
               size={"sm"}
             />

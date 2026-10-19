@@ -13,9 +13,8 @@ import type {
   IDocumentEditorProps,
   TFileHandler,
   TIssueLinkSuggestion,
-  TPageLinkSuggestion,
 } from "@plane/editor";
-import { PageIcon, WorkItemsIcon } from "@plane/propel/icons";
+import { WorkItemsIcon } from "@plane/propel/icons";
 import type { MakeOptional, TSearchEntityRequestPayload, TSearchResponse } from "@plane/types";
 import { cn } from "@plane/utils";
 // hooks
@@ -26,6 +25,7 @@ import { WorkspaceService } from "@/services/workspace.service";
 // plane web hooks
 
 const workspaceService = new WorkspaceService();
+import { usePageLinkHandler } from "@/plane-web/hooks/editor/use-page-link-handler";
 import { useEditorFlagging } from "@/plane-web/hooks/use-editor-flagging";
 // local imports
 import { EditorMentionsRoot } from "../embeds/mentions";
@@ -80,6 +80,12 @@ export const DocumentEditor = forwardRef(function DocumentEditor(
   const { fetchMentions } = useEditorMention({
     enableAdvancedMentions: true,
     searchEntity: editable ? async (payload) => await props.searchMentionCallback(payload) : async () => ({}),
+  });
+  // `[` page-link autocomplete
+  const pageLinkHandler = usePageLinkHandler({
+    workspaceSlug,
+    projectId,
+    searchEntity: editable ? props.searchMentionCallback : undefined,
   });
   // editor config
   const { getEditorFileHandlers } = useEditorConfig();
@@ -136,29 +142,7 @@ export const DocumentEditor = forwardRef(function DocumentEditor(
             }
           : undefined
       }
-      pageLinkHandler={
-        editable && projectId
-          ? {
-              searchCallback: async (query) => {
-                const res = await props.searchMentionCallback({
-                  count: 10,
-                  query_type: ["page"],
-                  query,
-                  project_id: projectId,
-                });
-                const items: TPageLinkSuggestion[] = (res?.page ?? []).map((foundPage) => ({
-                  id: foundPage.id ?? "",
-                  entity_identifier: foundPage.id ?? "",
-                  entity_name: "page" as const,
-                  title: foundPage.name || "Untitled",
-                  icon: <PageIcon className="size-3.5 text-tertiary" />,
-                  redirect_uri: `/${workspaceSlug}/projects/${foundPage.projects__id ?? projectId}/pages/${foundPage.id}`,
-                }));
-                return items.length > 0 ? [{ key: "pages", title: "Pages", items }] : [];
-              },
-            }
-          : undefined
-      }
+      pageLinkHandler={pageLinkHandler}
       linkSearchHandler={
         editable && projectId
           ? {

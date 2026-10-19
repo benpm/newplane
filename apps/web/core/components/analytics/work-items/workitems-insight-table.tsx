@@ -18,7 +18,7 @@ import { ProjectIcon } from "@plane/propel/icons";
 import type { AnalyticsTableDataMap, WorkItemInsightColumns } from "@plane/types";
 // plane web components
 import { Avatar } from "@plane/ui";
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 // hooks
 import { useAnalytics } from "@/hooks/store/use-analytics";
 import { useProject } from "@/hooks/store/use-project";
@@ -112,7 +112,7 @@ const WorkItemsInsightTable = observer(function WorkItemsInsightTable() {
                   {row.original.avatar_url && row.original.avatar_url !== "" ? (
                     <Avatar
                       name={row.original.display_name}
-                      src={getFileURL(row.original.avatar_url)}
+                      src={getAvatarURL(row.original.avatar_url)}
                       size={24}
                       shape="circle"
                     />

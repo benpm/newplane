@@ -314,6 +314,19 @@ Status refreshes automatically while settings are open. Sync jobs run one at a
 time per project. Failed conversion or Git pushes roll back sync bookkeeping so
 the next run retries the content.
 
+**Cross-links follow the content.** Links inside descriptions and pages are
+rewritten on the way through (`plane/utils/github_link_sync.py`): a Plane work
+item or page link becomes its GitHub issue or wiki page, and back again
+(work items arrive as `/<workspace>/browse/PROJ-12/`). Only verified pairings
+count — issue and wiki link rows, or a work item imported from this repository
+— scoped to the sync's workspace and project; nothing is matched by title. An
+outbound Plane link with no GitHub counterpart becomes plain text (label kept,
+hyperlink dropped), so GitHub never points back into Plane; an unresolved
+GitHub link coming in is kept as is. Code spans, fenced code and links with a
+`#fragment` (headings, comment anchors) are left untouched. Wiki sync pairs
+every new page and file before converting anything, so pages created in the
+same run link to each other.
+
 **How it converges.** `GithubIssueLink.github_state` suppresses the state loop
 and `content_hash` the content loop. The rule worth internalising before
 touching any of it: **the hash decides _whether_ a side changed, the timestamp

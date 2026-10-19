@@ -10,7 +10,7 @@ import { Earth, Info, Minus } from "lucide-react";
 import { LockIcon } from "@plane/propel/icons";
 import { Tooltip } from "@plane/propel/tooltip";
 import { Avatar, FavoriteStar } from "@plane/ui";
-import { renderFormattedDate, getFileURL } from "@plane/utils";
+import { renderFormattedDate, getAvatarURL } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 import { usePageOperations } from "@/hooks/use-page-operations";
@@ -44,7 +44,7 @@ export const BlockItemAction = observer(function BlockItemAction(props: Props) {
       {/* page details */}
       <div className="cursor-default">
         <Tooltip tooltipHeading="Owned by" tooltipContent={ownerDetails?.display_name}>
-          <Avatar src={getFileURL(ownerDetails?.avatar_url ?? "")} name={ownerDetails?.display_name} />
+          <Avatar src={getAvatarURL(ownerDetails?.avatar_url ?? "")} name={ownerDetails?.display_name} />
         </Tooltip>
       </div>
       <div className="cursor-default text-tertiary">

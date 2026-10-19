@@ -9,7 +9,7 @@ import { useState } from "react";
 import { observer } from "mobx-react";
 import { Menu, Transition } from "@headlessui/react";
 import { Avatar } from "@plane/ui";
-import { cn, getFileURL } from "@plane/utils";
+import { cn, getAvatarURL } from "@plane/utils";
 // helpers
 // hooks
 import { useUser } from "@/hooks/store/user";
@@ -42,7 +42,7 @@ export const SwitchAccountDropdown = observer(function SwitchAccountDropdown(pro
         <Menu.Button className="flex items-center gap-x-2.5 px-2 py-1.5 rounded-lg bg-layer-1 z-10">
           <Avatar
             name={displayName ?? fullName ?? ""}
-            src={getFileURL(user?.avatar_url ?? "")}
+            src={getAvatarURL(user?.avatar_url ?? "")}
             size={24}
             shape="circle"
             showTooltip={false}

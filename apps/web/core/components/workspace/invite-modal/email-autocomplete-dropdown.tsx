@@ -8,7 +8,7 @@
 import { useTranslation } from "@plane/i18n";
 import type { IUserLite } from "@plane/types";
 import { Avatar } from "@plane/ui";
-import { cn, getFileURL } from "@plane/utils";
+import { cn, getAvatarURL } from "@plane/utils";
 
 type TEmailAutocompleteDropdownProps = {
   suggestions: IUserLite[];
@@ -55,7 +55,7 @@ export const EmailAutocompleteDropdown = ({
                 onSelect(user);
               }}
             >
-              <Avatar name={fullName} src={getFileURL(user.avatar_url ?? "")} size="sm" />
+              <Avatar name={fullName} src={getAvatarURL(user.avatar_url ?? "")} size="sm" />
               <div className="flex flex-col min-w-0">
                 <span className="truncate font-medium">
                   {fullName}

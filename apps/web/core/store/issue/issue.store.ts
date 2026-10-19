@@ -10,10 +10,20 @@ import { computedFn } from "mobx-utils";
 // types
 import type { TIssue } from "@plane/types";
 // helpers
-import { getCurrentDateTimeInISO } from "@plane/utils";
+import { extractCheckboxCounts, getCurrentDateTimeInISO } from "@plane/utils";
 import { rootStore } from "@/lib/store-context";
 // services
 import { IssueService } from "@/services/issue";
+
+/**
+ * The description PATCH returns no body, so mirror the backend's checkbox count
+ * recomputation whenever an update carries a new description.
+ */
+const withCheckboxCounts = (data: Partial<TIssue>): Partial<TIssue> => {
+  if (data.description_html === undefined || data.checkbox_total !== undefined) return data;
+  const { total, completed } = extractCheckboxCounts(data.description_html);
+  return { ...data, checkbox_total: total, checkbox_completed: completed };
+};
 
 export type IIssueStore = {
   // observables
@@ -105,8 +115,9 @@ export class IssueStore implements IIssueStore {
    * @param {Partial<TIssue>} issue
    * @returns {void}
    */
-  updateIssue = (issueId: string, issue: Partial<TIssue>) => {
-    if (!issue || !issueId || !this.issuesMap[issueId]) return;
+  updateIssue = (issueId: string, data: Partial<TIssue>) => {
+    if (!data || !issueId || !this.issuesMap[issueId]) return;
+    const issue = withCheckboxCounts(data);
     runInAction(() => {
       set(this.issuesMap, [issueId, "updated_at"], getCurrentDateTimeInISO());
       Object.keys(issue).forEach((key) => {

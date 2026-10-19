@@ -21,7 +21,7 @@ import { Tooltip } from "@plane/propel/tooltip";
 import type { IProject } from "@plane/types";
 import type { TContextMenuItem } from "@plane/ui";
 import { Avatar, AvatarGroup, ContextMenu, FavoriteStar } from "@plane/ui";
-import { copyUrlToClipboard, cn, getFileURL, renderFormattedDate } from "@plane/utils";
+import { copyUrlToClipboard, cn, renderFormattedDate, getAvatarURL } from "@plane/utils";
 // components
 // hooks
 import { useMember } from "@/hooks/store/use-member";
@@ -295,7 +295,7 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
                         const member = getUserDetails(memberId);
                         if (!member) return null;
                         return (
-                          <Avatar key={member.id} name={member.display_name} src={getFileURL(member.avatar_url)} />
+                          <Avatar key={member.id} name={member.display_name} src={getAvatarURL(member.avatar_url)} />
                         );
                       })}
                     </AvatarGroup>

@@ -7,7 +7,7 @@
 // plane imports
 import type { IUserLite } from "@plane/types";
 import { Avatar, Tooltip } from "@plane/ui";
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 import { CloseIcon } from "@plane/propel/icons";
 
 type TSelectedUserDisplayProps = {
@@ -41,7 +41,7 @@ export const SelectedUserDisplay = ({ user, onClear }: TSelectedUserDisplayProps
   return (
     <Tooltip tooltipContent={tooltipContent} position="bottom" className="border border-strong">
       <div className="flex h-[36px] w-full items-center gap-2 overflow-hidden rounded-md border border-strong bg-surface-1 px-2.5 transition-colors hover:border-custom-primary-100 hover:bg-layer-transparent-hover">
-        <Avatar name={fullName} src={getFileURL(user.avatar_url ?? "")} size="sm" className="shrink-0" />
+        <Avatar name={fullName} src={getAvatarURL(user.avatar_url ?? "")} size="sm" className="shrink-0" />
         <span className="min-w-0 flex-1 truncate text-body-xs-medium">
           {fullName}
           {user.staff_id && <span className="ml-1 font-normal text-custom-primary-100">({user.staff_id})</span>}

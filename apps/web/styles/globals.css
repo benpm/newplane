@@ -198,21 +198,3 @@
     0 0 4px --alpha(var(--background-color-accent-primary) / 40%) !important;
   will-change: transform, opacity;
 }
-
-/* Unassigned work item claim button */
-.unassigned-claim-btn,
-[data-theme] .unassigned-claim-btn,
-[data-theme*="dark"] .unassigned-claim-btn,
-[data-theme*="light"] .unassigned-claim-btn {
-  background-color: #ffd600 !important;
-  color: #000000 !important;
-  font-weight: 700 !important;
-}
-
-.unassigned-claim-btn:hover,
-[data-theme] .unassigned-claim-btn:hover,
-[data-theme*="dark"] .unassigned-claim-btn:hover,
-[data-theme*="light"] .unassigned-claim-btn:hover {
-  background-color: #eab308 !important;
-  color: #000000 !important;
-}

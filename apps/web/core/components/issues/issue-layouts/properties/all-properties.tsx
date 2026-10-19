@@ -350,9 +350,7 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
             disabled={isReadOnly}
             multiple
             button={
-              !issue?.assignee_ids || issue.assignee_ids.length === 0 ? (
-                <UnassignedAssigneeBadge issueId={issue?.id} />
-              ) : undefined
+              !isReadOnly && !issue?.assignee_ids?.length ? <UnassignedAssigneeBadge issueId={issue?.id} /> : undefined
             }
             buttonVariant={issue.assignee_ids?.length > 0 ? "transparent-without-text" : "border-without-text"}
             buttonClassName={issue.assignee_ids?.length > 0 ? "hover:bg-transparent px-0" : ""}

@@ -1,11 +1,17 @@
 # Changelog
 
-## 1.2.1 — 9/8/2026 — Reliable Pages / GitHub Wiki sync
+## 1.2.1 — 10/19/2026 — Reliable Pages / GitHub Wiki sync, task progress rings, emoji avatars
 
 - Propagate Page and Wiki deletions in both directions, including soft-deleted Page links.
 - Add an admin-only Force Sync button in project settings to overwrite Wiki content from public, unarchived Pages and remove unmatched wiki pages.
 - Include Wiki in Sync now and refresh sync status automatically.
 - Serialize sync runs, preserve retry state after conversion or Git push failures, and retain newer page hierarchy edits.
+- Rewrite cross-links between Plane and GitHub during issue and wiki sync, following only verified pairings; unresolved outbound Plane links become plain text.
+- Show a checkbox progress ring next to work item titles (board, list, spreadsheet, calendar, gantt, home, peek, relations, drafts), updating live as the description changes.
+- Typing `[` (or `[[`) in work item editors opens page search and inserts a page link.
+- Highlight unassigned work items with a yellow "Get" / "Take" / "Yoink" claim button.
+- Default profile pictures are a stable per-user emoji; users can pick an emoji avatar instead of uploading a photo.
+- With a single project, the sidebar shows its navigation directly under Home; project admins can hide Intake.
 
 ## 9/7/2026 — Page editor Subpages tab & Home page GitHub issue links with configurable filter
 

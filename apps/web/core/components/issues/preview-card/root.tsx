@@ -67,7 +67,7 @@ export const WorkItemPreviewCard = observer(function WorkItemPreviewCard(props: 
       </div>
       <div className="flex items-center gap-1.5">
         <h6 className="text-13 flex-grow">{workItem.name}</h6>
-        <TaskCheckboxProgress issue={workItem as any} className="flex-shrink-0" />
+        <TaskCheckboxProgress issue={workItem} className="flex-shrink-0" />
       </div>
       <div className="flex items-center gap-1 h-5">
         <PriorityIcon priority={workItem.priority} withContainer />

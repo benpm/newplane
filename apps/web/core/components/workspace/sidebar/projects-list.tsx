@@ -48,20 +48,10 @@ export const SidebarProjectsList = observer(function SidebarProjectsList() {
   const { preferences: projectPreferences } = useProjectNavigationPreferences();
   const { isExtendedProjectSidebarOpened, toggleExtendedProjectSidebar } = useAppTheme();
 
-  const {
-    loader,
-    getPartialProjectById,
-    joinedProjectIds: joinedProjects,
-    workspaceProjectIds,
-    updateProjectView,
-  } = useProject();
+  const { loader, getPartialProjectById, joinedProjectIds: joinedProjects, updateProjectView } = useProject();
   // router params
   const { workspaceSlug } = useParams();
   const pathname = usePathname();
-
-  // Single project check — projects are moved below home at root level
-  const projectsList = joinedProjects && joinedProjects.length > 0 ? joinedProjects : (workspaceProjectIds ?? []);
-  const isSingleProject = projectsList.length === 1;
 
   // auth
   const isAuthorizedUser = allowPermissions(
@@ -79,16 +69,13 @@ export const SidebarProjectsList = observer(function SidebarProjectsList() {
     projectPreferences.showLimitedProjects && joinedProjects.length > projectPreferences.limitedProjectsCount;
 
   const handleCopyText = (projectId: string) => {
-    void copyUrlToClipboard(`${workspaceSlug}/projects/${projectId}/issues`)
-      .then(() => {
-        setToast({
-          type: TOAST_TYPE.SUCCESS,
-          title: t("link_copied"),
-          message: t("project_link_copied_to_clipboard"),
-        });
-        return null;
-      })
-      .catch(() => {});
+    copyUrlToClipboard(`${workspaceSlug}/projects/${projectId}/issues`).then(() => {
+      setToast({
+        type: TOAST_TYPE.SUCCESS,
+        title: t("link_copied"),
+        message: t("project_link_copied_to_clipboard"),
+      });
+    });
   };
 
   const handleOnProjectDrop = (
@@ -166,9 +153,6 @@ export const SidebarProjectsList = observer(function SidebarProjectsList() {
       localStorage.setItem("isAllProjectsListOpen", "true");
     }
   }, [pathname]);
-
-  if (isSingleProject) return null;
-
   return (
     <>
       {workspaceSlug && (

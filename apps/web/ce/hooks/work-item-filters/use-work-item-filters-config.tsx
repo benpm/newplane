@@ -39,7 +39,6 @@ import {
   getCreatedAtFilterConfig,
   getCreatedByFilterConfig,
   getCycleFilterConfig,
-  getFileURL,
   getLabelFilterConfig,
   getMentionFilterConfig,
   getModuleFilterConfig,
@@ -53,6 +52,7 @@ import {
   getTargetDateFilterConfig,
   getUpdatedAtFilterConfig,
   isLoaderReady,
+  getAvatarURL,
 } from "@plane/utils";
 // store hooks
 import { useCycle } from "@/hooks/store/use-cycle";
@@ -224,7 +224,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         getOptionIcon: (memberDetails) => (
           <Avatar
             name={memberDetails.display_name}
-            src={getFileURL(memberDetails.avatar_url)}
+            src={getAvatarURL(memberDetails.avatar_url)}
             showTooltip={false}
             size="sm"
           />
@@ -244,7 +244,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         getOptionIcon: (memberDetails) => (
           <Avatar
             name={memberDetails.display_name}
-            src={getFileURL(memberDetails.avatar_url)}
+            src={getAvatarURL(memberDetails.avatar_url)}
             showTooltip={false}
             size="sm"
           />
@@ -264,7 +264,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         getOptionIcon: (memberDetails) => (
           <Avatar
             name={memberDetails.display_name}
-            src={getFileURL(memberDetails.avatar_url)}
+            src={getAvatarURL(memberDetails.avatar_url)}
             showTooltip={false}
             size="sm"
           />
@@ -284,7 +284,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         getOptionIcon: (memberDetails) => (
           <Avatar
             name={memberDetails.display_name}
-            src={getFileURL(memberDetails.avatar_url)}
+            src={getAvatarURL(memberDetails.avatar_url)}
             showTooltip={false}
             size="sm"
           />

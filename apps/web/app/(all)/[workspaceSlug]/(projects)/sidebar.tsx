@@ -16,16 +16,16 @@ import { SidebarQuickActions } from "@/components/workspace/sidebar/quick-action
 import { SidebarMenuItems } from "@/components/workspace/sidebar/sidebar-menu-items";
 // hooks
 import { useFavorite } from "@/hooks/store/use-favorite";
-import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
-// plane web components
+// plane web imports
 import { SidebarTeamsList } from "@/plane-web/components/workspace/sidebar/teams-sidebar-list";
+import { useSingleProjectId } from "@/plane-web/hooks/use-single-project-id";
 
 export const AppSidebar = observer(function AppSidebar() {
   // store hooks
   const { allowPermissions } = useUserPermissions();
   const { groupedFavorites } = useFavorite();
-  const { joinedProjectIds, workspaceProjectIds } = useProject();
+  const singleProjectId = useSingleProjectId();
 
   // derived values
   const canPerformWorkspaceMemberActions = allowPermissions(
@@ -35,13 +35,12 @@ export const AppSidebar = observer(function AppSidebar() {
 
   const isFavoriteEmpty = isEmpty(groupedFavorites);
 
-  const projectsList = joinedProjectIds && joinedProjectIds.length > 0 ? joinedProjectIds : (workspaceProjectIds ?? []);
-  const isSingleProject = projectsList.length === 1;
-  const singleProjectId = isSingleProject ? projectsList[0] : undefined;
+  // with exactly one project, its navigation is shown under Home instead of the teams/projects lists
+  const isSingleProject = !!singleProjectId;
 
   return (
     <SidebarWrapper title="Projects" quickActions={<SidebarQuickActions />}>
-      <SidebarMenuItems singleProjectId={singleProjectId} />
+      <SidebarMenuItems />
       {/* Favorites Menu */}
       {canPerformWorkspaceMemberActions && !isFavoriteEmpty && <SidebarFavoritesMenu />}
       {/* Teams List */}

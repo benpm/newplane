@@ -10,7 +10,7 @@ import { PageIcon } from "@plane/propel/icons";
 // plane import
 import type { TActivityEntityData, TPageEntityData } from "@plane/types";
 import { Avatar } from "@plane/ui";
-import { calculateTimeAgo, getFileURL, getPageName } from "@plane/utils";
+import { calculateTimeAgo, getPageName, getAvatarURL } from "@plane/utils";
 import { ListItem } from "@/components/core/list";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
@@ -65,7 +65,7 @@ export function RecentPage(props: BlockProps) {
       }
       quickActionElement={
         <div className="flex gap-4">
-          <Avatar src={getFileURL(ownerDetails?.avatar_url ?? "")} name={ownerDetails?.display_name} />
+          <Avatar src={getAvatarURL(ownerDetails?.avatar_url ?? "")} name={ownerDetails?.display_name} />
         </div>
       }
       parentRef={ref}

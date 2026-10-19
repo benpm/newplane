@@ -15,7 +15,7 @@ import { setToast, TOAST_TYPE } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { TDescriptionVersion } from "@plane/types";
 import { Avatar, EModalPosition, EModalWidth, Loader, ModalCore } from "@plane/ui";
-import { calculateTimeAgo, cn, getFileURL } from "@plane/utils";
+import { calculateTimeAgo, cn, getAvatarURL } from "@plane/utils";
 // components
 import { RichTextEditor } from "@/components/editor/rich-text";
 // hooks
@@ -86,7 +86,7 @@ export const DescriptionVersionsModal = observer(function DescriptionVersionsMod
               <span className="flex-shrink-0">
                 <Avatar
                   size="sm"
-                  src={getFileURL(versionCreator?.avatar_url ?? "")}
+                  src={getAvatarURL(versionCreator?.avatar_url ?? "")}
                   name={versionCreator?.display_name}
                 />
               </span>

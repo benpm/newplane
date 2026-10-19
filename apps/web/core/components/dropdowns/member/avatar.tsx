@@ -9,7 +9,7 @@ import type { LucideIcon } from "lucide-react";
 import { MembersPropertyIcon } from "@plane/propel/icons";
 // plane ui
 import { Avatar, AvatarGroup } from "@plane/ui";
-import { cn, getFileURL } from "@plane/utils";
+import { cn, getAvatarURL } from "@plane/utils";
 // plane utils
 // helpers
 // hooks
@@ -35,7 +35,7 @@ export const ButtonAvatars = observer(function ButtonAvatars(props: AvatarProps)
             const userDetails = getUserDetails(userId);
 
             if (!userDetails) return;
-            return <Avatar key={userId} src={getFileURL(userDetails.avatar_url)} name={userDetails.display_name} />;
+            return <Avatar key={userId} src={getAvatarURL(userDetails.avatar_url)} name={userDetails.display_name} />;
           })}
         </AvatarGroup>
       );
@@ -44,7 +44,7 @@ export const ButtonAvatars = observer(function ButtonAvatars(props: AvatarProps)
       const userDetails = getUserDetails(userIds);
       return (
         <Avatar
-          src={getFileURL(userDetails?.avatar_url ?? "")}
+          src={getAvatarURL(userDetails?.avatar_url ?? "")}
           name={userDetails?.display_name}
           size={size}
           showTooltip={!showTooltip}

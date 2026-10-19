@@ -15,7 +15,8 @@ import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { useLocalStorage } from "@plane/hooks";
 import { useTranslation } from "@plane/i18n";
 import { MembersPropertyIcon, CheckIcon, ProjectIcon, CloseIcon } from "@plane/propel/icons";
-import { cn, getFileURL } from "@plane/utils";
+import { Avatar } from "@plane/ui";
+import { cn, getAvatarURL } from "@plane/utils";
 // hooks
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
 import { useProject } from "@/hooks/store/use-project";
@@ -93,24 +94,16 @@ export const NoProjectsEmptyState = observer(function NoProjectsEmptyState() {
       id: "personalize-account",
       title: "home.empty.personalize_account.title",
       description: "home.empty.personalize_account.description",
-      icon:
-        currentUser?.avatar_url && currentUser?.avatar_url.trim() !== "" ? (
-          <Link href={`/${workspaceSlug}/profile/${currentUser?.id}`}>
-            <span className="relative flex size-4 items-center justify-center rounded-full p-4 capitalize text-on-color">
-              <img
-                src={getFileURL(currentUser?.avatar_url)}
-                className="absolute left-0 top-0 h-full w-full rounded-full object-cover"
-                alt={currentUser?.display_name || currentUser?.email}
-              />
-            </span>
-          </Link>
-        ) : (
-          <Link href={`/${workspaceSlug}/profile/${currentUser?.id}`}>
-            <span className="relative flex size-4 items-center justify-center rounded-full bg-[#028375] p-4 capitalize text-on-color text-13">
-              {(currentUser?.email ?? currentUser?.display_name ?? "?")[0]}
-            </span>
-          </Link>
-        ),
+      icon: (
+        <Link href={`/${workspaceSlug}/profile/${currentUser?.id}`}>
+          <Avatar
+            name={currentUser?.display_name || currentUser?.email}
+            src={getAvatarURL(currentUser?.avatar_url)}
+            size={32}
+            showTooltip={false}
+          />
+        </Link>
+      ),
       flag: "visited_profile",
       cta: {
         text: "home.empty.personalize_account.cta",

@@ -14,7 +14,7 @@ import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { IUser } from "@plane/types";
 import { EOnboardingSteps } from "@plane/types";
-import { cn, getFileURL, getPasswordStrength, validatePersonName } from "@plane/utils";
+import { cn, getPasswordStrength, validatePersonName, getAvatarURL } from "@plane/utils";
 import { Avatar } from "@plane/ui";
 // components
 import { UserImageUploadModal } from "@/components/core/modals/user-image-upload-modal";
@@ -184,7 +184,7 @@ export const ProfileSetupStep = observer(function ProfileSetupStep({ handleStepC
         >
           <Avatar
             name={watch("first_name")}
-            src={getFileURL(userAvatar ?? "")}
+            src={getAvatarURL(userAvatar ?? "")}
             size={48}
             shape="circle"
             showTooltip={false}

@@ -463,24 +463,14 @@ export function ProjectDetailsForm(props: IProjectDetailsForm) {
           </div>
           <div className="flex items-center justify-between col-span-1 sm:col-span-2 py-3 border-t border-subtle">
             <div className="flex flex-col gap-0.5">
-              <h4 className="text-13 font-medium">Intake tab</h4>
-              <p className="text-11 text-placeholder">
-                Show or hide the Intake tab in the left sidebar navigation globally for this project.
-              </p>
+              <h4 className="text-13 font-medium">{t("project_settings.features.intake.toggle_title")}</h4>
+              <p className="text-11 text-placeholder">{t("project_settings.features.intake.toggle_description")}</p>
             </div>
             <Controller
               name="inbox_view"
               control={control}
               render={({ field: { value, onChange } }) => (
-                <ToggleSwitch
-                  value={Boolean(value)}
-                  onChange={(val) => {
-                    onChange(val);
-                    void handleUpdateChange({ inbox_view: val });
-                  }}
-                  size="sm"
-                  disabled={!isAdmin}
-                />
+                <ToggleSwitch value={Boolean(value)} onChange={(val) => onChange(val)} size="sm" disabled={!isAdmin} />
               )}
             />
           </div>

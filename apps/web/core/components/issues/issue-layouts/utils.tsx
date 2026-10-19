@@ -30,7 +30,7 @@ import type {
 import { EIssuesStoreType } from "@plane/types";
 // plane ui
 import { Avatar } from "@plane/ui";
-import { renderFormattedDate, getFileURL } from "@plane/utils";
+import { renderFormattedDate, getAvatarURL } from "@plane/utils";
 // helpers
 // store
 import { store } from "@/lib/store-context";
@@ -284,7 +284,7 @@ const getAssigneeColumns = ({ isWorkspaceLevel, projectId }: TGetColumns): IGrou
     assigneeColumns.push({
       id: memberId,
       name: member?.display_name || "",
-      icon: <Avatar name={member?.display_name} src={getFileURL(member?.avatar_url ?? "")} size="md" />,
+      icon: <Avatar name={member?.display_name} src={getAvatarURL(member?.avatar_url ?? "")} size="md" />,
       payload: { assignee_ids: [memberId] },
     });
   });
@@ -307,7 +307,7 @@ const getCreatedByColumns = (): IGroupByColumn[] | undefined => {
     return {
       id: memberId,
       name: member?.display_name || "",
-      icon: <Avatar name={member?.display_name} src={getFileURL(member?.avatar_url ?? "")} size="md" />,
+      icon: <Avatar name={member?.display_name} src={getAvatarURL(member?.avatar_url ?? "")} size="md" />,
       payload: {},
     };
   });

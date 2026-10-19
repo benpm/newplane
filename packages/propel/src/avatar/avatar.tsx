@@ -6,7 +6,7 @@
 
 import React from "react";
 import { Avatar as AvatarPrimitive } from "@base-ui-components/react/avatar";
-import { getRandomAvatarEmoji } from "@plane/utils";
+import { getAvatarEmoji, getRandomAvatarEmoji } from "@plane/utils";
 import { cn } from "../utils/classname";
 
 export type TAvatarSize = "sm" | "md" | "base" | "lg" | number;
@@ -101,10 +101,10 @@ export function Avatar(props: Props) {
   // get size details based on the size prop
   const sizeInfo = getSizeInfo(size);
 
-  const isImageSrc = Boolean(
-    src && (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("/") || src.startsWith("data:"))
-  );
-  const fallbackEmoji = src && !isImageSrc ? src : (fallbackText ?? getRandomAvatarEmoji(name));
+  // src is either an image URL or an emoji avatar; without either, fall back to a stable per-name emoji
+  const emoji = getAvatarEmoji(src);
+  const imageSrc = emoji ? undefined : src;
+  const fallbackContent = emoji ?? fallbackText ?? getRandomAvatarEmoji(name);
 
   return (
     <div
@@ -122,7 +122,7 @@ export function Avatar(props: Props) {
       tabIndex={-1}
     >
       <AvatarPrimitive.Root className={cn("h-full w-full", getBorderRadius(shape), className)}>
-        {isImageSrc && <AvatarPrimitive.Image src={src} width="48" height="48" />}
+        {imageSrc && <AvatarPrimitive.Image src={imageSrc} width="48" height="48" />}
         <AvatarPrimitive.Fallback
           className={cn(
             sizeInfo.fontSize,
@@ -131,12 +131,12 @@ export function Avatar(props: Props) {
             className
           )}
           style={{
-            backgroundColor: fallbackBackgroundColor ?? "var(--background-color-accent-primary)",
-            color: fallbackTextColor ?? "var(--text-color-on-color)",
+            backgroundColor: fallbackBackgroundColor ?? "var(--background-color-layer-3)",
+            color: fallbackTextColor ?? "var(--text-color-primary)",
             fontSize: isAValidNumber(size) ? `${Math.round(size * 0.55)}px` : undefined,
           }}
         >
-          {fallbackEmoji}
+          {fallbackContent}
         </AvatarPrimitive.Fallback>
       </AvatarPrimitive.Root>
     </div>

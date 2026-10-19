@@ -17,8 +17,8 @@ import { DiscordIcon, EditIcon, ChevronDownIcon } from "@plane/propel/icons";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { IUserProfileProjectSegregation } from "@plane/types";
-import { Loader } from "@plane/ui";
-import { cn, renderFormattedDate, getFileURL, copyTextToClipboard } from "@plane/utils";
+import { Avatar, Loader } from "@plane/ui";
+import { cn, renderFormattedDate, copyTextToClipboard, getAvatarURL } from "@plane/utils";
 // components
 import { CoverImage } from "@/components/common/cover-image";
 // hooks
@@ -127,17 +127,13 @@ export const ProfileSidebar = observer(function ProfileSidebar(props: TProfileSi
               showDefaultWhenEmpty
             />
             <div className="absolute -bottom-[26px] left-5 h-[52px] w-[52px] rounded-sm">
-              {userData?.avatar_url && userData?.avatar_url !== "" ? (
-                <img
-                  src={getFileURL(userData?.avatar_url)}
-                  alt={userData?.display_name}
-                  className="h-full w-full rounded-sm object-cover"
-                />
-              ) : (
-                <div className="flex h-[52px] w-[52px] items-center justify-center rounded-sm bg-accent-primary capitalize text-on-color">
-                  {userData?.first_name?.[0]}
-                </div>
-              )}
+              <Avatar
+                name={userData?.display_name}
+                src={getAvatarURL(userData?.avatar_url)}
+                size={52}
+                shape="square"
+                showTooltip={false}
+              />
             </div>
           </div>
           <div className="px-5">

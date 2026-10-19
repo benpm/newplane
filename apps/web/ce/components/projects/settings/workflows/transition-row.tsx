@@ -4,7 +4,7 @@ import { Info, Trash2, Users } from "lucide-react";
 import { useTranslation } from "@plane/i18n";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Avatar, CustomSearchSelect } from "@plane/ui";
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 import { useProjectState } from "@/hooks/store/use-project-state";
@@ -65,7 +65,7 @@ export const TransitionRow = observer(function TransitionRow(props: Props) {
         <div className="flex items-center gap-2">
           <Avatar
             name={user?.display_name}
-            src={user?.avatar_url ? getFileURL(user.avatar_url) : undefined}
+            src={user?.avatar_url ? getAvatarURL(user.avatar_url) : undefined}
             size="sm"
           />
           <span>{user?.display_name ?? userId.slice(0, 8)}</span>
@@ -154,7 +154,7 @@ export const TransitionRow = observer(function TransitionRow(props: Props) {
                 >
                   <Avatar
                     name={user?.display_name}
-                    src={user?.avatar_url ? getFileURL(user.avatar_url) : undefined}
+                    src={user?.avatar_url ? getAvatarURL(user.avatar_url) : undefined}
                     size="sm"
                   />
                   <span>{user?.display_name ?? userId.slice(0, 8)}</span>

@@ -99,13 +99,14 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
 
   useOutsideClickDetector(menuActionRef, () => setIsMenuActive(false));
 
+  // the GitHub badge is pinned to the card's top-left corner; pad the title row so they never overlap
   const hasGithub = Boolean(issue?.github_issue_number && issue?.github_repository);
-  const hasComments = Boolean(hasGithub && issue?.github_comment_count && issue.github_comment_count > 0);
-  const leftPadClass = hasComments ? "pl-9" : hasGithub ? "pl-5" : "";
+  const hasGithubComments = hasGithub && (issue?.github_comment_count ?? 0) > 0;
+  const leftPadClass = hasGithubComments ? "pl-9" : hasGithub ? "pl-5" : "";
 
   return (
     <>
-      <WorkItemGithubBadge issue={issue} className="absolute top-[4px] left-[4px] z-10" />
+      <WorkItemGithubBadge issue={issue} className="absolute top-1 left-1 z-10" />
       <div className={cn("relative flex items-center gap-1.5 min-w-0 pr-6", leftPadClass)}>
         {issue.project_id && (
           <IssueIdentifier

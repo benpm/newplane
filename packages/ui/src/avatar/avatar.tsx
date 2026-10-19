@@ -7,8 +7,7 @@
 // ui
 import { Tooltip } from "@plane/propel/tooltip";
 // helpers
-// utils
-import { getRandomAvatarEmoji } from "@plane/utils";
+import { getAvatarEmoji, getRandomAvatarEmoji } from "@plane/utils";
 import { cn } from "../utils";
 import type { TAvatarSize } from "./helper";
 import { getBorderRadius, getSizeInfo, isAValidNumber } from "./helper";
@@ -73,10 +72,10 @@ export function Avatar(props: Props) {
   // get size details based on the size prop
   const sizeInfo = getSizeInfo(size);
 
-  const isImageSrc = Boolean(
-    src && (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("/") || src.startsWith("data:"))
-  );
-  const emoji = src && !isImageSrc ? src : (fallbackText ?? getRandomAvatarEmoji(name));
+  // src is either an image URL or an emoji avatar; without either, fall back to a stable per-name emoji
+  const emoji = getAvatarEmoji(src);
+  const imageSrc = emoji ? undefined : src;
+  const fallbackContent = emoji ?? fallbackText ?? getRandomAvatarEmoji(name);
 
   return (
     <Tooltip tooltipContent={fallbackText ?? name ?? "?"} disabled={!showTooltip}>
@@ -94,8 +93,8 @@ export function Avatar(props: Props) {
         }
         tabIndex={-1}
       >
-        {isImageSrc ? (
-          <img src={src} className={cn("h-full w-full", getBorderRadius(shape), className)} alt={name} />
+        {imageSrc ? (
+          <img src={imageSrc} className={cn("h-full w-full", getBorderRadius(shape), className)} alt={name} />
         ) : (
           <div
             className={cn(
@@ -105,12 +104,12 @@ export function Avatar(props: Props) {
               className
             )}
             style={{
-              backgroundColor: fallbackBackgroundColor ?? "var(--color-layer-2, #27272a)",
-              color: fallbackTextColor ?? "inherit",
+              backgroundColor: fallbackBackgroundColor ?? "var(--background-color-layer-3)",
+              color: fallbackTextColor ?? "var(--text-color-primary)",
               fontSize: isAValidNumber(size) ? `${Math.round(size * 0.55)}px` : undefined,
             }}
           >
-            {emoji}
+            {fallbackContent}
           </div>
         )}
       </div>

@@ -5,5 +5,6 @@
  */
 
 export * from "./base";
+export * from "./checkbox";
 export * from "./modal";
 export * from "./state";

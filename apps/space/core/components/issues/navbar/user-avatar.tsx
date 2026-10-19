@@ -16,7 +16,7 @@ import { API_BASE_URL } from "@plane/constants";
 import { Button } from "@plane/propel/button";
 import { AuthService } from "@plane/services";
 import { Avatar } from "@plane/ui";
-import { getFileURL } from "@plane/utils";
+import { getAvatarURL } from "@plane/utils";
 // helpers
 import { queryParamGenerator } from "@/helpers/query-param-generator";
 // hooks
@@ -69,7 +69,7 @@ export const UserAvatar = observer(function UserAvatar() {
               <button ref={setReferenceElement} className="flex items-center gap-2 rounded-sm border border-subtle p-2">
                 <Avatar
                   name={currentUser?.display_name}
-                  src={getFileURL(currentUser?.avatar_url)}
+                  src={getAvatarURL(currentUser?.avatar_url)}
                   shape="square"
                   size="sm"
                   showTooltip={false}

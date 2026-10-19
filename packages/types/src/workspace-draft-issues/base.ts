@@ -34,6 +34,7 @@ export type TWorkspaceDraftIssue = {
   is_draft: boolean;
 
   type_id: string;
+  description_html?: string;
 
   main_task_category_id: string | null;
   sub_task_category_id: string | null;

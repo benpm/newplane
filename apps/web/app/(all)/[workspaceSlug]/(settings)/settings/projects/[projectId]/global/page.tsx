@@ -54,26 +54,6 @@ function GlobalProjectSettingsPage({ params }: Route.ComponentProps) {
     });
   };
 
-  const handleIntakeToggle = () => {
-    if (!currentProjectDetails) return;
-
-    const updateProjectPromise = updateProject(workspaceSlug, projectId, {
-      inbox_view: !currentProjectDetails.inbox_view,
-    });
-
-    setPromiseToast(updateProjectPromise, {
-      loading: t("common.updating"),
-      success: {
-        title: t("toast.success"),
-        message: () => "Intake setting updated successfully.",
-      },
-      error: {
-        title: t("toast.error"),
-        message: () => "Something went wrong while updating Intake setting.",
-      },
-    });
-  };
-
   if (workspaceUserInfo && !canPerformProjectAdminActions) {
     return <NotAuthorizedView section="settings" isProjectView className="h-auto" />;
   }
@@ -86,7 +66,7 @@ function GlobalProjectSettingsPage({ params }: Route.ComponentProps) {
           title={t("global_project.settings.title")}
           description={t("global_project.settings.header_description")}
         />
-        <div className="mt-7 flex flex-col gap-4">
+        <div className="mt-7">
           <SettingsBoxedControlItem
             title={t("global_project.settings.label")}
             description={t("global_project.settings.description")}
@@ -94,18 +74,6 @@ function GlobalProjectSettingsPage({ params }: Route.ComponentProps) {
               <ToggleSwitch
                 value={!!currentProjectDetails?.is_global}
                 onChange={handleToggle}
-                disabled={!canPerformProjectAdminActions}
-                size="sm"
-              />
-            }
-          />
-          <SettingsBoxedControlItem
-            title="Intake sidebar tab"
-            description="Allow the Intake tab to be displayed in the left navigation sidebar globally for this project."
-            control={
-              <ToggleSwitch
-                value={!!currentProjectDetails?.inbox_view}
-                onChange={handleIntakeToggle}
                 disabled={!canPerformProjectAdminActions}
                 size="sm"
               />
