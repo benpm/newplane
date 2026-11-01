@@ -4,9 +4,9 @@ import { useUser } from "@/hooks/store/user/user-user";
 import { useUserPermissions } from "@/hooks/store/user";
 
 /**
- * Returns whether the current user can edit the given issue.
- * Allowed: workspace admin, project admin, issue creator, issue assignee.
- * Returns false when issue data is not yet loaded (safe read-only default).
+ * Returns whether the current user can edit the given issue, mirroring the API's
+ * issue PATCH rule: project admins and members edit any issue; guests edit only
+ * issues they created. Returns false for guests until the issue is loaded.
  */
 export const useCanEditIssue = (issueId: string | undefined, workspaceSlug?: string, projectId?: string): boolean => {
   const { allowPermissions } = useUserPermissions();
@@ -15,19 +15,15 @@ export const useCanEditIssue = (issueId: string | undefined, workspaceSlug?: str
     issue: { getIssueById },
   } = useIssueDetail();
 
-  // Admin check — workspace admin is treated as project admin by allowPermissions
-  const isAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.PROJECT, workspaceSlug, projectId);
-
-  if (isAdmin) return true;
+  // workspace admins are treated as project admins by allowPermissions
+  const isMember = allowPermissions(
+    [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
+    EUserPermissionsLevel.PROJECT,
+    workspaceSlug,
+    projectId
+  );
+  if (isMember) return true;
 
   if (!issueId || !currentUser?.id) return false;
-
-  const issue = getIssueById(issueId);
-  if (!issue) return false;
-
-  // Creator or assignee check
-  if (issue.created_by === currentUser.id) return true;
-  if (issue.assignee_ids?.includes(currentUser.id)) return true;
-
-  return false;
+  return getIssueById(issueId)?.created_by === currentUser.id;
 };
