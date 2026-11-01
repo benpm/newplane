@@ -17,6 +17,7 @@ import { resolveGeneralTheme } from "@plane/utils";
 import "@/lib/polyfills";
 // mobx store provider
 import { StoreProvider } from "@/lib/store-context";
+import { useThemeColorMeta } from "@/plane-web/hooks/use-theme-color-meta";
 
 // lazy imports
 const AppProgressBar = lazy(function AppProgressBar() {
@@ -43,6 +44,8 @@ export function AppProvider(props: IAppProvider) {
   const { children } = props;
   // themes
   const { resolvedTheme } = useTheme();
+  // keep the PWA title bar in step with the active theme
+  useThemeColorMeta();
 
   return (
     <StoreProvider>
