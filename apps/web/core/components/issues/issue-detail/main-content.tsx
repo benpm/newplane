@@ -24,6 +24,7 @@ import useSize from "@/hooks/use-window-size";
 // plane web components
 import { DeDupeIssuePopoverRoot } from "@/plane-web/components/de-dupe/duplicate-popover";
 import { IssueTypeSwitcher } from "@/plane-web/components/issues/issue-details/issue-type-switcher";
+import { useCanAddToIssue } from "@/plane-web/hooks/use-can-edit-issue";
 import { useDebouncedDuplicateIssues } from "@/plane-web/hooks/use-debounced-duplicate-issues";
 // services
 import { WorkItemVersionService } from "@/services/issue";
@@ -64,13 +65,14 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
   } = useIssueDetail();
   const { getProjectById } = useProject();
   const { setShowAlert } = useReloadConfirmations(isSubmitting === "submitting");
+  const canAddToIssue = useCanAddToIssue(workspaceSlug, projectId);
   // derived values
   const projectDetails = getProjectById(projectId);
   const issue = issueId ? getIssueById(issueId) : undefined;
   // debounced duplicate issues swr
   const { duplicateIssues } = useDebouncedDuplicateIssues(
     workspaceSlug,
-    projectDetails?.workspace.toString(),
+    typeof projectDetails?.workspace === "string" ? projectDetails.workspace : projectDetails?.workspace?.id,
     projectDetails?.id,
     {
       name: issue?.name,
@@ -82,7 +84,7 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
   useEffect(() => {
     if (isSubmitting === "submitted") {
       setShowAlert(false);
-      setTimeout(async () => setIsSubmitting("saved"), 2000);
+      setTimeout(() => setIsSubmitting("saved"), 2000);
     } else if (isSubmitting === "submitting") setShowAlert(true);
   }, [isSubmitting, setShowAlert, setIsSubmitting]);
 
@@ -190,7 +192,7 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
         workspaceSlug={workspaceSlug}
         projectId={projectId}
         issueId={issueId}
-        disabled={!isEditable || isArchived}
+        disabled={!canAddToIssue || isArchived}
         renderWidgetModals={!isPeekModeActive}
         issueServiceType={EIssueServiceType.ISSUES}
       />

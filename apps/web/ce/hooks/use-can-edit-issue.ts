@@ -31,3 +31,18 @@ export const useCanEditIssue = (issueId: string | undefined, workspaceSlug?: str
 
   return false;
 };
+
+/**
+ * Returns whether the current user can attach things to an issue: sub-work items, relations, links, attachments.
+ * Mirrors the API's ProjectEntityPermission (project admin or member), which is looser than useCanEditIssue —
+ * only editing the issue's own fields is restricted to admin, creator and assignee.
+ */
+export const useCanAddToIssue = (workspaceSlug?: string, projectId?: string): boolean => {
+  const { allowPermissions } = useUserPermissions();
+  return allowPermissions(
+    [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
+    EUserPermissionsLevel.PROJECT,
+    workspaceSlug,
+    projectId
+  );
+};

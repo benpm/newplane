@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { useRef, useState } from "react";
 import { observer } from "mobx-react";
 import { createPortal } from "react-dom";
@@ -17,6 +16,8 @@ import { cn } from "@plane/utils";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import useKeypress from "@/hooks/use-keypress";
 import usePeekOverviewOutsideClickDetector from "@/hooks/use-peek-overview-outside-click";
+// plane web hooks
+import { useCanAddToIssue } from "@/plane-web/hooks/use-can-edit-issue";
 // local imports
 import type { TIssueOperations } from "../issue-detail";
 import { IssueActivity } from "../issue-detail/issue-activity";
@@ -72,6 +73,9 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
   } = useIssueDetail();
   const { isAnyModalOpen: isAnyEpicModalOpen } = useIssueDetail(EIssueServiceType.EPICS);
   const issue = getIssueById(issueId);
+  // widgets (sub-work items, relations, links, attachments) only need project write access, not edit rights
+  const canAddToIssue = useCanAddToIssue(workspaceSlug, projectId);
+  const widgetsDisabled = !canAddToIssue || is_archived;
   // remove peek id
   const removeRoutePeekId = () => {
     setPeekIssue(undefined);
@@ -193,7 +197,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
                         workspaceSlug={workspaceSlug}
                         projectId={projectId}
                         issueId={issueId}
-                        disabled={disabled || is_archived}
+                        disabled={widgetsDisabled}
                         issueServiceType={EIssueServiceType.ISSUES}
                       />
                     </div>
@@ -234,7 +238,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
                             workspaceSlug={workspaceSlug}
                             projectId={projectId}
                             issueId={issueId}
-                            disabled={disabled}
+                            disabled={widgetsDisabled}
                             issueServiceType={EIssueServiceType.ISSUES}
                           />
                         </div>

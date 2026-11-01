@@ -24,6 +24,7 @@ import useIssuePeekOverviewRedirection from "@/hooks/use-issue-peek-overview-red
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web components
 import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
+import { useCanEditIssue } from "@/plane-web/hooks/use-can-edit-issue";
 // local components
 import { SubIssuesListItemProperties } from "./properties";
 import { SubIssuesListRoot } from "./root";
@@ -76,6 +77,9 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
   const { handleRedirection } = useIssuePeekOverviewRedirection();
   const { isMobile } = usePlatformOS();
   const issue = getIssueById(issueId);
+  // editing, unparenting or deleting a sub-work item changes the child, so it needs edit rights on the child itself
+  const canEditChild = useCanEditIssue(issueId, workspaceSlug, issue?.project_id ?? projectId);
+  const canEditItem = canEdit && canEditChild;
 
   // derived values
   const projectDetail = (issue && issue.project_id && project.getProjectById(issue.project_id)) || undefined;
@@ -89,6 +93,15 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
 
   //
   const handleIssuePeekOverview = (issue: TIssue) => handleRedirection(workspaceSlug, issue, isMobile);
+
+  const handleToggleSubIssues = async () => {
+    if (!subIssueHelpers.issue_visibility.includes(issueId)) {
+      setSubIssueHelpers(parentIssueId, "preview_loader", issueId);
+      await fetchSubIssues(workspaceSlug, projectId, issueId);
+      setSubIssueHelpers(parentIssueId, "preview_loader", issueId);
+    }
+    setSubIssueHelpers(parentIssueId, "issue_visibility", issueId);
+  };
 
   if (!issue) return <></>;
 
@@ -125,17 +138,13 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                       <Loader width={14} strokeWidth={2} className="animate-spin" />
                     </div>
                   ) : (
-                    <div
+                    <button
+                      type="button"
                       className="flex h-full w-full cursor-pointer items-center justify-center text-placeholder hover:text-tertiary"
-                      onClick={async (e) => {
+                      onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        if (!subIssueHelpers.issue_visibility.includes(issueId)) {
-                          setSubIssueHelpers(parentIssueId, "preview_loader", issueId);
-                          await fetchSubIssues(workspaceSlug, projectId, issueId);
-                          setSubIssueHelpers(parentIssueId, "preview_loader", issueId);
-                        }
-                        setSubIssueHelpers(parentIssueId, "issue_visibility", issueId);
+                        void handleToggleSubIssues();
                       }}
                     >
                       <ChevronRightIcon
@@ -144,7 +153,7 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                         })}
                         strokeWidth={2.5}
                       />
-                    </div>
+                    </button>
                   )}
                 </>
               )}
@@ -171,6 +180,7 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
             </div>
 
             <div
+              role="presentation"
               className="flex-shrink-0 text-13"
               onClick={(e) => {
                 e.preventDefault();
@@ -181,7 +191,7 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                 workspaceSlug={workspaceSlug}
                 parentIssueId={parentIssueId}
                 issueId={issueId}
-                canEdit={canEdit}
+                canEdit={canEditItem}
                 updateSubIssue={subIssueOperations.updateSubIssue}
                 displayProperties={displayProperties}
                 issue={issue}
@@ -190,7 +200,7 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
 
             <div className="flex-shrink-0 text-13">
               <CustomMenu placement="bottom-end" ellipsis>
-                {canEdit && (
+                {canEditItem && (
                   <CustomMenu.MenuItem
                     onClick={() => {
                       handleIssueCrudState("update", parentIssueId, { ...issue });
@@ -215,11 +225,16 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                   </div>
                 </CustomMenu.MenuItem>
 
-                {canEdit && (
+                {canEditItem && (
                   <CustomMenu.MenuItem
                     onClick={() => {
                       if (issue.project_id)
-                        subIssueOperations.removeSubIssue(workspaceSlug, issue.project_id, parentIssueId, issue.id);
+                        void subIssueOperations.removeSubIssue(
+                          workspaceSlug,
+                          issue.project_id,
+                          parentIssueId,
+                          issue.id
+                        );
                     }}
                   >
                     <div className="flex items-center gap-2">
@@ -231,7 +246,7 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                   </CustomMenu.MenuItem>
                 )}
 
-                {canEdit && (
+                {canEditItem && (
                   <CustomMenu.MenuItem
                     onClick={() => {
                       handleIssueCrudState("delete", parentIssueId, issue);
